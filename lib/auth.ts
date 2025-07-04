@@ -1,16 +1,18 @@
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
+import { createClient } from "../lib/supabase-server"
 
 export interface User {
   id: string
   email: string
-  firstName: string
-  lastName: string
+  first_name: string
+  last_name: string
   role: "teacher" | "student" | "institution"
-  institutionId?: string
-  institutionName?: string
-  createdAt: Date
-  updatedAt: Date
+  institution_id?: string
+  institution_name?: string
+  department_id?: string
+  created_at: string
+  updated_at: string
 }
 
 export interface Session {
@@ -21,96 +23,7 @@ export interface Session {
   expiresAt: Date
 }
 
-// Mock database - replace with actual database
-const users: User[] = [
-  {
-    id: "1",
-    email: "teacher@demo.com",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    role: "teacher",
-    institutionName: "Demo High School",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "2",
-    email: "student@demo.com",
-    firstName: "Alex",
-    lastName: "Thompson",
-    role: "student",
-    institutionName: "Demo High School",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-  {
-    id: "3",
-    email: "admin@demo.com",
-    firstName: "John",
-    lastName: "Administrator",
-    role: "institution",
-    institutionId: "inst_1",
-    institutionName: "Demo High School",
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
-]
 
-const sessions: Map<string, Session> = new Map()
-
-export async function createSession(user: User): Promise<string> {
-  const sessionId = generateSessionId()
-  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 7 days
-
-  const session: Session = {
-    userId: user.id,
-    email: user.email,
-    role: user.role,
-    institutionId: user.institutionId,
-    expiresAt,
-  }
-
-  sessions.set(sessionId, session)
-
-  // Set cookie
-  const cookieStore = await cookies()
-  cookieStore.set("session", sessionId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    expires: expiresAt,
-  })
-
-  return sessionId
-}
-
-export async function getSession(): Promise<Session | null> {
-  const cookieStore = await cookies()
-  const sessionId = cookieStore.get("session")?.value
-
-  if (!sessionId) return null
-
-  const session = sessions.get(sessionId)
-  if (!session) return null
-
-  if (session.expiresAt < new Date()) {
-    sessions.delete(sessionId)
-    return null
-  }
-
-  return session
-}
-
-export async function deleteSession(): Promise<void> {
-  const cookieStore = await cookies()
-  const sessionId = cookieStore.get("session")?.value
-
-  if (sessionId) {
-    sessions.delete(sessionId)
-  }
-
-  cookieStore.delete("session")
-}
 
 export async function getCurrentUser(): Promise<User | null> {
   const session = await getSession()
@@ -136,10 +49,34 @@ export async function requireRole(allowedRoles: string[]): Promise<User> {
 }
 
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
-  // Mock authentication - replace with actual password verification
-  if (password !== "demo123") return null
+  const supabase = createClient()
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  })
 
-  return users.find((user) => user.email === email) || null
+  if (error) {
+    console.error("Supabase authentication error:", error)
+    return null
+  }
+
+  if (!data.user) {
+    return null
+  }
+
+  // Fetch user profile from your 'users' table
+  const { data: userProfile, error: profileError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", data.user.id)
+    .single()
+
+  if (profileError) {
+    console.error("Error fetching user profile:", profileError)
+    return null
+  }
+
+  return userProfile as User
 }
 
 export async function createUser(userData: {
@@ -149,26 +86,92 @@ export async function createUser(userData: {
   role: "teacher" | "student" | "institution"
   institutionName?: string
   password: string
-}): Promise<User> {
-  const newUser: User = {
-    id: generateUserId(),
+}): Promise<User | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase.auth.signUp({
     email: userData.email,
-    firstName: userData.firstName,
-    lastName: userData.lastName,
-    role: userData.role,
-    institutionName: userData.institutionName,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    password: userData.password,
+    options: {
+      data: {
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        role: userData.role,
+        institution_name: userData.institutionName,
+      },
+    },
+  })
+
+  if (error) {
+    console.error("Supabase sign up error:", error)
+    return null
   }
 
-  users.push(newUser)
-  return newUser
+  if (!data.user) {
+    return null
+  }
+
+  // Insert into your public.users table
+  const { data: newUserProfile, error: insertError } = await supabase
+    .from("users")
+    .insert([
+      {
+        id: data.user.id,
+        email: userData.email,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        role: userData.role,
+        institution_name: userData.institutionName,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      },
+    ])
+    .select()
+    .single()
+
+  if (insertError) {
+    console.error("Error inserting new user profile:", insertError)
+    return null
+  }
+
+  return newUserProfile as User
 }
 
-function generateSessionId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36)
+export async function getCurrentUser(): Promise<User | null> {
+  const supabase = createClient()
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  if (error) {
+    console.error("Error getting current user:", error)
+    return null
+  }
+
+  if (!user) {
+    return null
+  }
+
+  const { data: userProfile, error: profileError } = await supabase
+    .from("users")
+    .select("*")
+    .eq("id", user.id)
+    .single()
+
+  if (profileError) {
+    console.error("Error fetching user profile:", profileError)
+    return null
+  }
+
+  return userProfile as User
 }
 
-function generateUserId(): string {
-  return "user_" + Math.random().toString(36).substring(2) + Date.now().toString(36)
+export async function deleteSession(): Promise<void> {
+  const supabase = createClient()
+  const { error } = await supabase.auth.signOut()
+
+  if (error) {
+    console.error("Error signing out:", error)
+  }
 }
+
+
+

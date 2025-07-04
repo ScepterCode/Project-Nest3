@@ -1,6 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
+import { createClient } from "@/lib/supabase-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -33,63 +36,106 @@ import {
 } from "@/components/ui/dialog"
 
 export default function ManageClassPage() {
+  const router = useRouter()
+  const { id: classId } = useParams()
   const [activeTab, setActiveTab] = useState("students")
   const [inviteEmail, setInviteEmail] = useState("")
+  const [classInfo, setClassInfo] = useState<any>(null)
+  const [students, setStudents] = useState<any[]>([])
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  // Mock data
-  const classInfo = {
-    id: 1,
-    name: "Grade 11 Biology",
-    code: "BIO11A",
-    description: "Advanced Biology course covering cellular structure, genetics, and ecology",
-    teacher: "Dr. Sarah Johnson",
-    students: 25,
-    assignments: 12,
+  const { user, loading: authLoading } = useAuth()
+  const supabase = createClient()
+
+  useEffect(() => {
+    if (!user || !classId) return
+    fetchClassDetails()
+    fetchStudents()
+    fetchAssignments()
+  }, [user, classId])
+
+  const fetchClassDetails = async () => {
+    const { data, error } = await supabase.from('classes').select('*').eq('id', classId).single()
+    if (error) {
+      console.error("Error fetching class details:", error)
+    } else {
+      setClassInfo(data)
+    }
+    setIsLoading(false)
   }
 
-  const students = [
-    { id: 1, name: "John Obi", email: "john.obi@student.edu", joinDate: "2024-01-05", submissions: 8, grade: "A-" },
-    {
-      id: 2,
-      name: "Adaeze Nwoko",
-      email: "adaeze.nwoko@student.edu",
-      joinDate: "2024-01-05",
-      submissions: 7,
-      grade: "B+",
-    },
-    { id: 3, name: "Musa Lawal", email: "musa.lawal@student.edu", joinDate: "2024-01-06", submissions: 9, grade: "A" },
-    {
-      id: 4,
-      name: "Fatima Hassan",
-      email: "fatima.hassan@student.edu",
-      joinDate: "2024-01-07",
-      submissions: 6,
-      grade: "B",
-    },
-    {
-      id: 5,
-      name: "Chidi Okoro",
-      email: "chidi.okoro@student.edu",
-      joinDate: "2024-01-08",
-      submissions: 8,
-      grade: "A-",
-    },
-  ]
+  const fetchStudents = async () => {
+    const { data, error } = await supabase.from('class_enrollments').select('*, users(*)').eq('class_id', classId)
+    if (error) {
+      console.error("Error fetching students:", error)
+    } else {
+      setStudents(data.map((enrollment: any) => enrollment.users))
+    }
+  }
 
-  const assignments = [
-    { id: 1, title: "Cell Structure Lab Report", dueDate: "2024-01-15", submissions: 18, total: 25, status: "active" },
-    { id: 2, title: "Photosynthesis Quiz", dueDate: "2024-01-20", submissions: 0, total: 25, status: "draft" },
-    { id: 3, title: "Digestive System Project", dueDate: "2024-01-25", submissions: 0, total: 25, status: "scheduled" },
-  ]
+  const fetchAssignments = async () => {
+    const { data, error } = await supabase.from('assignments').select('*').eq('class_id', classId)
+    if (error) {
+      console.error("Error fetching assignments:", error)
+    } else {
+      setAssignments(data)
+    }
+  }
 
-  const handleInviteStudent = () => {
-    // Handle student invitation
-    console.log("Inviting student:", inviteEmail)
-    setInviteEmail("")
+  const handleInviteStudent = async () => {
+    if (!user || !classId) return
+
+    const { data, error } = await supabase.auth.signUp({
+      email: inviteEmail,
+      password: "temporary_password", // Consider a more robust invitation flow
+      options: {
+        data: {
+          role: "student",
+          institution_id: user.institution_id,
+          institution_name: user.institution_name,
+        },
+      },
+    })
+
+    if (error) {
+      alert('Failed to invite student.' + error.message)
+    } else if (data.user) {
+      // Insert into class_enrollments table
+      const { error: enrollmentError } = await supabase.from('class_enrollments').insert([
+        {
+          class_id: classId,
+          student_id: data.user.id,
+          status: 'pending',
+        },
+      ])
+
+      if (enrollmentError) {
+        console.error("Error enrolling student:", enrollmentError)
+        alert('Failed to invite student: Could not enroll student in class.')
+      } else {
+        alert('Student invited successfully! Temporary password: temporary_password')
+        setInviteEmail("")
+        fetchStudents()
+      }
+    } else {
+      alert('Failed to invite student: No user data returned.')
+    }
   }
 
   const copyClassCode = () => {
-    navigator.clipboard.writeText(classInfo.code)
+    if (classInfo?.code) {
+      navigator.clipboard.writeText(classInfo.code)
+      alert("Class code copied to clipboard!")
+    }
+  }
+
+  if (authLoading || isLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (!user || user.role !== 'teacher' || !classInfo) {
+    return <div>Access Denied or Class Not Found</div>
   }
 
   return (
@@ -226,10 +272,7 @@ export default function ManageClassPage() {
                       <div className="flex items-center space-x-4">
                         <Avatar>
                           <AvatarFallback>
-                            {student.name
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
+                            {student.first_name[0]}{student.last_name[0]}
                           </AvatarFallback>
                         </Avatar>
                         <div>

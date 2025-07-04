@@ -54,7 +54,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         : undefined
 
     const newReview: PeerReview = {
-      id: "review_" + Date.now(),
+      id: "review_" + new Date().toISOString(),
       pairId,
       reviewAssignmentId: id,
       reviewerId: user.id,

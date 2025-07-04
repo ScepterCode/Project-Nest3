@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { BookOpen, Eye, EyeOff } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -18,28 +19,19 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const { login } = useAuth()
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      })
+      const { success, redirectUrl } = await login(email, password)
 
-      const data = await response.json()
-
-      if (response.ok) {
-        // Redirect to appropriate dashboard
-        router.push(data.redirectUrl)
+      if (success && redirectUrl) {
+        router.push(redirectUrl)
       } else {
-        // Handle error - you might want to add error state
-        console.error("Login failed:", data.error)
-        alert(data.error || "Login failed")
+        alert("Login failed. Please check your credentials.")
       }
     } catch (error) {
       console.error("Login error:", error)
@@ -48,6 +40,8 @@ export default function LoginPage() {
       setIsLoading(false)
     }
   }
+
+  // ... (rest of the component)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
@@ -107,7 +101,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-4 text-center text-sm">
-            Don't have an account?{" "}
+            Don&apos;t have an account?{" "}
             <Link href="/auth/register" className="text-blue-600 hover:underline">
               Sign up
             </Link>

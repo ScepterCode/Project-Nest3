@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BookOpen, Eye, EyeOff } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -26,6 +27,8 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
+  const { register } = useAuth()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -37,29 +40,19 @@ export default function RegisterPage() {
     }
 
     try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          password: formData.password,
-          role: formData.role,
-          institutionName: formData.institution,
-        }),
+      const { success, redirectUrl } = await register({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password,
+        role: formData.role as "teacher" | "student" | "institution",
+        institutionName: formData.institution,
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        // Redirect to appropriate dashboard
-        router.push(data.redirectUrl)
+      if (success && redirectUrl) {
+        router.push(redirectUrl)
       } else {
-        console.error("Registration failed:", data.error)
-        alert(data.error || "Registration failed")
+        alert("Registration failed. Please try again.")
       }
     } catch (error) {
       console.error("Registration error:", error)
@@ -68,6 +61,8 @@ export default function RegisterPage() {
       setIsLoading(false)
     }
   }
+
+  // ... (rest of the component)
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))

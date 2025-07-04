@@ -1,6 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -8,71 +10,136 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BookOpen, Users, FileText, Plus, Bell, Search, Filter, MoreHorizontal, Clock, CheckCircle } from "lucide-react"
 import { Input } from "@/components/ui/input"
+import Link from "next/link"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+
 
 export default function TeacherDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
+  const [classes, setClasses] = useState<any[]>([])
+  const [recentAssignments, setRecentAssignments] = useState<any[]>([])
+  const [pendingGrading, setPendingGrading] = useState<any[]>([])
+  const [sortOrder, setSortOrder] = useState("asc") // 'asc' or 'desc'
 
-  // Mock data
-  const classes = [
-    { id: 1, name: "Grade 11 Biology", students: 25, assignments: 12, code: "BIO11A" },
-    { id: 2, name: "Grade 10 Chemistry", students: 30, assignments: 8, code: "CHEM10B" },
-    { id: 3, name: "Advanced Physics", students: 18, assignments: 15, code: "PHYS12A" },
-  ]
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const recentAssignments = [
-    {
-      id: 1,
-      title: "Cell Structure Lab Report",
-      class: "Grade 11 Biology",
-      dueDate: "2024-01-15",
-      submissions: 18,
-      total: 25,
-      status: "active",
-    },
-    {
-      id: 2,
-      title: "Chemical Reactions Quiz",
-      class: "Grade 10 Chemistry",
-      dueDate: "2024-01-12",
-      submissions: 30,
-      total: 30,
-      status: "completed",
-    },
-    {
-      id: 3,
-      title: "Newton's Laws Project",
-      class: "Advanced Physics",
-      dueDate: "2024-01-20",
-      submissions: 12,
-      total: 18,
-      status: "active",
-    },
-  ]
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredAssignments, setFilteredAssignments] = useState<any[]>([])
 
-  const pendingGrading = [
-    {
-      id: 1,
-      student: "John Obi",
-      assignment: "Cell Structure Lab Report",
-      submitted: "2 hours ago",
-      class: "Grade 11 Biology",
-    },
-    {
-      id: 2,
-      student: "Adaeze Nwoko",
-      assignment: "Newton's Laws Project",
-      submitted: "1 day ago",
-      class: "Advanced Physics",
-    },
-    {
-      id: 3,
-      student: "Musa Lawal",
-      assignment: "Cell Structure Lab Report",
-      submitted: "3 hours ago",
-      class: "Grade 11 Biology",
-    },
-  ]
+  const { user, loading: authLoading } = useAuth()
+  const supabase = createClient()
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return
+
+      try {
+        // Fetch classes
+        const { data: classesData, error: classesError } = await supabase.from('classes').select()
+        if (classesError) throw classesError
+        setClasses(classesData)
+
+        // Fetch assignments
+        let assignmentQuery = supabase.from('assignments').select()
+
+        if (searchTerm) {
+          assignmentQuery = assignmentQuery.ilike('title', `%${searchTerm}%`)
+        }
+
+        const { data: assignmentsData, error: assignmentsError } = await assignmentQuery
+        if (assignmentsError) throw assignmentsError
+        setRecentAssignments(assignmentsData)
+        setFilteredAssignments(assignmentsData)
+
+        // Fetch pending grading
+        let gradingQuery = supabase.from('submissions').select('*, users(*), assignments(*)').eq('status', 'submitted')
+        if (sortOrder === "asc") {
+          gradingQuery = gradingQuery.order('submitted_at', { ascending: true })
+        } else {
+          gradingQuery = gradingQuery.order('submitted_at', { ascending: false })
+        }
+
+        const { data: pendingGradingData, error: pendingGradingError } = await gradingQuery
+        if (pendingGradingError) throw pendingGradingError
+        setPendingGrading(pendingGradingData)
+      } catch (error: any) {
+        setError(error.message)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [searchTerm, sortOrder, user])
+
+  const handleEditClass = (classId: string) => {
+    // Implement navigation to an edit class page
+    console.log(`Editing class with ID: ${classId}`)
+    // router.push(`/dashboard/teacher/classes/${classId}/edit`)
+  }
+
+  const handleArchiveClass = async (classId: string) => {
+    if (!confirm("Are you sure you want to archive this class? This action cannot be undone.")) {
+      return
+    }
+    try {
+      const { error } = await supabase.from('classes').update({ status: 'archived' }).eq('id', classId)
+      if (error) {
+        console.error('Error archiving class:', error)
+        alert(error.message || 'Failed to archive class')
+      } else {
+        alert('Class archived successfully!')
+        // Re-fetch classes to update the list
+        const { data: classesData, error: classesError } = await supabase.from('classes').select()
+        if (classesError) console.error('Error refetching classes:', classesError)
+        else setClasses(classesData)
+      }
+    } catch (error: any) {
+      console.error('Error archiving class:', error)
+      alert(error.message)
+    }
+  }
+
+  const handleGradeSubmission = async (submissionId: string) => {
+    const grade = prompt("Enter grade:")
+    const feedback = prompt("Enter feedback (optional):")
+
+    if (grade === null) return // User cancelled
+
+    try {
+      const response = await fetch('/api/submissions/grade', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ submissionId, grade, feedback }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to grade submission')
+      }
+
+      alert('Submission graded successfully!')
+      // Re-fetch pending grading to update the list
+      const { data: pendingGradingData, error: pendingGradingError } = await supabase.from('submissions').select('*, users(*), assignments(*)').eq('status', 'submitted').order('submitted_at', { ascending: true })
+      if (pendingGradingError) console.error('Error refetching pending grading:', pendingGradingError)
+      else setPendingGrading(pendingGradingData)
+
+    } catch (error: any) {
+      console.error('Error grading submission:', error)
+      alert(error.message)
+    }
+  }
+
+  if (isLoading || authLoading) {
+    return <div>Loading dashboard...</div>
+  }
+
+  if (error || !user) {
+    return <div>Error: {error || "User not authenticated"}</div>
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -84,7 +151,7 @@ export default function TeacherDashboard() {
               <BookOpen className="h-8 w-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold">Teacher Dashboard</h1>
-                <p className="text-gray-600 dark:text-gray-400">Welcome back, Dr. Sarah Johnson</p>
+                <p className="text-gray-600 dark:text-gray-400">Welcome back, {userProfile?.first_name} {userProfile?.last_name}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -94,10 +161,18 @@ export default function TeacherDashboard() {
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
               </Button>
-              <Avatar>
-                <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                <AvatarFallback>SJ</AvatarFallback>
-              </Avatar>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar>
+                    <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                    <AvatarFallback>SJ</AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>View Profile</DropdownMenuItem>
+                  {/* Add logout or other profile-related options here */}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -216,10 +291,12 @@ export default function TeacherDashboard() {
           <TabsContent value="classes" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">My Classes</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Class
-              </Button>
+              <Link href="/dashboard/teacher/classes/create">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Class
+                </Button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -238,10 +315,10 @@ export default function TeacherDashboard() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent>
-                          <DropdownMenuItem>Edit Class</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditClass(classItem.id)}>Edit Class</DropdownMenuItem>
                           <DropdownMenuItem>View Students</DropdownMenuItem>
                           <DropdownMenuItem>Class Settings</DropdownMenuItem>
-                          <DropdownMenuItem className="text-red-600">Archive Class</DropdownMenuItem>
+                          <DropdownMenuItem className="text-red-600" onClick={() => handleArchiveClass(classItem.id)}>Archive Class</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -271,24 +348,38 @@ export default function TeacherDashboard() {
           <TabsContent value="assignments" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Assignments</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Assignment
-              </Button>
+              <Link href="/dashboard/teacher/assignments/create">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Assignment
+                </Button>
+              </Link>
             </div>
 
             <div className="flex space-x-4">
               <div className="flex-1">
-                <Input placeholder="Search assignments..." className="max-w-sm" />
+                <Input placeholder="Search assignments..." className="max-w-sm" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
               </div>
-              <Button variant="outline">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter by Class
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onSelect={() => setFilteredAssignments(recentAssignments)}>All Classes</DropdownMenuItem>
+                  {classes.map((classItem) => (
+                    <DropdownMenuItem key={classItem.id} onSelect={() => setFilteredAssignments(recentAssignments.filter(a => a.class_id === classItem.id))}>
+                      {classItem.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <div className="space-y-4">
-              {recentAssignments.map((assignment) => (
+              {filteredAssignments.map((assignment) => (
                 <Card key={assignment.id}>
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -308,7 +399,7 @@ export default function TeacherDashboard() {
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/teacher/assignments/${assignment.id}`)}>
                           View Details
                         </Button>
                         <Button size="sm">Grade</Button>
@@ -324,11 +415,27 @@ export default function TeacherDashboard() {
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">Grading Queue</h2>
               <div className="flex space-x-2">
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter by Class
-                </Button>
-                <Button variant="outline">Sort by Date</Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filter by Class
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem>All Classes</DropdownMenuItem>
+                    {/* Add class filter options here */}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">Sort by Date</Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onSelect={() => setSortOrder("asc")}>Oldest First</DropdownMenuItem>
+                    <DropdownMenuItem onSelect={() => setSortOrder("desc")}>Newest First</DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             </div>
 
@@ -360,7 +467,9 @@ export default function TeacherDashboard() {
                         <Button variant="outline" size="sm">
                           Download
                         </Button>
-                        <Button size="sm">Grade Now</Button>
+                        <Button size="sm" onClick={() => handleGradeSubmission(item.id)}>
+                          Grade Now
+                        </Button>
                       </div>
                     </div>
                   </CardContent>

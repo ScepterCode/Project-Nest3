@@ -1,12 +1,14 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { useAuth } from "@/contexts/auth-context"
+import { createClient } from "@/lib/supabase-client"
 import {
   Clock,
   FileText,
@@ -22,122 +24,83 @@ import {
 
 export default function StudentPeerReviewsPage() {
   const [activeTab, setActiveTab] = useState("assigned")
+  const [assignedReviews, setAssignedReviews] = useState<any[]>([])
+  const [receivedReviews, setReceivedReviews] = useState<any[]>([])
+  const [reviewStats, setReviewStats] = useState({
+    totalAssigned: 0,
+    completed: 0,
+    pending: 0,
+    averageRating: 0,
+    totalTimeSpent: 0,
+    helpfulnessScore: 0,
+  })
 
-  // Mock data
-  const assignedReviews = [
-    {
-      id: "pair_1",
-      reviewAssignmentId: "peer_assign_1",
-      title: "Essay Peer Review",
-      submissionTitle: "The Impact of Climate Change",
-      authorName: "Anonymous",
-      dueDate: "2024-01-20",
-      status: "pending",
-      progress: 0,
-      timeSpent: 0,
-      estimatedTime: 30,
-    },
-    {
-      id: "pair_2",
-      reviewAssignmentId: "peer_assign_1",
-      title: "Essay Peer Review",
-      submissionTitle: "Renewable Energy Solutions",
-      authorName: "Anonymous",
-      dueDate: "2024-01-20",
-      status: "in_progress",
-      progress: 60,
-      timeSpent: 18,
-      estimatedTime: 30,
-    },
-    {
-      id: "pair_3",
-      reviewAssignmentId: "peer_assign_2",
-      title: "Lab Report Review",
-      submissionTitle: "Chemical Reactions Analysis",
-      authorName: "Anonymous",
-      dueDate: "2024-01-22",
-      status: "completed",
-      progress: 100,
-      timeSpent: 25,
-      estimatedTime: 20,
-    },
-  ]
+  const { user, loading: authLoading } = useAuth()
+  const supabase = createClient()
 
-  const receivedReviews = [
-    {
-      id: "review_1",
-      assignmentTitle: "Cell Structure Lab Report",
-      reviewerName: "Anonymous Reviewer 1",
-      overallRating: 8,
-      maxRating: 10,
-      submittedAt: "2024-01-18",
-      feedback: {
-        strengths: [
-          "Clear and detailed observations",
-          "Good use of scientific terminology",
-          "Well-organized structure",
-        ],
-        improvements: ["Could expand on the analysis section", "Add more references to support conclusions"],
-        overallComments: "Good work overall! Your observations were accurate and well-documented.",
-      },
-      helpfulnessRating: null,
-    },
-    {
-      id: "review_2",
-      assignmentTitle: "Cell Structure Lab Report",
-      reviewerName: "Anonymous Reviewer 2",
-      overallRating: 7,
-      maxRating: 10,
-      submittedAt: "2024-01-18",
-      feedback: {
-        strengths: ["Professional presentation", "Accurate data collection"],
-        improvements: ["Strengthen the conclusion", "Include more comparative analysis"],
-        overallComments: "Solid work with room for improvement in analysis depth.",
-      },
-      helpfulnessRating: 4,
-    },
-  ]
+  useEffect(() => {
+    if (!user) return
+    fetchReviews()
+  }, [user])
 
-  const reviewStats = {
-    totalAssigned: 5,
-    completed: 3,
-    pending: 2,
-    averageRating: 4.2,
-    totalTimeSpent: 120,
-    helpfulnessScore: 4.1,
-  }
+  const fetchReviews = async () => {
+    try {
+      // Fetch assigned reviews
+      const { data: assignedData, error: assignedError } = await supabase
+        .from('peer_review_assignments')
+        .select('*, peer_reviews(*)')
+        .eq('reviewer_id', user?.id)
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "completed":
-        return "default"
-      case "in_progress":
-        return "secondary"
-      case "pending":
-        return "destructive"
-      case "overdue":
-        return "destructive"
-      default:
-        return "outline"
-    }
-  }
+      if (assignedError) throw assignedError
+      setAssignedReviews(assignedData)
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4" />
-      case "in_progress":
-        return <Clock className="h-4 w-4" />
-      case "pending":
-        return <AlertTriangle className="h-4 w-4" />
-      default:
-        return <FileText className="h-4 w-4" />
+      // Fetch received reviews
+      const { data: receivedData, error: receivedError } = await supabase
+        .from('peer_reviews')
+        .select('*, peer_review_assignments(*)')
+        .eq('submission_owner_id', user?.id)
+
+      if (receivedError) throw receivedError
+      setReceivedReviews(receivedData)
+
+      // Calculate stats (simplified for now)
+      const completed = assignedData.filter((r) => r.status === "completed").length
+      const pending = assignedData.filter((r) => r.status !== "completed").length
+      setReviewStats({
+        totalAssigned: assignedData.length,
+        completed: completed,
+        pending: pending,
+        averageRating: 0, // To be calculated from received reviews
+        totalTimeSpent: 0, // To be calculated
+        helpfulnessScore: 0, // To be calculated
+      })
+    } catch (error: any) {
+      console.error("Error fetching reviews:", error.message)
     }
   }
 
   const rateReviewHelpfulness = async (reviewId: string, rating: number) => {
-    // API call to rate review helpfulness
-    console.log(`Rating review ${reviewId} with ${rating} stars`)
+    try {
+      const { error } = await supabase
+        .from('peer_reviews')
+        .update({ helpfulness_rating: rating })
+        .eq('id', reviewId)
+
+      if (error) throw error
+      alert("Review helpfulness rated!")
+      fetchReviews() // Refresh data
+    } catch (error: any) {
+      console.error("Error rating review helpfulness:", error.message)
+      alert("Failed to rate review helpfulness.")
+    }
+  }
+
+  if (authLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (!user) {
+    return <div>Access Denied</div>
   }
 
   return (
@@ -147,7 +110,7 @@ export default function StudentPeerReviewsPage() {
         <div className="mb-6">
           <h1 className="text-2xl font-bold">Peer Reviews</h1>
           <p className="text-gray-600 dark:text-gray-400">
-            Review your classmates' work and see feedback on your submissions
+            Review your classmates&apos; work and see feedback on your submissions
           </p>
         </div>
 
@@ -284,7 +247,7 @@ export default function StudentPeerReviewsPage() {
                   <CardContent className="py-12 text-center">
                     <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium mb-2">No reviews assigned</h3>
-                    <p className="text-gray-600">You don't have any peer reviews to complete at the moment.</p>
+                    <p className="text-gray-600">You don&apos;t have any peer reviews to complete at the moment.</p>
                   </CardContent>
                 </Card>
               )}
@@ -394,7 +357,7 @@ export default function StudentPeerReviewsPage() {
                     <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium mb-2">No feedback yet</h3>
                     <p className="text-gray-600">
-                      You haven't received any peer review feedback yet. Complete your assigned reviews to unlock
+                      You haven&apos;t received any peer review feedback yet. Complete your assigned reviews to unlock
                       feedback on your own work.
                     </p>
                   </CardContent>

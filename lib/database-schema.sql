@@ -109,9 +109,38 @@ CREATE TABLE sessions (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+-- Departments table
+CREATE TABLE departments (
+    id VARCHAR(255) PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    institution_id VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (institution_id) REFERENCES institutions(id)
+);
+
+-- Department members table (linking users to departments)
+CREATE TABLE department_members (
+    id VARCHAR(255) PRIMARY KEY,
+    department_id VARCHAR(255) NOT NULL,
+    user_id VARCHAR(255) NOT NULL,
+    role ENUM('teacher', 'student') NOT NULL, -- Role within the department context
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (department_id) REFERENCES departments(id),
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    UNIQUE KEY unique_department_member (department_id, user_id)
+);
+
+-- Add department_id to users table
+ALTER TABLE users
+ADD COLUMN department_id VARCHAR(255),
+ADD CONSTRAINT fk_users_department
+FOREIGN KEY (department_id) REFERENCES departments(id);
+
 -- Indexes for better performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_users_department ON users(department_id);
 CREATE INDEX idx_classes_teacher ON classes(teacher_id);
 CREATE INDEX idx_classes_institution ON classes(institution_id);
 CREATE INDEX idx_enrollments_class ON class_enrollments(class_id);
@@ -122,3 +151,6 @@ CREATE INDEX idx_submissions_assignment ON submissions(assignment_id);
 CREATE INDEX idx_submissions_student ON submissions(student_id);
 CREATE INDEX idx_notifications_user ON notifications(user_id);
 CREATE INDEX idx_sessions_user ON sessions(user_id);
+CREATE INDEX idx_departments_institution ON departments(institution_id);
+CREATE INDEX idx_department_members_department ON department_members(department_id);
+CREATE INDEX idx_department_members_user ON department_members(user_id);

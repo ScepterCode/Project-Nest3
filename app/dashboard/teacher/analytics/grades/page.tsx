@@ -1,6 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useAuth } from "@/contexts/auth-context"
+import { createClient } from "@/lib/supabase-client"
+import { useAuth } from "@/contexts/auth-context"
+import { createClient } from "@/lib/supabase-client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -37,7 +41,7 @@ export default function GradeAnalyticsPage() {
   const assignments = [
     { id: "assign_1", name: "Cell Structure Lab Report", class: "Grade 11 Biology" },
     { id: "assign_2", name: "Chemical Reactions Quiz", class: "Grade 10 Chemistry" },
-    { id: "assign_3", name: "Newton's Laws Project", class: "Advanced Physics" },
+    { id: "assign_3", name: "Newton&apos;s Laws Project", class: "Advanced Physics" },
   ]
 
   const gradeDistribution = [
@@ -375,7 +379,7 @@ export default function GradeAnalyticsPage() {
                         </div>
                         <div className="text-sm text-gray-500 space-y-1">
                           <div>Assignments completed: {student.assignments}</div>
-                          <div>Current streak: {student.streak} A's</div>
+                          <div>Current streak: {student.streak} A&apos;s</div>
                         </div>
                         <Button size="sm" variant="outline" className="mt-2 bg-transparent">
                           Send Praise

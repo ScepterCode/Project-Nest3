@@ -43,7 +43,7 @@ export default function PeerReviewPage() {
   const [newStrength, setNewStrength] = useState("")
   const [newImprovement, setNewImprovement] = useState("")
   const [timeSpent, setTimeSpent] = useState(0)
-  const [startTime] = useState(Date.now())
+  const [startTime] = useState(() => new Date().toISOString())
 
   // Mock data - replace with API calls
   const reviewAssignment = {
@@ -123,7 +123,7 @@ The evidence clearly demonstrates that climate change poses unprecedented challe
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setTimeSpent(Math.floor((Date.now() - startTime) / 1000 / 60))
+      setTimeSpent(Math.floor((new Date().getTime() - new Date(startTime).getTime()) / 1000 / 60))
     }, 60000)
 
     return () => clearInterval(interval)

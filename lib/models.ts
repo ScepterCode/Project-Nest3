@@ -74,6 +74,22 @@ export interface Notification {
   createdAt: Date
 }
 
+export interface Department {
+  id: string
+  name: string
+  institutionId: string
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface DepartmentMember {
+  id: string
+  departmentId: string
+  userId: string
+  role: "teacher" | "student"
+  createdAt: Date
+}
+
 // Mock data stores
 export const institutions: Institution[] = [
   {

@@ -1,12 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import Link from "next/link"
 import {
   BookOpen,
   Calendar,
@@ -21,60 +25,94 @@ import {
   Download,
 } from "lucide-react"
 
+
 export default function StudentDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
+  const [enrolledClasses, setEnrolledClasses] = useState<any[]>([])
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [upcomingDeadlines, setUpcomingDeadlines] = useState<any[]>([])
+  const [recentGrades, setRecentGrades] = useState<any[]>([])
 
-  // Mock data
-  const enrolledClasses = [
-    { id: 1, name: "Grade 11 Biology", teacher: "Dr. Sarah Johnson", code: "BIO11A", progress: 75 },
-    { id: 2, name: "Grade 11 Mathematics", teacher: "Mr. David Chen", code: "MATH11B", progress: 82 },
-    { id: 3, name: "Grade 11 English", teacher: "Ms. Emily Rodriguez", code: "ENG11C", progress: 68 },
-  ]
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { user, loading: authLoading } = useAuth()
 
-  const assignments = [
-    {
-      id: 1,
-      title: "Cell Structure Lab Report",
-      class: "Grade 11 Biology",
-      dueDate: "2024-01-15",
-      status: "pending",
-      submitted: false,
-      grade: null,
-      priority: "high",
-    },
-    {
-      id: 2,
-      title: "Quadratic Equations Worksheet",
-      class: "Grade 11 Mathematics",
-      dueDate: "2024-01-18",
-      status: "submitted",
-      submitted: true,
-      grade: null,
-      priority: "medium",
-    },
-    {
-      id: 3,
-      title: "Shakespeare Essay",
-      class: "Grade 11 English",
-      dueDate: "2024-01-10",
-      status: "graded",
-      submitted: true,
-      grade: "A-",
-      priority: "low",
-    },
-  ]
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!user) return
 
-  const upcomingDeadlines = [
-    { title: "Cell Structure Lab Report", class: "Biology", dueDate: "Jan 15", daysLeft: 2 },
-    { title: "Quadratic Equations Test", class: "Mathematics", dueDate: "Jan 20", daysLeft: 7 },
-    { title: "Poetry Analysis", class: "English", dueDate: "Jan 22", daysLeft: 9 },
-  ]
+      try {
+        // Fetch enrolled classes
+        const { data: classesData, error: classesError } = await supabase.from('classes').select()
+        if (classesError) throw classesError
+        setEnrolledClasses(classesData)
 
-  const recentGrades = [
-    { assignment: "Shakespeare Essay", class: "English", grade: "A-", date: "Jan 8" },
-    { assignment: "Chemical Reactions Quiz", class: "Biology", grade: "B+", date: "Jan 5" },
-    { assignment: "Algebra Test", class: "Mathematics", grade: "A", date: "Jan 3" },
-  ]
+        // Fetch assignments
+        const { data: assignmentsData, error: assignmentsError } = await supabase.from('assignments').select()
+        if (assignmentsError) throw assignmentsError
+        setAssignments(assignmentsData)
+
+        // Fetch upcoming deadlines (you'll need to adjust this query based on your logic)
+        const { data: deadlinesData, error: deadlinesError } = await supabase.from('assignments').select().order('due_date', { ascending: true }).limit(3)
+        if (deadlinesError) throw deadlinesError
+        setUpcomingDeadlines(deadlinesData)
+
+        // Fetch recent grades (you'll need to adjust this query based on your logic)
+        const { data: gradesData, error: gradesError } = await supabase.from('submissions').select('*, assignments(*)').order('graded_at', { ascending: false }).limit(3)
+        if (gradesError) throw gradesError
+        setRecentGrades(gradesData)
+      } catch (error: any) {
+        setError(error.message)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [user])
+
+  if (isLoading || authLoading) {
+    return <div>Loading dashboard...</div>
+  }
+
+  if (error || !user) {
+    return <div>Error: {error || "User not authenticated"}</div>
+  }
+
+  const handleSubmitAssignment = async (assignmentId: string) => {
+    const content = prompt("Enter your submission content:")
+    if (content === null) return // User cancelled
+
+    try {
+      if (!user) {
+        alert("You must be logged in to submit an assignment.")
+        return
+      }
+
+      const { data, error } = await supabase.from('submissions').insert([
+        {
+          assignment_id: assignmentId,
+          student_id: user.id,
+          content: content,
+          status: 'submitted',
+        },
+      ])
+
+      if (error) {
+        console.error('Error submitting assignment:', error)
+        alert(error.message || 'Failed to submit assignment')
+      } else {
+        alert('Assignment submitted successfully!')
+        // Re-fetch assignments to update their status
+        const { data: assignmentsData, error: assignmentsError } = await supabase.from('assignments').select()
+        if (assignmentsError) console.error('Error refetching assignments:', assignmentsError)
+        else setAssignments(assignmentsData)
+      }
+    } catch (error: any) {
+      console.error('Error submitting assignment:', error)
+      alert(error.message)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -86,7 +124,7 @@ export default function StudentDashboard() {
               <BookOpen className="h-8 w-8 text-blue-600" />
               <div>
                 <h1 className="text-2xl font-bold">Student Dashboard</h1>
-                <p className="text-gray-600 dark:text-gray-400">Welcome back, Alex Thompson</p>
+                <p className="text-gray-600 dark:text-gray-400">Welcome back, {userProfile?.first_name} {userProfile?.last_name}</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -96,10 +134,18 @@ export default function StudentDashboard() {
               <Button variant="ghost" size="icon">
                 <Bell className="h-5 w-5" />
               </Button>
-              <Avatar>
-                <AvatarImage src="/placeholder.svg?height=32&width=32" />
-                <AvatarFallback>AT</AvatarFallback>
-              </Avatar>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Avatar>
+                    <AvatarImage src="/placeholder.svg?height=32&width=32" />
+                    <AvatarFallback>AT</AvatarFallback>
+                  </Avatar>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={() => router.push('/dashboard/profile')}>View Profile</DropdownMenuItem>
+                  {/* Add logout or other profile-related options here */}
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </div>
@@ -167,7 +213,7 @@ export default function StudentDashboard() {
               <Card>
                 <CardHeader>
                   <CardTitle>Upcoming Deadlines</CardTitle>
-                  <CardDescription>Don't miss these important dates</CardDescription>
+                  <CardDescription>Don&apos;t miss these important dates</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {upcomingDeadlines.map((deadline, index) => (
@@ -272,7 +318,7 @@ export default function StudentDashboard() {
                       </div>
                       <div className="flex items-center space-x-2">
                         {!assignment.submitted ? (
-                          <Button>
+                          <Button onClick={() => handleSubmitAssignment(assignment.id)}>
                             <Upload className="h-4 w-4 mr-2" />
                             Submit
                           </Button>
@@ -282,7 +328,7 @@ export default function StudentDashboard() {
                             Download
                           </Button>
                         )}
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}`)}>
                           View Details
                         </Button>
                       </div>
@@ -296,10 +342,12 @@ export default function StudentDashboard() {
           <TabsContent value="classes" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="text-2xl font-bold">My Classes</h2>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Join Class
-              </Button>
+              <Link href="/dashboard/student/classes/join">
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Join Class
+                </Button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

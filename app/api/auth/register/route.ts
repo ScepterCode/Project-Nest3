@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { createUser, createSession } from "@/lib/auth"
+import { createUser } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
   try {
@@ -21,17 +21,15 @@ export async function POST(request: NextRequest) {
       institutionName,
     })
 
-    await createSession(newUser)
-
     return NextResponse.json({
       success: true,
       user: {
         id: newUser.id,
         email: newUser.email,
-        firstName: newUser.firstName,
-        lastName: newUser.lastName,
+        first_name: newUser.first_name,
+        last_name: newUser.last_name,
         role: newUser.role,
-        institutionName: newUser.institutionName,
+        institution_name: newUser.institution_name,
       },
       redirectUrl: `/dashboard/${newUser.role}`,
     })

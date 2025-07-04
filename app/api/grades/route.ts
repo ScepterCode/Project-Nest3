@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
-import { grades, submissions, type Grade } from "@/lib/models"
-import { rubrics } from "@/lib/grading-models"
+import { createClient } from "@/lib/supabase-server"
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,19 +9,25 @@ export async function GET(request: NextRequest) {
     const assignmentId = searchParams.get("assignmentId")
     const studentId = searchParams.get("studentId")
 
-    let userGrades: Grade[] = []
+    const supabase = createClient()
+
+    let query = supabase.from('grades').select('*')
 
     if (user.role === "teacher") {
-      userGrades = grades.filter((grade) => grade.teacherId === user.id)
+      query = query.eq('teacher_id', user.id)
       if (assignmentId) {
-        userGrades = userGrades.filter((grade) => grade.assignmentId === assignmentId)
+        query = query.eq('assignment_id', assignmentId)
       }
     } else if (user.role === "student") {
-      userGrades = grades.filter((grade) => grade.studentId === user.id && grade.status === "published")
+      query = query.eq('student_id', user.id).eq('status', 'published')
       if (assignmentId) {
-        userGrades = userGrades.filter((grade) => grade.assignmentId === assignmentId)
+        query = query.eq('assignment_id', assignmentId)
       }
     }
+
+    const { data: userGrades, error } = await query
+
+    if (error) throw error
 
     return NextResponse.json({ grades: userGrades })
   } catch (error) {
@@ -42,43 +47,62 @@ export async function POST(request: NextRequest) {
     const gradeData = await request.json()
     const { submissionId, assignmentId, studentId, rubricId, criteriaGrades, feedback, status } = gradeData
 
+    const supabase = createClient()
+
+    // Fetch rubric to get max_points
+    const { data: rubric, error: rubricError } = await supabase
+      .from('rubrics')
+      .select('total_points')
+      .eq('id', rubricId)
+      .single()
+
+    if (rubricError) throw rubricError
+
     // Calculate total points
     const totalPoints = criteriaGrades.reduce((sum: number, cg: any) => sum + cg.points, 0)
-    const rubric = rubrics.find((r) => r.id === rubricId)
-    const maxPoints = rubric?.totalPoints || 100
+    const maxPoints = rubric?.total_points || 100
     const percentage = Math.round((totalPoints / maxPoints) * 100)
 
-    const newGrade: Grade = {
-      id: "grade_" + Date.now(),
-      submissionId,
-      assignmentId,
-      studentId,
-      teacherId: user.id,
-      rubricId,
-      criteriaGrades,
-      totalPoints,
-      maxPoints,
-      percentage,
-      letterGrade: calculateLetterGrade(percentage),
-      feedback,
+    const newGrade = {
+      submission_id: submissionId,
+      assignment_id: assignmentId,
+      student_id: studentId,
+      teacher_id: user.id,
+      rubric_id: rubricId,
+      criteria_grades: criteriaGrades,
+      total_points: totalPoints,
+      max_points: maxPoints,
+      percentage: percentage,
+      letter_grade: calculateLetterGrade(percentage),
+      feedback: feedback,
       status: status || "draft",
-      gradedAt: new Date(),
-      publishedAt: status === "published" ? new Date() : undefined,
+      graded_at: new Date().toISOString(),
+      published_at: status === "published" ? new Date().toISOString() : null,
     }
 
-    grades.push(newGrade)
+    const { data: insertedGrade, error: insertError } = await supabase
+      .from('grades')
+      .insert([newGrade])
+      .select()
+      .single()
+
+    if (insertError) throw insertError
 
     // Update submission status
-    const submission = submissions.find((s) => s.id === submissionId)
-    if (submission) {
-      submission.status = status === "published" ? "graded" : "submitted"
-      submission.grade = totalPoints
-      submission.feedback = feedback.overallComments
-      submission.gradedAt = new Date()
-      submission.gradedBy = user.id
-    }
+    const { error: submissionUpdateError } = await supabase
+      .from('submissions')
+      .update({
+        status: status === "published" ? "graded" : "submitted",
+        grade: totalPoints,
+        feedback: feedback.overallComments,
+        graded_at: new Date().toISOString(),
+        graded_by: user.id,
+      })
+      .eq('id', submissionId)
 
-    return NextResponse.json({ grade: newGrade })
+    if (submissionUpdateError) throw submissionUpdateError
+
+    return NextResponse.json({ grade: insertedGrade })
   } catch (error) {
     console.error("Create grade error:", error)
     return NextResponse.json({ error: "Internal server error" }, { status: 500 })

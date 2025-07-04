@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newPeerReview: PeerReviewAssignment = {
-      id: "peer_assign_" + Date.now(),
+      id: "peer_assign_" + new Date().toISOString(),
       title,
       description,
       assignmentId,

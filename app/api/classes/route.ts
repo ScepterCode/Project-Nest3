@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newClass: Class = {
-      id: "class_" + Date.now(),
+      id: "class_" + new Date().toISOString(),
       name,
       code: generateClassCode(),
       description,
@@ -75,7 +75,7 @@ function generateClassCode(): string {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   let result = ""
   for (let i = 0; i < 6; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length))
+    result += chars.charAt(Math.floor(0.5 * chars.length))
   }
   return result
 }

@@ -13,10 +13,10 @@ export async function GET() {
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        first_name: user.first_name,
+        last_name: user.last_name,
         role: user.role,
-        institutionName: user.institutionName,
+        institution_name: user.institution_name,
       },
     })
   } catch (error) {

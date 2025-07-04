@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
+import { useAuth } from "@/contexts/auth-context"
 import { Plus, Minus, Save, Eye, BookOpen, Target, Star, Trash2, GripVertical } from "lucide-react"
 
 interface RubricLevel {
@@ -39,36 +40,39 @@ export default function CreateRubricPage() {
   const [criteria, setCriteria] = useState<RubricCriterion[]>([])
   const [previewMode, setPreviewMode] = useState(false)
 
+  const { user, loading: authLoading } = useAuth()
+  const supabase = createClient()
+
   const addCriterion = () => {
     const newCriterion: RubricCriterion = {
-      id: `criterion_${Date.now()}`,
+      id: `criterion_${new Date().toISOString()}`,
       name: "",
       description: "",
       weight: 25,
       levels: [
         {
-          id: `level_${Date.now()}_1`,
+          id: `level_${new Date().toISOString()}_1`,
           name: "Excellent",
           description: "",
           points: 4,
           qualityIndicators: [],
         },
         {
-          id: `level_${Date.now()}_2`,
+          id: `level_${new Date().toISOString()}_2`,
           name: "Good",
           description: "",
           points: 3,
           qualityIndicators: [],
         },
         {
-          id: `level_${Date.now()}_3`,
+          id: `level_${new Date().toISOString()}_3`,
           name: "Satisfactory",
           description: "",
           points: 2,
           qualityIndicators: [],
         },
         {
-          id: `level_${Date.now()}_4`,
+          id: `level_${new Date().toISOString()}_4`,
           name: "Needs Improvement",
           description: "",
           points: 1,
@@ -136,26 +140,34 @@ export default function CreateRubricPage() {
   }
 
   const saveRubric = async () => {
+    if (!user) {
+      alert("You must be logged in to save a rubric.")
+      return
+    }
+
     const rubricPayload = {
-      ...rubricData,
-      criteria,
-      totalPoints: calculateTotalPoints(),
+      name: rubricData.name,
+      description: rubricData.description,
+      is_template: rubricData.isTemplate,
+      teacher_id: user.id,
+      class_id: rubricData.classId || null, // Assuming classId can be optional
+      criteria: JSON.stringify(criteria), // Store criteria as JSON string
+      total_points: calculateTotalPoints(),
     }
 
     try {
-      const response = await fetch("/api/rubrics", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(rubricPayload),
-      })
+      const { error } = await supabase.from('rubrics').insert([rubricPayload])
 
-      if (response.ok) {
+      if (error) {
+        console.error("Error creating rubric:", error)
+        alert(error.message || "Failed to create rubric")
+      } else {
         alert("Rubric created successfully!")
         router.push("/dashboard/teacher/rubrics")
       }
     } catch (error) {
       console.error("Error creating rubric:", error)
-      alert("Error creating rubric")
+      alert("An error occurred while saving the rubric.")
     }
   }
 
@@ -257,7 +269,7 @@ export default function CreateRubricPage() {
               name: "Good (24-26 pts)",
               description: "Few minor errors",
               points: 26,
-              qualityIndicators: ["Minor errors only", "Generally correct"],
+              qualityIndicators: ["Few minor errors", "Generally correct"],
             },
             {
               id: "level_grammar_2",
@@ -279,332 +291,10 @@ export default function CreateRubricPage() {
     }
   }
 
-  if (previewMode) {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold">Rubric Preview</h1>
-            <Button onClick={() => setPreviewMode(false)} variant="outline">
-              <Eye className="h-4 w-4 mr-2" />
-              Exit Preview
-            </Button>
-          </div>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>{rubricData.name || "Untitled Rubric"}</CardTitle>
-              <CardDescription>{rubricData.description}</CardDescription>
-              <div className="flex items-center space-x-4">
-                <Badge variant="outline">Total Points: {calculateTotalPoints()}</Badge>
-                <Badge variant="outline">{criteria.length} Criteria</Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-8">
-                {criteria.map((criterion) => (
-                  <div key={criterion.id} className="space-y-4">
-                    <div>
-                      <h3 className="text-lg font-semibold">{criterion.name}</h3>
-                      <p className="text-gray-600">{criterion.description}</p>
-                      <Badge variant="secondary" className="mt-1">
-                        {criterion.weight}% of grade
-                      </Badge>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                      {criterion.levels.map((level) => (
-                        <Card key={level.id} className="border-2">
-                          <CardHeader className="pb-2">
-                            <div className="flex items-center justify-between">
-                              <CardTitle className="text-sm">{level.name}</CardTitle>
-                              <Badge>{level.points} pts</Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="pt-0">
-                            <p className="text-sm text-gray-600 mb-2">{level.description}</p>
-                            {level.qualityIndicators.length > 0 && (
-                              <ul className="text-xs space-y-1">
-                                {level.qualityIndicators.map((indicator, index) => (
-                                  <li key={index} className="flex items-start space-x-1">
-                                    <span>•</span>
-                                    <span>{indicator}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                    <Separator />
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
+  if (authLoading) {
+    return <div>Loading...</div>
   }
 
-  return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold">Create Rubric</h1>
-            <p className="text-gray-600">Build a comprehensive grading rubric</p>
-          </div>
-          <div className="flex space-x-2">
-            <Button onClick={() => setPreviewMode(true)} variant="outline">
-              <Eye className="h-4 w-4 mr-2" />
-              Preview
-            </Button>
-            <Button onClick={saveRubric}>
-              <Save className="h-4 w-4 mr-2" />
-              Save Rubric
-            </Button>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Rubric Details */}
-          <div className="lg:col-span-1">
-            <Card>
-              <CardHeader>
-                <CardTitle>Rubric Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="name">Rubric Name</Label>
-                  <Input
-                    id="name"
-                    placeholder="e.g., Essay Writing Rubric"
-                    value={rubricData.name}
-                    onChange={(e) => setRubricData({ ...rubricData, name: e.target.value })}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    placeholder="Brief description of this rubric..."
-                    value={rubricData.description}
-                    onChange={(e) => setRubricData({ ...rubricData, description: e.target.value })}
-                    rows={3}
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="template"
-                    checked={rubricData.isTemplate}
-                    onCheckedChange={(checked) => setRubricData({ ...rubricData, isTemplate: checked })}
-                  />
-                  <Label htmlFor="template">Save as template</Label>
-                </div>
-
-                <Separator />
-
-                <div>
-                  <h4 className="font-medium mb-2">Quick Templates</h4>
-                  <div className="space-y-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full justify-start bg-transparent"
-                      onClick={() => loadTemplate("essay")}
-                    >
-                      <BookOpen className="h-4 w-4 mr-2" />
-                      Essay Writing
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start bg-transparent">
-                      <Target className="h-4 w-4 mr-2" />
-                      Lab Report
-                    </Button>
-                    <Button variant="outline" size="sm" className="w-full justify-start bg-transparent">
-                      <Star className="h-4 w-4 mr-2" />
-                      Presentation
-                    </Button>
-                  </div>
-                </div>
-
-                <Separator />
-
-                <div className="text-sm space-y-2">
-                  <div className="flex justify-between">
-                    <span>Total Criteria:</span>
-                    <Badge variant="outline">{criteria.length}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span>Total Points:</span>
-                    <Badge variant="outline">{calculateTotalPoints()}</Badge>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Criteria Builder */}
-          <div className="lg:col-span-3">
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold">Criteria</h2>
-                <Button onClick={addCriterion}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Criterion
-                </Button>
-              </div>
-
-              {criteria.length === 0 ? (
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <Target className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No criteria yet</h3>
-                    <p className="text-gray-600 mb-4">Add your first grading criterion to get started</p>
-                    <Button onClick={addCriterion}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Criterion
-                    </Button>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="space-y-6">
-                  {criteria.map((criterion, criterionIndex) => (
-                    <Card key={criterion.id}>
-                      <CardHeader>
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-2">
-                            <GripVertical className="h-4 w-4 text-gray-400" />
-                            <div className="flex-1">
-                              <Input
-                                placeholder="Criterion name (e.g., Content & Ideas)"
-                                value={criterion.name}
-                                onChange={(e) => updateCriterion(criterion.id, { name: e.target.value })}
-                                className="font-medium"
-                              />
-                            </div>
-                          </div>
-                          <Button variant="ghost" size="sm" onClick={() => removeCriterion(criterion.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                          <div className="md:col-span-3">
-                            <Textarea
-                              placeholder="Describe what this criterion evaluates..."
-                              value={criterion.description}
-                              onChange={(e) => updateCriterion(criterion.id, { description: e.target.value })}
-                              rows={2}
-                            />
-                          </div>
-                          <div>
-                            <Label>Weight (%)</Label>
-                            <Input
-                              type="number"
-                              min="1"
-                              max="100"
-                              value={criterion.weight}
-                              onChange={(e) =>
-                                updateCriterion(criterion.id, { weight: Number.parseInt(e.target.value) || 0 })
-                              }
-                            />
-                          </div>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4">
-                          <h4 className="font-medium">Performance Levels</h4>
-                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            {criterion.levels.map((level, levelIndex) => (
-                              <Card key={level.id} className="border-2">
-                                <CardHeader className="pb-2">
-                                  <Input
-                                    placeholder="Level name"
-                                    value={level.name}
-                                    onChange={(e) => updateLevel(criterion.id, level.id, { name: e.target.value })}
-                                    className="font-medium text-sm"
-                                  />
-                                  <Input
-                                    type="number"
-                                    placeholder="Points"
-                                    value={level.points}
-                                    onChange={(e) =>
-                                      updateLevel(criterion.id, level.id, {
-                                        points: Number.parseInt(e.target.value) || 0,
-                                      })
-                                    }
-                                    className="text-sm"
-                                  />
-                                </CardHeader>
-                                <CardContent className="pt-0 space-y-2">
-                                  <Textarea
-                                    placeholder="Describe this performance level..."
-                                    value={level.description}
-                                    onChange={(e) =>
-                                      updateLevel(criterion.id, level.id, { description: e.target.value })
-                                    }
-                                    rows={3}
-                                    className="text-sm"
-                                  />
-
-                                  <div>
-                                    <Label className="text-xs">Quality Indicators</Label>
-                                    <div className="space-y-1">
-                                      {level.qualityIndicators.map((indicator, indicatorIndex) => (
-                                        <div key={indicatorIndex} className="flex space-x-1">
-                                          <Input
-                                            placeholder="Quality indicator..."
-                                            value={indicator}
-                                            onChange={(e) =>
-                                              updateQualityIndicator(
-                                                criterion.id,
-                                                level.id,
-                                                indicatorIndex,
-                                                e.target.value,
-                                              )
-                                            }
-                                            className="text-xs"
-                                          />
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() =>
-                                              removeQualityIndicator(criterion.id, level.id, indicatorIndex)
-                                            }
-                                          >
-                                            <Minus className="h-3 w-3" />
-                                          </Button>
-                                        </div>
-                                      ))}
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => addQualityIndicator(criterion.id, level.id)}
-                                        className="w-full"
-                                      >
-                                        <Plus className="h-3 w-3 mr-1" />
-                                        Add Indicator
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
-                            ))}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
+  if (!user || user.role !== 'teacher') {
+    return <div>Access Denied</div>
+  }

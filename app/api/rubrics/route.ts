@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     }, 0)
 
     const newRubric: Rubric = {
-      id: "rubric_" + Date.now(),
+      id: "rubric_" + new Date().toISOString(),
       name,
       description,
       teacherId: user.id,

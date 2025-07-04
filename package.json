@@ -10,7 +10,8 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
-    "@radix-ui/react-accordion": "latest",
+    "@next/swc-linux-x64-gnu": "^15.3.4",
+    "@radix-ui/react-accordion": "*",
     "@radix-ui/react-alert-dialog": "latest",
     "@radix-ui/react-aspect-ratio": "latest",
     "@radix-ui/react-avatar": "latest",
@@ -37,6 +38,8 @@
     "@radix-ui/react-toggle": "latest",
     "@radix-ui/react-toggle-group": "latest",
     "@radix-ui/react-tooltip": "latest",
+    "@supabase/ssr": "^0.6.1",
+    "@supabase/supabase-js": "^2.50.3",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -63,6 +66,8 @@
     "@types/node": "^22",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "eslint": "^9.30.1",
+    "eslint-config-next": "^15.3.5",
     "postcss": "^8.5",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"

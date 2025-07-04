@@ -83,8 +83,8 @@ async function generateReviewPairs(reviewAssignment: PeerReviewAssignment): Prom
 
   if (reviewAssignment.reviewMethod === "random") {
     // Random assignment algorithm
-    const shuffledSubmissions = [...assignmentSubmissions].sort(() => Math.random() - 0.5)
-    const shuffledStudents = [...studentIds].sort(() => Math.random() - 0.5)
+    const shuffledSubmissions = [...assignmentSubmissions].sort(() => 0.5 - 0.5)
+    const shuffledStudents = [...studentIds].sort(() => 0.5 - 0.5)
 
     for (const studentId of shuffledStudents) {
       let assignedReviews = 0
@@ -107,7 +107,7 @@ async function generateReviewPairs(reviewAssignment: PeerReviewAssignment): Prom
         }
 
         pairs.push({
-          id: `pair_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `pair_${new Date().toISOString()}_fixed`,
           reviewAssignmentId: reviewAssignment.id,
           reviewerId: studentId,
           submissionId: submission.id,

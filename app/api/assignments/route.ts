@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
     }
 
     const newAssignment: Assignment = {
-      id: "assign_" + Date.now(),
+      id: "assign_" + new Date().toISOString(),
       title,
       description,
       classId,

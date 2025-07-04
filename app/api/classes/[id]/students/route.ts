@@ -52,7 +52,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
 
       const newEnrollment: ClassEnrollment = {
-        id: "enroll_" + Date.now(),
+        id: "enroll_" + new Date().toISOString(),
         classId: id,
         studentId: user.id,
         enrolledAt: new Date(),
@@ -70,9 +70,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // For now, we'll create a pending enrollment
 
       const newEnrollment: ClassEnrollment = {
-        id: "enroll_" + Date.now(),
+        id: "enroll_" + new Date().toISOString(),
         classId: id,
-        studentId: studentId || "pending_" + Date.now(),
+        studentId: studentId || "pending_" + new Date().toISOString(),
         enrolledAt: new Date(),
         status: "pending",
       }
