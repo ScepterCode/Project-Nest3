@@ -17,8 +17,16 @@ export async function GET(request: NextRequest) {
       token_hash,
     });
     if (!error) {
-      // redirect user to specified redirect URL or root of app
-      redirect(next);
+      // Get user data to determine role and redirect to appropriate dashboard
+      const { data: { user } } = await supabase.auth.getUser();
+      const userRole = user?.user_metadata?.role || 'student';
+      
+      // If next param is provided and it's not the default, use it, otherwise use role-based redirect
+      if (next !== "/" && next.includes('/dashboard/')) {
+        redirect(next);
+      } else {
+        redirect(`/dashboard/${userRole}`);
+      }
     } else {
       // redirect the user to an error page with some instructions
       redirect(`/auth/error?error=${error?.message}`);

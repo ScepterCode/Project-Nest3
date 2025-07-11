@@ -38,8 +38,13 @@ export function LoginForm({
         password,
       });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
-      router.push("/protected");
+      
+      // Get user data to determine role
+      const { data: { user } } = await supabase.auth.getUser();
+      const userRole = user?.user_metadata?.role || 'student';
+      
+      // Redirect to appropriate dashboard based on role
+      router.push(`/dashboard/${userRole}`);
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {

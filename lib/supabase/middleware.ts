@@ -45,11 +45,39 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // If user is authenticated and trying to access auth pages, redirect to dashboard
+  if (user && request.nextUrl.pathname.startsWith("/auth")) {
+    const userRole = user.user_metadata?.role || 'student';
+    const url = request.nextUrl.clone();
+    url.pathname = `/dashboard/${userRole}`;
+    return NextResponse.redirect(url);
+  }
+
+  // If user is authenticated and accessing root, redirect to their dashboard
+  if (user && request.nextUrl.pathname === "/") {
+    const userRole = user.user_metadata?.role || 'student';
+    const url = request.nextUrl.clone();
+    url.pathname = `/dashboard/${userRole}`;
+    return NextResponse.redirect(url);
+  }
+
+  // If user is not authenticated and trying to access protected routes, redirect to login
+  if (
+    !user &&
+    request.nextUrl.pathname.startsWith("/dashboard")
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/auth/login";
+    return NextResponse.redirect(url);
+  }
+
+  // Legacy protected route redirect
   if (
     request.nextUrl.pathname !== "/" &&
     !user &&
     !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
+    !request.nextUrl.pathname.startsWith("/auth") &&
+    !request.nextUrl.pathname.startsWith("/dashboard")
   ) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone();
