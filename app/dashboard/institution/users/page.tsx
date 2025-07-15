@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useState, useEffect } from 'react'
 import { useAuth } from "@/contexts/auth-context"
-import { createClient } from "@/lib/supabase-client"
+import { createClient } from "../../../../lib/supabase-client"
 
 interface User {
   id: string
@@ -38,7 +38,7 @@ export default function UserManagementPage() {
   const fetchUsers = async () => {
     const { data, error } = await supabase.from('users').select('id, email, first_name, last_name, role, institution_id, institution_name')
     if (error) {
-      console.error("Error fetching users:", error)
+      console.error("Error fetching users:", JSON.stringify(error, null, 2))
     } else {
       setUsers(data as User[])
     }
@@ -53,8 +53,8 @@ export default function UserManagementPage() {
           first_name: firstName,
           last_name: lastName,
           role: role,
-          institution_id: user?.institution_id,
-          institution_name: user?.institution_name,
+          institution_id: (user as any)?.institution_id,
+          institution_name: (user as any)?.institution_name,
         },
       },
     })
@@ -70,15 +70,15 @@ export default function UserManagementPage() {
           first_name: firstName,
           last_name: lastName,
           role: role,
-          institution_id: user?.institution_id,
-          institution_name: user?.institution_name,
+          institution_id: (user as any)?.institution_id,
+          institution_name: (user as any)?.institution_name,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         },
       ])
 
       if (insertError) {
-        console.error("Error inserting new user profile:", insertError)
+        console.error("Error inserting new user profile:", JSON.stringify(insertError, null, 2))
         alert('Failed to invite user: Could not create user profile.')
       } else {
         alert('User invited successfully! Temporary password: temporary_password')

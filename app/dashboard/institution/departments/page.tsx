@@ -1,7 +1,4 @@
 "use client"
-
-"use client"
-
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -9,7 +6,8 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useState, useEffect } from 'react'
 import { useAuth } from "@/contexts/auth-context"
-import { createClient } from "@/lib/supabase-client"
+import { createClient } from "../../../../lib/supabase-client"
+
 
 interface Department {
   id: string
@@ -21,7 +19,7 @@ interface User {
   email: string
   first_name: string
   last_name: string
-  role: 'teacher' | 'student' | 'institution'
+  role: 'institution_admin' | 'department_admin' | 'teacher' | 'student'
   institution_id?: string
   institution_name?: string
 }
@@ -46,7 +44,7 @@ export default function DepartmentManagementPage() {
   const fetchDepartments = async () => {
     const { data, error } = await supabase.from('departments').select('*')
     if (error) {
-      console.error("Error fetching departments:", error)
+      console.error("Error fetching departments:", JSON.stringify(error, null, 2))
     } else {
       setDepartments(data)
     }
@@ -55,14 +53,20 @@ export default function DepartmentManagementPage() {
   const fetchUsers = async () => {
     const { data, error } = await supabase.from('users').select('id, email, first_name, last_name, role, institution_id, institution_name')
     if (error) {
-      console.error("Error fetching users:", error)
+      console.error("Error fetching users:", JSON.stringify(error, null, 2))
     } else {
       setUsers(data as User[])
     }
   }
 
   const handleCreateDepartment = async () => {
-    const { error } = await supabase.from('departments').insert({ name: newDepartmentName, institution_id: user?.institution_id })
+    if (!newDepartmentName.trim()) {
+      alert('Department name cannot be empty.')
+      return
+    }
+    // user is from useAuth() and may not have institution_id if not set in auth context
+    // If you see TS errors here, ensure your auth context provides institution_id
+    const { error } = await supabase.from('departments').insert({ name: newDepartmentName, institution_id: (user as any)?.institution_id })
     if (error) {
       alert('Failed to create department.' + error.message)
     } else {
@@ -108,7 +112,7 @@ export default function DepartmentManagementPage() {
     return <div>Loading...</div>
   }
 
-  if (!user || user.role !== 'institution') {
+  if (!user || user.role !== 'institution_admin') {
     return <div>Access Denied</div>
   }
 
@@ -205,7 +209,7 @@ export default function DepartmentManagementPage() {
             <select id="selectStudent" value={selectedStudent || ''} onChange={(e) => setSelectedStudent(e.target.value)} className="p-2 border rounded">
               <option value="">-- Select --</option>
               {users.filter(user => user.role === 'student').map((student) => (
-                <option key={student.id} value={student.id}>{student.firstName} {student.lastName}</option>
+                <option key={student.id} value={student.id}>{student.first_name} {student.last_name}</option>
               ))}
             </select>
           </div>
