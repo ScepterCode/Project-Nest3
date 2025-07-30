@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu"
+import StudentEnrollmentDashboard from "@/components/enrollment/student-enrollment-dashboard"
 import Link from "next/link"
 import {
   BookOpen,
@@ -220,8 +221,9 @@ export default function StudentDashboard() {
 
       <div className="p-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="enrollments">Enrollments</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="classes">My Classes</TabsTrigger>
             <TabsTrigger value="grades">Grades</TabsTrigger>
@@ -363,6 +365,10 @@ export default function StudentDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="enrollments" className="space-y-6">
+            {user && <StudentEnrollmentDashboard studentId={user.id} />}
           </TabsContent>
 
           <TabsContent value="assignments" className="space-y-6">

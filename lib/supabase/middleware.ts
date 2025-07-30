@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
+import { OnboardingGuard } from "../utils/onboarding-guard";
+import { extractTenantContext } from "../utils/tenant-context";
+import { CrossTenantMonitor } from "../services/cross-tenant-monitor";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -45,20 +48,49 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // If user is authenticated and trying to access auth pages, redirect to dashboard
-  if (user && request.nextUrl.pathname.startsWith("/auth")) {
-    const userRole = user.user_metadata?.role || 'student';
-    const url = request.nextUrl.clone();
-    url.pathname = `/dashboard/${userRole}`;
-    return NextResponse.redirect(url);
-  }
+  // Handle authenticated users
+  if (user) {
+    // Check onboarding status for authenticated users
+    const onboardingStatus = await OnboardingGuard.checkOnboardingStatus(user);
+    
+    // If user needs onboarding and is trying to access protected routes
+    if (onboardingStatus.needsOnboarding && OnboardingGuard.requiresOnboarding(request.nextUrl.pathname)) {
+      const url = request.nextUrl.clone();
+      url.pathname = onboardingStatus.redirectPath || '/onboarding';
+      return NextResponse.redirect(url);
+    }
 
-  // If user is authenticated and accessing root, redirect to their dashboard
-  if (user && request.nextUrl.pathname === "/") {
-    const userRole = user.user_metadata?.role || 'student';
-    const url = request.nextUrl.clone();
-    url.pathname = `/dashboard/${userRole}`;
-    return NextResponse.redirect(url);
+    // If user is trying to access auth pages after authentication, redirect appropriately
+    if (request.nextUrl.pathname.startsWith("/auth")) {
+      const url = request.nextUrl.clone();
+      if (onboardingStatus.needsOnboarding) {
+        url.pathname = onboardingStatus.redirectPath || '/onboarding';
+      } else {
+        const userRole = user.user_metadata?.role || 'student';
+        url.pathname = OnboardingGuard.getDashboardPath(userRole);
+      }
+      return NextResponse.redirect(url);
+    }
+
+    // If user is accessing root, redirect appropriately
+    if (request.nextUrl.pathname === "/") {
+      const url = request.nextUrl.clone();
+      if (onboardingStatus.needsOnboarding) {
+        url.pathname = onboardingStatus.redirectPath || '/onboarding';
+      } else {
+        const userRole = user.user_metadata?.role || 'student';
+        url.pathname = OnboardingGuard.getDashboardPath(userRole);
+      }
+      return NextResponse.redirect(url);
+    }
+
+    // If user completed onboarding but is still on onboarding page, redirect to dashboard
+    if (!onboardingStatus.needsOnboarding && request.nextUrl.pathname.startsWith("/onboarding")) {
+      const userRole = user.user_metadata?.role || 'student';
+      const url = request.nextUrl.clone();
+      url.pathname = OnboardingGuard.getDashboardPath(userRole);
+      return NextResponse.redirect(url);
+    }
   }
 
   // If user is not authenticated and trying to access protected routes, redirect to login

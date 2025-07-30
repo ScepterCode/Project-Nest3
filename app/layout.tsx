@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+// import { Geist } from "next/font/google"; // Commented out for build reliability
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "@/components/session-provider";
 import "./globals.css";
@@ -14,11 +14,10 @@ export const metadata: Metadata = {
   description: "The fastest way to build apps with Next.js and Supabase",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  display: "swap",
-  subsets: ["latin"],
-});
+// Using system fonts for better build reliability
+const geistSans = {
+  className: "font-sans"
+};
 
 export default function RootLayout({
   children,

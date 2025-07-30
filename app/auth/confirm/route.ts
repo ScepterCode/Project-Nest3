@@ -17,15 +17,28 @@ export async function GET(request: NextRequest) {
       token_hash,
     });
     if (!error) {
-      // Get user data to determine role and redirect to appropriate dashboard
+      // Get user data and check onboarding status
       const { data: { user } } = await supabase.auth.getUser();
-      const userRole = user?.user_metadata?.role || 'student';
       
-      // If next param is provided and it's not the default, use it, otherwise use role-based redirect
-      if (next !== "/" && next.includes('/dashboard/')) {
-        redirect(next);
+      if (user) {
+        // Import OnboardingGuard dynamically to avoid circular dependencies
+        const { OnboardingGuard } = await import('@/lib/utils/onboarding-guard');
+        const onboardingStatus = await OnboardingGuard.checkOnboardingStatus(user);
+        
+        // If user needs onboarding, redirect to onboarding flow
+        if (onboardingStatus.needsOnboarding) {
+          redirect(onboardingStatus.redirectPath || '/onboarding');
+        } else {
+          // User has completed onboarding, redirect to intended destination or dashboard
+          const userRole = user.user_metadata?.role || 'student';
+          if (next !== "/" && next.includes('/dashboard/')) {
+            redirect(next);
+          } else {
+            redirect(OnboardingGuard.getDashboardPath(userRole));
+          }
+        }
       } else {
-        redirect(`/dashboard/${userRole}`);
+        redirect('/auth/error?error=User not found after verification');
       }
     } else {
       // redirect the user to an error page with some instructions

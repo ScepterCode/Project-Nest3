@@ -298,3 +298,11 @@ export default function CreateRubricPage() {
   if (!user || user.role !== 'teacher') {
     return <div>Access Denied</div>
   }
+
+  return (
+    <div className="container mx-auto py-6">
+      <h1 className="text-2xl font-bold mb-6">Create Rubric</h1>
+      <p>Rubric creation interface coming soon...</p>
+    </div>
+  )
+}
