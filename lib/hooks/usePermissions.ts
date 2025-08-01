@@ -4,14 +4,23 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { PermissionChecker, Action, ResourceContext } from '../services/permission-checker';
-import { Permission } from '../types/role-management';
+import { simplePermissionChecker, ResourceContext } from '../services/simple-permission-checker';
 
-const permissionChecker = new PermissionChecker({
-  cacheEnabled: true,
-  cacheTtl: 300, // 5 minutes
-  bulkCheckLimit: 50
-});
+// Simple permission type for compatibility
+interface Permission {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export enum Action {
+  CREATE = 'create',
+  READ = 'read',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  MANAGE = 'manage',
+  APPROVE = 'approve'
+}
 
 export interface UsePermissionsReturn {
   hasPermission: (permission: string, context?: ResourceContext) => Promise<boolean>;
@@ -27,14 +36,14 @@ export function usePermissions(userId?: string): UsePermissionsReturn {
   const [error, setError] = useState<string | null>(null);
 
   const hasPermission = useCallback(async (
-    permission: string, 
+    permission: string,
     context?: ResourceContext
   ): Promise<boolean> => {
     if (!userId) return false;
-    
+
     try {
       setError(null);
-      return await permissionChecker.hasPermission(userId, permission, context);
+      return await simplePermissionChecker.hasPermission(userId, permission, context);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Permission check failed');
       return false;
@@ -47,10 +56,13 @@ export function usePermissions(userId?: string): UsePermissionsReturn {
     context?: Partial<ResourceContext>
   ): Promise<boolean> => {
     if (!userId) return false;
-    
+
     try {
       setError(null);
-      return await permissionChecker.canAccessResource(userId, resourceId, action, context);
+      // Map action to permission name and include resourceId in context
+      const permissionName = `${context?.resourceType || 'resource'}.${action}`;
+      const fullContext = { ...context, resourceId };
+      return await simplePermissionChecker.hasPermission(userId, permissionName, fullContext);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Resource access check failed');
       return false;
@@ -62,10 +74,10 @@ export function usePermissions(userId?: string): UsePermissionsReturn {
     scopeId?: string
   ): Promise<boolean> => {
     if (!userId) return false;
-    
+
     try {
       setError(null);
-      return await permissionChecker.isAdmin(userId, scope, scopeId);
+      return await simplePermissionChecker.isAdmin(userId, scope, scopeId);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Admin check failed');
       return false;
@@ -74,11 +86,12 @@ export function usePermissions(userId?: string): UsePermissionsReturn {
 
   const getUserPermissions = useCallback(async (): Promise<Permission[]> => {
     if (!userId) return [];
-    
+
     try {
       setLoading(true);
       setError(null);
-      return await permissionChecker.getUserPermissions(userId);
+      // For now, return empty array as we don't have a complex permission system
+      return [];
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get user permissions');
       return [];
@@ -122,7 +135,7 @@ export function usePermissionCheck(
       try {
         setLoading(true);
         setError(null);
-        const result = await permissionChecker.hasPermission(userId, permission, context);
+        const result = await simplePermissionChecker.hasPermission(userId, permission, context);
         if (isMounted) {
           setHasAccess(result);
         }
@@ -172,17 +185,24 @@ export function useBulkPermissionCheck(
       try {
         setLoading(true);
         setError(null);
-        
-        const permissionResults = await permissionChecker.checkBulkPermissions(
-          userId,
-          permissions
-        );
+
+        const resultMap: Record<string, boolean> = {};
+
+        // Check each permission individually
+        for (const permCheck of permissions) {
+          try {
+            const result = await simplePermissionChecker.hasPermission(
+              userId,
+              permCheck.permission,
+              permCheck.context
+            );
+            resultMap[permCheck.permission] = result;
+          } catch (err) {
+            resultMap[permCheck.permission] = false;
+          }
+        }
 
         if (isMounted) {
-          const resultMap: Record<string, boolean> = {};
-          permissionResults.forEach((result) => {
-            resultMap[result.permission] = result.granted;
-          });
           setResults(resultMap);
         }
       } catch (err) {

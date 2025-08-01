@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { useAuth } from "@/contexts/auth-context"
+import { createClient } from "@/lib/supabase/client"
+import { RoleGate } from "@/components/ui/permission-gate"
 import { Plus, Minus, Save, Eye, BookOpen, Target, Star, Trash2, GripVertical } from "lucide-react"
 
 interface RubricLevel {
@@ -295,14 +297,16 @@ export default function CreateRubricPage() {
     return <div>Loading...</div>
   }
 
-  if (!user || user.role !== 'teacher') {
+  if (!user) {
     return <div>Access Denied</div>
   }
 
   return (
+    <RoleGate userId={user.id} allowedRoles={['teacher']}>
     <div className="container mx-auto py-6">
       <h1 className="text-2xl font-bold mb-6">Create Rubric</h1>
       <p>Rubric creation interface coming soon...</p>
     </div>
+    </RoleGate>
   )
 }

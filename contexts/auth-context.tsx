@@ -3,7 +3,13 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { OnboardingGuard, OnboardingStatus } from "@/lib/utils/onboarding-guard";
+interface OnboardingStatus {
+  isComplete: boolean;
+  currentStep: number;
+  totalSteps: number;
+  needsOnboarding: boolean;
+  redirectPath?: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +29,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
-  const supabase = createClient();
 
   const refreshOnboardingStatus = async () => {
     if (!user) {
@@ -32,11 +37,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const status = await OnboardingGuard.checkOnboardingStatus(user);
-      setOnboardingStatus(status);
+      const supabase = createClient();
+      const { data: userProfile, error } = await supabase
+        .from('users')
+        .select('onboarding_completed, role')
+        .eq('id', user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.log('Database table not found or error checking onboarding status, assuming onboarding needed');
+        setOnboardingStatus({
+          isComplete: false,
+          currentStep: 0,
+          totalSteps: 5,
+          needsOnboarding: true,
+          redirectPath: '/onboarding'
+        });
+        return;
+      }
+
+      if (!userProfile || !userProfile.onboarding_completed) {
+        setOnboardingStatus({
+          isComplete: false,
+          currentStep: 0,
+          totalSteps: 5,
+          needsOnboarding: true,
+          redirectPath: '/onboarding'
+        });
+      } else {
+        setOnboardingStatus({
+          isComplete: true,
+          currentStep: 5,
+          totalSteps: 5,
+          needsOnboarding: false
+        });
+      }
     } catch (error) {
-      console.error('Failed to refresh onboarding status:', error);
-      // Set default status on error
+      console.log('Error refreshing onboarding status, using default values');
       setOnboardingStatus({
         isComplete: false,
         currentStep: 0,
@@ -48,32 +85,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    const supabase = createClient();
+    
     const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-      setLoading(false);
+      try {
+        console.log('Auth Context: Getting user...');
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          // Handle auth session missing gracefully
+          if (error.message.includes('Auth session missing')) {
+            console.log('Auth Context: No active session found');
+          } else {
+            console.error('Auth Context: Auth error:', error);
+          }
+        }
+        console.log('Auth Context: User retrieved:', user?.email, user?.id);
+        setUser(user);
+        setLoading(false);
+        
+        // Refresh onboarding status when user is loaded
+        if (user) {
+          await refreshOnboardingStatus();
+        }
+      } catch (error) {
+        console.log('Auth Context: No active session or failed to get user');
+        setUser(null);
+        setLoading(false);
+      }
     };
 
     getUser();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth Context: Auth state changed:', event, !!session?.user, session?.user?.email);
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Refresh onboarding status when auth state changes
+        if (session?.user) {
+          try {
+            await refreshOnboardingStatus();
+          } catch (error) {
+            console.log('Auth Context: Error refreshing onboarding status:', error);
+          }
+        } else {
+          setOnboardingStatus(null);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [supabase.auth]);
-
-  // Refresh onboarding status when user changes
-  useEffect(() => {
-    if (user) {
-      refreshOnboardingStatus();
-    } else {
-      setOnboardingStatus(null);
-    }
-  }, [user]);
+  }, []);
 
   return (
     <AuthContext.Provider value={{ 

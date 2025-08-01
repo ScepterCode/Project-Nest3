@@ -72,11 +72,12 @@ export function SignUpForm({
       });
       if (error) throw error;
       
-      // If user is immediately confirmed, redirect to dashboard
+      // Redirect to success page for email confirmation
       if (data.user && !data.user.email_confirmed_at) {
         router.push("/auth/sign-up-success");
-      } else if (data.user && data.user.email_confirmed_at) {
-        router.push(`/dashboard/${role}`);
+      } else if (data.user) {
+        // User is immediately confirmed, go to onboarding
+        router.push("/onboarding");
       } else {
         router.push("/auth/sign-up-success");
       }

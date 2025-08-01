@@ -33,19 +33,50 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      console.log('Attempting login with email:', email);
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      if (error) throw error;
       
-      // Get user data to determine role
+      if (error) {
+        console.error('Login error:', error);
+        throw error;
+      }
+      
+      console.log('Login successful, user:', data.user?.email);
+      
+      // Check if user has completed onboarding
       const { data: { user } } = await supabase.auth.getUser();
-      const userRole = user?.user_metadata?.role || 'student';
       
-      // Redirect to appropriate dashboard based on role
-      router.push(`/dashboard/${userRole}`);
+      if (user) {
+        console.log('User authenticated:', user.email);
+        
+        // Check if user profile exists and onboarding is complete
+        const { data: userProfile, error: profileError } = await supabase
+          .from('users')
+          .select('onboarding_completed, role')
+          .eq('id', user.id)
+          .single();
+
+        console.log('User profile:', userProfile, 'Error:', profileError);
+
+        if (userProfile?.onboarding_completed) {
+          // User has completed onboarding, go to dashboard
+          const role = userProfile.role || 'student';
+          console.log('Redirecting to dashboard:', role);
+          router.push(`/dashboard/${role}`);
+        } else {
+          // User needs to complete onboarding
+          console.log('Redirecting to onboarding');
+          router.push('/onboarding');
+        }
+      } else {
+        console.error('No user found after login');
+        setError('Authentication failed - no user found');
+      }
     } catch (error: unknown) {
+      console.error('Login process error:', error);
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);

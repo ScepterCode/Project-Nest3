@@ -1,215 +1,297 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
-import { OnboardingProvider, useOnboarding } from '@/contexts/onboarding-context';
-import { OnboardingLayout, StepIndicator } from '@/components/onboarding/onboarding-layout';
-import { RoleSelectionStep } from '@/components/onboarding/role-selection-step';
-import { InstitutionSelectionStep } from '@/components/onboarding/institution-selection-step';
-import { DepartmentSelectionStep } from '@/components/onboarding/department-selection-step';
-import { ProfileSetupStep } from '@/components/onboarding/profile-setup-step';
-import { StudentClassJoinStep } from '@/components/onboarding/student-class-join-step';
-import { TeacherClassGuideStep } from '@/components/onboarding/teacher-class-guide-step';
-import { AdminInstitutionSetupStep } from '@/components/onboarding/admin-institution-setup-step';
-import { WelcomeStep } from '@/components/onboarding/welcome-step';
-import { OnboardingGuard } from '@/lib/utils/onboarding-guard';
-import { UserRole } from '@/lib/types/onboarding';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { StudentOnboarding } from '@/components/onboarding/student-onboarding';
+import { TeacherOnboarding } from '@/components/onboarding/teacher-onboarding';
+import { InstitutionAdminOnboarding } from '@/components/onboarding/institution-admin-onboarding';
 
-const getOnboardingSteps = (role: UserRole | undefined) => {
-  const baseSteps = [
-    'Role Selection',
-    'Institution',
-    'Department'
-  ];
-  
-  // Add role-specific steps
-  if (role === UserRole.STUDENT) {
-    baseSteps.push('Join Class');
-  } else if (role === UserRole.TEACHER) {
-    baseSteps.push('Class Setup');
-  } else if (role === UserRole.INSTITUTION_ADMIN) {
-    baseSteps.push('Institution Setup');
-  }
-  
-  // Add common final steps
-  baseSteps.push('Profile Setup', 'Welcome');
-  
-  return baseSteps;
-};
-
-function OnboardingContent() {
+export default function OnboardingPage() {
+  const { user, loading } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const { user } = useAuth();
-  const { currentStep, totalSteps, completeOnboarding, onboardingData } = useOnboarding();
   const [mounted, setMounted] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [debugInfo, setDebugInfo] = useState('');
+  const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [onboardingStep, setOnboardingStep] = useState<'role-selection' | 'role-specific'>('role-selection');
 
-  // Handle client-side mounting
   useEffect(() => {
     setMounted(true);
-  }, []);
-
-  // Redirect if user can't access onboarding
-  useEffect(() => {
-    if (mounted && !OnboardingGuard.canAccessOnboarding(user)) {
-      router.push('/auth/login');
-    }
-  }, [mounted, user, router]);
-
-  // Handle step parameter from URL
-  useEffect(() => {
-    if (!mounted) return;
     
-    const stepParam = searchParams.get('step');
-    if (stepParam) {
-      const requestedStep = parseInt(stepParam, 10);
-      if (!isNaN(requestedStep) && OnboardingGuard.canAccessStep(requestedStep, currentStep, totalSteps)) {
-        // Step navigation is handled by the onboarding context
-        // This just validates the URL parameter
-      } else {
-        // Invalid step, redirect to current step
-        router.replace('/onboarding');
+    // Add a timeout to prevent infinite loading
+    const timeout = setTimeout(() => {
+      if (loading) {
+        setDebugInfo('Loading timeout - forcing continue');
       }
-    }
-  }, [mounted, searchParams, currentStep, totalSteps, router]);
+    }, 5000);
 
-  const handleComplete = async () => {
+    return () => clearTimeout(timeout);
+  }, [loading]);
+
+  // Debug logging
+  useEffect(() => {
+    const debugData = {
+      mounted,
+      user: !!user,
+      userEmail: user?.email,
+      userId: user?.id,
+      loading,
+      timestamp: new Date().toISOString()
+    };
+    console.log('Onboarding Debug:', debugData);
+    setDebugInfo(JSON.stringify(debugData, null, 2));
+  }, [mounted, user, loading]);
+
+  const handleRoleSelect = (role: string) => {
+    setSelectedRole(role);
+    setOnboardingStep('role-specific');
+  };
+
+  const handleOnboardingComplete = async (role: string, onboardingData: any) => {
+    if (!user) {
+      alert('No user found. Please refresh and try again.');
+      return;
+    }
+    
+    setSaving(true);
+    console.log('Completing onboarding for user:', user.id, 'role:', role, 'data:', onboardingData);
+    
     try {
-      await completeOnboarding();
+      const supabase = createClient();
       
+      // Check if user already has a role assigned
+      const { data: existingUser } = await supabase
+        .from('users')
+        .select('role, onboarding_completed')
+        .eq('id', user.id)
+        .single();
+
+      if (existingUser && existingUser.onboarding_completed) {
+        alert('Your role has already been set and cannot be changed. Contact an administrator if you need a role change.');
+        router.push('/dashboard');
+        return;
+      }
+
+      // Set role permanently with onboarding data
+      const { error: updateError } = await supabase
+        .from('users')
+        .upsert({ 
+          id: user.id,
+          email: user.email || '',
+          role: role,
+          onboarding_completed: true,
+          first_name: onboardingData.firstName || user.user_metadata?.first_name || '',
+          last_name: onboardingData.lastName || user.user_metadata?.last_name || '',
+          // Store additional onboarding data in metadata
+          onboarding_data: onboardingData
+        }, {
+          onConflict: 'id'
+        });
+
+      if (updateError) {
+        console.error('Error setting user role:', {
+          message: updateError.message,
+          details: updateError.details,
+          hint: updateError.hint,
+          code: updateError.code,
+          fullError: updateError
+        });
+        alert(`Failed to complete onboarding: ${updateError.message}`);
+        return;
+      }
+      
+      console.log('Onboarding completed for role:', role);
+
       // Redirect to appropriate dashboard
-      const userRole = onboardingData.role || user?.user_metadata?.role || 'student';
-      const dashboardPath = OnboardingGuard.getDashboardPath(userRole);
+      const dashboardPath = role === 'student' ? '/dashboard/student' : 
+                           role === 'teacher' ? '/dashboard/teacher' : 
+                           role === 'institution_admin' ? '/dashboard/institution' :
+                           '/dashboard';
+      
+      console.log('Redirecting to:', dashboardPath);
       router.push(dashboardPath);
     } catch (error) {
-      console.error('Failed to complete onboarding:', error);
+      console.error('Error completing onboarding:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        fullError: error
+      });
+      alert(`Something went wrong: ${error instanceof Error ? error.message : error}`);
+    } finally {
+      setSaving(false);
     }
   };
 
+  const handleBackToRoleSelection = () => {
+    setSelectedRole(null);
+    setOnboardingStep('role-selection');
+  };
+
+  // Debug: Show what's happening
   if (!mounted) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div>Mounting component...</div>
       </div>
     );
   }
 
-  if (!user) {
-    return null; // Will redirect via useEffect
+  if (loading && !debugInfo.includes('timeout')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div>Loading user authentication...</div>
+          <div className="text-sm text-gray-500 mt-2">
+            Debug: mounted={mounted.toString()}, loading={loading.toString()}, user={user ? 'exists' : 'null'}
+          </div>
+          <button 
+            onClick={() => setDebugInfo('timeout-forced')}
+            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded text-sm"
+          >
+            Skip Loading (Debug)
+          </button>
+          <pre className="text-xs text-left mt-4 bg-gray-100 p-2 rounded overflow-auto max-h-32">
+            {debugInfo}
+          </pre>
+        </div>
+      </div>
+    );
   }
 
-  const renderCurrentStep = () => {
-    const userRole = onboardingData.role;
-    
-    switch (currentStep) {
-      case 0:
-        return <RoleSelectionStep />;
-      case 1:
-        return <InstitutionSelectionStep />;
-      case 2:
-        return <DepartmentSelectionStep />;
-      case 3:
-        // Role-specific step
-        if (userRole === UserRole.STUDENT) {
-          return <StudentClassJoinStep />;
-        } else if (userRole === UserRole.TEACHER) {
-          return <TeacherClassGuideStep />;
-        } else if (userRole === UserRole.INSTITUTION_ADMIN) {
-          return <AdminInstitutionSetupStep />;
-        } else {
-          return <ProfileSetupStep />;
-        }
-      case 4:
-        return <ProfileSetupStep />;
-      case 5:
-        return <WelcomeStep onComplete={handleComplete} />;
-      default:
-        return <RoleSelectionStep />;
-    }
-  };
+  if (!user && !debugInfo.includes('timeout')) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <h2 className="text-xl font-semibold mb-4">Please Log In</h2>
+          <p className="mb-4">You need to be logged in to access onboarding.</p>
+          <button 
+            onClick={() => router.push('/auth/login')}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
+          >
+            Go to Login
+          </button>
+          <button 
+            onClick={async () => {
+              // Test Supabase connection
+              try {
+                const supabase = createClient();
+                const { data, error } = await supabase.from('users').select('count').limit(1);
+                alert(`Supabase test: ${error ? 'Error: ' + error.message : 'Success: ' + JSON.stringify(data)}`);
+              } catch (err) {
+                alert('Supabase connection failed: ' + err);
+              }
+            }}
+            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
+          >
+            Test DB
+          </button>
+          <pre className="text-xs text-left mt-4 bg-gray-100 p-2 rounded overflow-auto max-h-32">
+            {debugInfo}
+          </pre>
+        </div>
+      </div>
+    );
+  }
 
-  const getStepTitle = () => {
-    const userRole = onboardingData.role;
-    
-    switch (currentStep) {
-      case 0:
-        return "Choose Your Role";
-      case 1:
-        return "Select Your Institution";
-      case 2:
-        return "Choose Your Department";
-      case 3:
-        // Role-specific step titles
-        if (userRole === UserRole.STUDENT) {
-          return "Join Your First Class";
-        } else if (userRole === UserRole.TEACHER) {
-          return "Set Up Your First Class";
-        } else if (userRole === UserRole.INSTITUTION_ADMIN) {
-          return "Configure Your Institution";
-        } else {
-          return "Complete Your Profile";
-        }
-      case 4:
-        return "Complete Your Profile";
-      case 5:
-        return "Welcome to the Platform!";
+  // Show role-specific onboarding if role is selected
+  if (onboardingStep === 'role-specific' && selectedRole) {
+    switch (selectedRole) {
+      case 'student':
+        return (
+          <StudentOnboarding
+            onComplete={(data) => handleOnboardingComplete('student', data)}
+            onBack={handleBackToRoleSelection}
+          />
+        );
+      case 'teacher':
+        return (
+          <TeacherOnboarding
+            onComplete={(data) => handleOnboardingComplete('teacher', data)}
+            onBack={handleBackToRoleSelection}
+          />
+        );
+      case 'institution_admin':
+        return (
+          <InstitutionAdminOnboarding
+            onComplete={(data) => handleOnboardingComplete('institution_admin', data)}
+            onBack={handleBackToRoleSelection}
+          />
+        );
       default:
-        return "Getting Started";
+        setOnboardingStep('role-selection');
+        break;
     }
-  };
+  }
 
-  const getStepDescription = () => {
-    const userRole = onboardingData.role;
-    
-    switch (currentStep) {
-      case 0:
-        return "Let us know how you'll be using the platform so we can customize your experience.";
-      case 1:
-        return "Help us connect you with your educational institution.";
-      case 2:
-        return "Select the department or area you're associated with.";
-      case 3:
-        // Role-specific step descriptions
-        if (userRole === UserRole.STUDENT) {
-          return "Enter your class code to join your first class and start learning.";
-        } else if (userRole === UserRole.TEACHER) {
-          return "Get guidance on creating your first class and inviting students.";
-        } else if (userRole === UserRole.INSTITUTION_ADMIN) {
-          return "Set up your institution's settings and configuration.";
-        } else {
-          return "Add some final details to personalize your account.";
-        }
-      case 4:
-        return "Add some final details to personalize your account.";
-      case 5:
-        return "You're all set! Let's explore what you can do.";
-      default:
-        return "Let's get you set up with everything you need.";
-    }
-  };
-
+  // Show role selection
   return (
-    <div className="min-h-screen">
-      <StepIndicator steps={getOnboardingSteps(onboardingData.role)} currentStep={currentStep} />
-      
-      <OnboardingLayout
-        title={getStepTitle()}
-        description={getStepDescription()}
-        showSkip={currentStep < totalSteps - 1}
-        showBack={currentStep > 0}
-        showNext={false} // Steps handle their own navigation
-      >
-        {renderCurrentStep()}
-      </OnboardingLayout>
+    <div className="min-h-screen bg-gray-50 py-12">
+      <div className="max-w-2xl mx-auto px-4">
+        <div className="bg-white rounded-lg shadow p-8">
+          <h1 className="text-2xl font-bold text-center mb-2">Welcome to the Platform!</h1>
+          <p className="text-gray-600 text-center mb-8">
+            Hi {user?.email}! Let's get you set up. What's your role?
+          </p>
+
+          <div className="space-y-4">
+            <button 
+              onClick={() => handleRoleSelect('student')}
+              disabled={saving}
+              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50"
+            >
+              <div className="flex items-center">
+                <div className="text-2xl mr-4">👨‍🎓</div>
+                <div>
+                  <h3 className="font-semibold">Student</h3>
+                  <p className="text-gray-600 text-sm">I'm here to learn and complete assignments</p>
+                </div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => handleRoleSelect('teacher')}
+              disabled={saving}
+              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50"
+            >
+              <div className="flex items-center">
+                <div className="text-2xl mr-4">👨‍🏫</div>
+                <div>
+                  <h3 className="font-semibold">Teacher</h3>
+                  <p className="text-gray-600 text-sm">I teach classes and manage student learning</p>
+                </div>
+              </div>
+            </button>
+
+            <button 
+              onClick={() => handleRoleSelect('institution_admin')}
+              disabled={saving}
+              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50"
+            >
+              <div className="flex items-center">
+                <div className="text-2xl mr-4">👨‍💼</div>
+                <div>
+                  <h3 className="font-semibold">Administrator</h3>
+                  <p className="text-gray-600 text-sm">I manage institution operations</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          {saving && (
+            <div className="mt-6 text-center">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="text-gray-600 mt-2">Completing your setup...</p>
+            </div>
+          )}
+
+          <div className="mt-8 text-center text-sm text-gray-500">
+            <p>Each role has a customized setup process</p>
+          </div>
+        </div>
+      </div>
     </div>
-  );
-}
-
-export default function OnboardingPage() {
-  return (
-    <OnboardingProvider>
-      <OnboardingContent />
-    </OnboardingProvider>
   );
 }

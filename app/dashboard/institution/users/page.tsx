@@ -9,15 +9,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useState, useEffect } from 'react'
 import { useAuth } from "@/contexts/auth-context"
 import { createClient } from "../../../../lib/supabase-client"
+import { RoleGate } from '@/components/ui/permission-gate'
+import { DatabaseStatusBanner } from '@/components/database-status-banner'
 
 interface User {
   id: string
   email: string
   first_name: string
   last_name: string
-  role: 'teacher' | 'student' | 'institution'
+  role: 'teacher' | 'student' | 'institution_admin'
   institution_id?: string
-  institution_name?: string
 }
 
 export default function UserManagementPage() {
@@ -36,60 +37,56 @@ export default function UserManagementPage() {
   }, [user])
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from('users').select('id, email, first_name, last_name, role, institution_id, institution_name')
-    if (error) {
-      console.error("Error fetching users:", JSON.stringify(error, null, 2))
-    } else {
-      setUsers(data as User[])
+    try {
+      const { data, error } = await supabase.from('users').select('id, email, first_name, last_name, role, institution_id')
+      
+      if (error) {
+        console.error("Error fetching users:", error);
+        setUsers([]);
+      } else {
+        setUsers(data as User[]);
+      }
+    } catch (error) {
+      console.error("Database connection error:", error);
+      setUsers([]);
     }
   }
 
   const handleInviteUser = async () => {
-    const { data, error } = await supabase.auth.signUp({
-      email: email,
-      password: "temporary_password", // Consider a more robust invitation flow
-      options: {
-        data: {
-          first_name: firstName,
-          last_name: lastName,
-          role: role,
-          institution_id: (user as any)?.institution_id,
-          institution_name: (user as any)?.institution_name,
+    try {
+      // Create user via Supabase Auth
+      const { data, error } = await supabase.auth.signUp({
+        email: email,
+        password: "TempPassword123!", // Temporary password - user should reset
+        options: {
+          data: {
+            first_name: firstName,
+            last_name: lastName,
+            role: role,
+          },
         },
-      },
-    })
+      });
 
-    if (error) {
-      alert('Failed to invite user.' + error.message)
-    } else if (data.user) {
-      // Insert into your public.users table
-      const { error: insertError } = await supabase.from('users').insert([
-        {
-          id: data.user.id,
-          email: email,
-          first_name: firstName,
-          last_name: lastName,
-          role: role,
-          institution_id: (user as any)?.institution_id,
-          institution_name: (user as any)?.institution_name,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-      ])
-
-      if (insertError) {
-        console.error("Error inserting new user profile:", JSON.stringify(insertError, null, 2))
-        alert('Failed to invite user: Could not create user profile.')
-      } else {
-        alert('User invited successfully! Temporary password: temporary_password')
-        setEmail('')
-        setFirstName('')
-        setLastName('')
-        setRole('student')
-        fetchUsers()
+      if (error) {
+        alert(`Failed to invite user: ${error.message}`);
+        return;
       }
-    } else {
-      alert('Failed to invite user: No user data returned.')
+
+      if (data.user) {
+        alert(`User invitation sent successfully!\n\nInvited: ${firstName} ${lastName}\nEmail: ${email}\nRole: ${role}\n\nThey will receive an email to confirm their account.`);
+        
+        // Reset form
+        setEmail('');
+        setFirstName('');
+        setLastName('');
+        setRole('student');
+        
+        // Refresh users list
+        fetchUsers();
+      }
+    } catch (error) {
+      console.error("Error inviting user:", error);
+      alert(`Failed to invite user: ${error}`);
     }
   }
 
@@ -116,12 +113,14 @@ export default function UserManagementPage() {
     return <div>Loading...</div>
   }
 
-  if (!user || user.role !== 'institution') {
+  if (!user) {
     return <div>Access Denied</div>
   }
 
   return (
+    <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
     <div className="flex flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <DatabaseStatusBanner />
       <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
 
       <Card>
@@ -192,5 +191,6 @@ export default function UserManagementPage() {
         </CardContent>
       </Card>
     </div>
+    </RoleGate>
   )
 }

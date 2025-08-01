@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { createClient } from "@/lib/supabase-client"
+import { createClient } from "@/lib/supabase/client"
+import { RoleGate } from "@/components/ui/permission-gate"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -134,11 +135,12 @@ export default function ManageClassPage() {
     return <div>Loading...</div>
   }
 
-  if (!user || user.role !== 'teacher' || !classInfo) {
+  if (!user || !classInfo) {
     return <div>Access Denied or Class Not Found</div>
   }
 
   return (
+    <RoleGate userId={user.id} allowedRoles={['teacher']}>
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
       <header className="bg-white dark:bg-gray-800 border-b">
@@ -430,5 +432,6 @@ export default function ManageClassPage() {
         </Tabs>
       </div>
     </div>
+    </RoleGate>
   )
 }

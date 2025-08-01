@@ -1,7 +1,8 @@
 "use client"
 
 import { redirect } from 'next/navigation'
-import { AuthProvider, useAuth, logout } from '@/contexts/auth-context'
+import { useAuth, logout } from '@/contexts/auth-context'
+import { useUserRole } from '@/lib/hooks/useUserRole'
 import { useEffect } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { PermissionGate, RoleGate } from '@/components/ui/permission-gate'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading, onboardingStatus } = useAuth()
+  const { roleData, loading: roleLoading, error: roleError } = useUserRole()
 
   useEffect(() => {
     if (!loading && !user) {
@@ -24,15 +26,46 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading, onboardingStatus])
 
-  if (loading) {
-    return <div>Loading dashboard...</div>
+  if (loading || roleLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
   }
 
   if (!user) {
     return null // Should redirect by useEffect
   }
 
-  const userRole = user.user_metadata?.role || 'student'
+  // If there's a role error or no role data, show error state
+  if (roleError || !roleData) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="max-w-md w-full mx-4 text-center">
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4 text-red-600">Role Access Required</h2>
+            <p className="text-gray-600 mb-4">
+              Your user profile is not properly set up in the database. This is required for security and permission management.
+            </p>
+            <div className="space-y-3">
+              <Button onClick={() => window.location.href = '/debug'} className="w-full">
+                Go to Debug Page
+              </Button>
+              <Button variant="outline" onClick={() => window.location.href = '/onboarding'} className="w-full">
+                Complete Setup
+              </Button>
+            </div>
+            {roleError && (
+              <p className="text-sm text-red-500 mt-4">Error: {roleError}</p>
+            )}
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const userRole = roleData.role
 
   return (
     <div className="flex min-h-screen w-full flex-col">
@@ -156,9 +189,14 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             <div className="ml-auto flex-1 sm:flex-initial">
               {/* Search or other header elements */}
             </div>
-            <Button variant="outline" size="sm" onClick={logout}>
-              Logout
-            </Button>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-gray-600">
+                Role: <span className="font-medium capitalize">{userRole}</span>
+              </span>
+              <Button variant="outline" size="sm" onClick={logout}>
+                Logout
+              </Button>
+            </div>
           </div>
         </header>
         <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
@@ -170,9 +208,5 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <AuthProvider>
-      <DashboardContent>{children}</DashboardContent>
-    </AuthProvider>
-  )
+  return <DashboardContent>{children}</DashboardContent>
 }

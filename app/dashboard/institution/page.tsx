@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
 import { useAuth } from "@/contexts/auth-context"
+import { RoleGate } from '@/components/ui/permission-gate'
 
 export default function InstitutionDashboardPage() {
   const { user, loading } = useAuth()
@@ -12,10 +13,12 @@ export default function InstitutionDashboardPage() {
     return <div>Loading...</div>
   }
 
-  if (!user || user.user_metadata?.role !== 'institution') {
+  if (!user) {
     return <div>Access Denied</div>
   }
+
   return (
+    <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
     <div className="flex flex-col gap-4 p-4 md:gap-8 md:p-6">
       <h1 className="text-lg font-semibold md:text-2xl">Institution Dashboard</h1>
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -57,6 +60,7 @@ export default function InstitutionDashboardPage() {
         </Card>
       </div>
     </div>
+    </RoleGate>
   )
 }
 

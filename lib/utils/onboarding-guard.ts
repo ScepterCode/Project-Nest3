@@ -22,7 +22,7 @@ export class OnboardingGuard {
       const supabase = createClient();
       const { data: userProfile, error } = await supabase
         .from('users')
-        .select('onboarding_completed, onboarding_step')
+        .select('onboarding_completed')
         .eq('id', user.id)
         .single();
 
@@ -62,7 +62,7 @@ export class OnboardingGuard {
       // Check onboarding session for current progress
       try {
         const session = await onboardingService.getOnboardingSession(user.id);
-        const currentStep = session?.currentStep || userProfile.onboarding_step || 0;
+        const currentStep = session?.currentStep || 0;
 
         return {
           isComplete: false,
@@ -75,7 +75,7 @@ export class OnboardingGuard {
         // If session check fails, use basic onboarding redirect
         return {
           isComplete: false,
-          currentStep: userProfile.onboarding_step || 0,
+          currentStep: 0,
           totalSteps: 5,
           needsOnboarding: true,
           redirectPath: '/onboarding'

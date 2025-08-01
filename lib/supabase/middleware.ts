@@ -1,9 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
-import { OnboardingGuard } from "../utils/onboarding-guard";
-import { extractTenantContext } from "../utils/tenant-context";
-import { CrossTenantMonitor } from "../services/cross-tenant-monitor";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -50,46 +47,81 @@ export async function updateSession(request: NextRequest) {
 
   // Handle authenticated users
   if (user) {
-    // Check onboarding status for authenticated users
-    const onboardingStatus = await OnboardingGuard.checkOnboardingStatus(user);
+    console.log('Middleware: User authenticated:', user.email, 'Path:', request.nextUrl.pathname);
     
-    // If user needs onboarding and is trying to access protected routes
-    if (onboardingStatus.needsOnboarding && OnboardingGuard.requiresOnboarding(request.nextUrl.pathname)) {
-      const url = request.nextUrl.clone();
-      url.pathname = onboardingStatus.redirectPath || '/onboarding';
-      return NextResponse.redirect(url);
-    }
+    // Simple onboarding check - just check if user profile exists
+    try {
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('onboarding_completed, role')
+        .eq('id', user.id)
+        .single();
 
-    // If user is trying to access auth pages after authentication, redirect appropriately
-    if (request.nextUrl.pathname.startsWith("/auth")) {
-      const url = request.nextUrl.clone();
-      if (onboardingStatus.needsOnboarding) {
-        url.pathname = onboardingStatus.redirectPath || '/onboarding';
-      } else {
-        const userRole = user.user_metadata?.role || 'student';
-        url.pathname = OnboardingGuard.getDashboardPath(userRole);
+      console.log('Middleware: User profile:', userProfile, 'Error:', profileError);
+
+      const needsOnboarding = !userProfile?.onboarding_completed;
+
+      // If user needs onboarding and is trying to access protected routes
+      if (needsOnboarding && request.nextUrl.pathname.startsWith("/dashboard")) {
+        console.log('Middleware: Redirecting to onboarding from dashboard');
+        const url = request.nextUrl.clone();
+        url.pathname = '/onboarding';
+        return NextResponse.redirect(url);
       }
-      return NextResponse.redirect(url);
-    }
 
-    // If user is accessing root, redirect appropriately
-    if (request.nextUrl.pathname === "/") {
-      const url = request.nextUrl.clone();
-      if (onboardingStatus.needsOnboarding) {
-        url.pathname = onboardingStatus.redirectPath || '/onboarding';
-      } else {
-        const userRole = user.user_metadata?.role || 'student';
-        url.pathname = OnboardingGuard.getDashboardPath(userRole);
+      // If user completed onboarding but is still on onboarding page, redirect to their role dashboard
+      if (!needsOnboarding && request.nextUrl.pathname.startsWith("/onboarding")) {
+        console.log('Middleware: Redirecting completed user to role-specific dashboard');
+        const userRole = userProfile?.role || 'student';
+        const url = request.nextUrl.clone();
+        url.pathname = `/dashboard/${userRole}`;
+        return NextResponse.redirect(url);
       }
-      return NextResponse.redirect(url);
-    }
 
-    // If user completed onboarding but is still on onboarding page, redirect to dashboard
-    if (!onboardingStatus.needsOnboarding && request.nextUrl.pathname.startsWith("/onboarding")) {
-      const userRole = user.user_metadata?.role || 'student';
-      const url = request.nextUrl.clone();
-      url.pathname = OnboardingGuard.getDashboardPath(userRole);
-      return NextResponse.redirect(url);
+      // Enforce role-based dashboard access - redirect to correct dashboard if on wrong one
+      if (!needsOnboarding && request.nextUrl.pathname.startsWith("/dashboard/")) {
+        const userRole = userProfile?.role || 'student';
+        const currentPath = request.nextUrl.pathname;
+        
+        // Map roles to their dashboard paths
+        const roleDashboardMap: Record<string, string> = {
+          'student': '/dashboard/student',
+          'teacher': '/dashboard/teacher',
+          'institution_admin': '/dashboard/institution',
+          'department_admin': '/dashboard/department_admin',
+          'system_admin': '/dashboard/admin'
+        };
+        
+        const correctDashboard = roleDashboardMap[userRole] || '/dashboard/student';
+        
+        // If user is on wrong dashboard, redirect to correct one
+        // Allow access to sub-pages of the correct dashboard
+        if (!currentPath.startsWith(correctDashboard) && 
+            !currentPath.startsWith('/dashboard/profile') && 
+            currentPath !== '/dashboard') {
+          console.log(`Middleware: Redirecting ${userRole} from ${currentPath} to ${correctDashboard}`);
+          const url = request.nextUrl.clone();
+          url.pathname = correctDashboard;
+          return NextResponse.redirect(url);
+        }
+      }
+
+      // Only redirect away from auth pages if user is fully authenticated AND has completed onboarding
+      // This prevents redirect loops for users who are authenticated but need to complete setup
+      if (request.nextUrl.pathname.startsWith("/auth") && 
+          !request.nextUrl.pathname.includes("/confirm") &&
+          userProfile && !needsOnboarding) {
+        console.log('Middleware: Redirecting completed user away from auth pages');
+        const userRole = userProfile.role || 'student';
+        const url = request.nextUrl.clone();
+        url.pathname = `/dashboard/${userRole}`;
+        return NextResponse.redirect(url);
+      }
+
+    } catch (error) {
+      console.error('Error checking user profile in middleware:', error);
+      // If there's an error checking profile, allow the request to continue
+      // This prevents users from getting stuck if there are database issues
     }
   }
 

@@ -1,74 +1,94 @@
-import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
+"use client";
 
-export default async function DashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+import { useAuth } from '@/contexts/auth-context';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
+
+export default function Dashboard() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/auth/login');
+    }
+  }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
 
   if (!user) {
-    redirect("/auth/login");
+    return null;
   }
 
-  // Get user's active role assignments to determine primary role
-  const { data: roleAssignments } = await supabase
-    .from("user_role_assignments")
-    .select("role, status")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .gte("expires_at", new Date().toISOString())
-    .or("expires_at.is.null")
-    .order("assigned_at", { ascending: false });
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-6">
+            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+            <button
+              onClick={async () => {
+                const { logout } = await import('@/contexts/auth-context');
+                await logout();
+                router.push('/');
+              }}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
 
-  // Determine primary role based on role hierarchy
-  let primaryRole = "student"; // default
-  
-  if (roleAssignments && roleAssignments.length > 0) {
-    // Role hierarchy: system_admin > institution_admin > department_admin > teacher > student
-    const roleHierarchy = {
-      system_admin: 5,
-      institution_admin: 4,
-      department_admin: 3,
-      teacher: 2,
-      student: 1
-    };
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold mb-4">Welcome, {user.email}!</h2>
+          <p className="text-gray-600 mb-6">
+            Welcome to your dashboard. Choose your role to get started:
+          </p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <button
+              onClick={() => router.push('/dashboard/student')}
+              className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+            >
+              <div className="flex items-center">
+                <div className="text-3xl mr-4">👨‍🎓</div>
+                <div>
+                  <h3 className="font-semibold">Student Dashboard</h3>
+                  <p className="text-gray-600 text-sm">Access classes, assignments, and grades</p>
+                </div>
+              </div>
+            </button>
+            
+            <button
+              onClick={() => router.push('/dashboard/teacher')}
+              className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+            >
+              <div className="flex items-center">
+                <div className="text-3xl mr-4">👨‍🏫</div>
+                <div>
+                  <h3 className="font-semibold">Teacher Dashboard</h3>
+                  <p className="text-gray-600 text-sm">Manage classes, create assignments</p>
+                </div>
+              </div>
+            </button>
+          </div>
 
-    const highestRole = roleAssignments.reduce((highest, current) => {
-      const currentWeight = roleHierarchy[current.role as keyof typeof roleHierarchy] || 0;
-      const highestWeight = roleHierarchy[highest.role as keyof typeof roleHierarchy] || 0;
-      return currentWeight > highestWeight ? current : highest;
-    });
-
-    primaryRole = highestRole.role;
-  } else {
-    // Fallback to legacy role system if no role assignments found
-    const { data: profile } = await supabase
-      .from("users")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    primaryRole = profile?.role || user.user_metadata?.role || "student";
-  }
-
-  // Redirect based on primary role
-  switch (primaryRole) {
-    case "system_admin":
-      redirect("/dashboard/admin");
-      break;
-    case "institution_admin":
-      redirect("/dashboard/institution");
-      break;
-    case "department_admin":
-      redirect("/dashboard/department_admin");
-      break;
-    case "teacher":
-      redirect("/dashboard/teacher");
-      break;
-    case "student":
-    default:
-      redirect("/dashboard/student");
-      break;
-  }
+          <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h3 className="font-semibold text-blue-800 mb-2">💡 Getting Started</h3>
+            <p className="text-blue-700 text-sm">
+              Select the dashboard that matches your role to access the appropriate features and tools.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

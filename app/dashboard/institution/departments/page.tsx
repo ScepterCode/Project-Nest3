@@ -7,6 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useState, useEffect } from 'react'
 import { useAuth } from "@/contexts/auth-context"
 import { createClient } from "../../../../lib/supabase-client"
+import { RoleGate } from '@/components/ui/permission-gate'
+import { DatabaseStatusBanner } from '@/components/database-status-banner'
 
 
 interface Department {
@@ -42,20 +44,32 @@ export default function DepartmentManagementPage() {
   }, [user])
 
   const fetchDepartments = async () => {
-    const { data, error } = await supabase.from('departments').select('*')
-    if (error) {
-      console.error("Error fetching departments:", JSON.stringify(error, null, 2))
-    } else {
-      setDepartments(data)
+    try {
+      const { data, error } = await supabase.from('departments').select('*')
+      if (error) {
+        console.error("Error fetching departments:", error);
+        setDepartments([]);
+      } else {
+        setDepartments(data);
+      }
+    } catch (error) {
+      console.error("Database connection error:", error);
+      setDepartments([]);
     }
   }
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from('users').select('id, email, first_name, last_name, role, institution_id, institution_name')
-    if (error) {
-      console.error("Error fetching users:", JSON.stringify(error, null, 2))
-    } else {
-      setUsers(data as User[])
+    try {
+      const { data, error } = await supabase.from('users').select('id, email, first_name, last_name, role, institution_id')
+      if (error) {
+        console.error("Error fetching users:", error);
+        setUsers([]);
+      } else {
+        setUsers(data as User[]);
+      }
+    } catch (error) {
+      console.error("Database connection error:", error);
+      setUsers([]);
     }
   }
 
@@ -64,15 +78,35 @@ export default function DepartmentManagementPage() {
       alert('Department name cannot be empty.')
       return
     }
-    // user is from useAuth() and may not have institution_id if not set in auth context
-    // If you see TS errors here, ensure your auth context provides institution_id
-    const { error } = await supabase.from('departments').insert({ name: newDepartmentName, institution_id: (user as any)?.institution_id })
-    if (error) {
-      alert('Failed to create department.' + error.message)
-    } else {
-      alert('Department created successfully!')
-      setNewDepartmentName('')
-      fetchDepartments()
+
+    try {
+      // Get the default institution for now (you can enhance this later)
+      const { data: institutions, error: instError } = await supabase
+        .from('institutions')
+        .select('id')
+        .limit(1)
+        .single();
+
+      if (instError) {
+        alert('Error: Could not find institution. Please contact administrator.');
+        return;
+      }
+
+      const { error } = await supabase.from('departments').insert({ 
+        name: newDepartmentName, 
+        institution_id: institutions.id 
+      });
+
+      if (error) {
+        alert(`Failed to create department: ${error.message}`);
+      } else {
+        alert('Department created successfully!');
+        setNewDepartmentName('');
+        fetchDepartments();
+      }
+    } catch (error) {
+      console.error('Error creating department:', error);
+      alert('Failed to create department. Please try again.');
     }
   }
 
@@ -112,12 +146,14 @@ export default function DepartmentManagementPage() {
     return <div>Loading...</div>
   }
 
-  if (!user || user.role !== 'institution_admin') {
+  if (!user) {
     return <div>Access Denied</div>
   }
 
   return (
+    <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
     <div className="flex flex-col gap-4 p-4 md:gap-8 md:p-6">
+      <DatabaseStatusBanner />
       <h1 className="text-lg font-semibold md:text-2xl">Department Management</h1>
 
       <Card>
@@ -217,5 +253,6 @@ export default function DepartmentManagementPage() {
         </CardContent>
       </Card>
     </div>
+    </RoleGate>
   )
 }

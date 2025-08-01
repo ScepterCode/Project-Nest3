@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-// import { Geist } from "next/font/google"; // Commented out for build reliability
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "@/components/session-provider";
+import { AuthProvider } from "@/contexts/auth-context";
+import { ErrorBoundary } from "@/components/error-boundary";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -14,11 +15,6 @@ export const metadata: Metadata = {
   description: "The fastest way to build apps with Next.js and Supabase",
 };
 
-// Using system fonts for better build reliability
-const geistSans = {
-  className: "font-sans"
-};
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -26,17 +22,21 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
-        <SessionProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </SessionProvider>
+      <body className="font-sans antialiased" suppressHydrationWarning>
+        <ErrorBoundary>
+          <SessionProvider>
+            <AuthProvider>
+              <ThemeProvider
+                attribute="class"
+                defaultTheme="system"
+                enableSystem
+                disableTransitionOnChange
+              >
+                {children}
+              </ThemeProvider>
+            </AuthProvider>
+          </SessionProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

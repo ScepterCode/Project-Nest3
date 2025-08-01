@@ -110,29 +110,44 @@ export function OnboardingProvider({ children }: OnboardingProviderProps) {
   }, [session, user, hasUnsavedChanges, isOnline]);
 
   const initializeOnboarding = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user provided to initializeOnboarding');
+      return;
+    }
 
     try {
+      console.log('Initializing onboarding for user:', user.id);
       setLoading(true);
       setError(undefined);
 
       // Try to get existing session
+      console.log('Attempting to get existing onboarding session...');
       let existingSession = await onboardingService.getOnboardingSession(user.id);
+      console.log('Existing session result:', existingSession);
 
       if (!existingSession) {
+        console.log('No existing session found, creating new one...');
         // Create new session if none exists
         existingSession = await onboardingService.createOnboardingSession(user.id);
+        console.log('New session created:', existingSession);
         
         // Track the start of onboarding
-        const firstStepName = getStepName(0);
-        await onboardingAnalyticsService.trackStepEvent(
-          existingSession.id,
-          firstStepName,
-          0,
-          'started'
-        );
+        try {
+          const firstStepName = getStepName(0);
+          await onboardingAnalyticsService.trackStepEvent(
+            existingSession.id,
+            firstStepName,
+            0,
+            'started'
+          );
+          console.log('Analytics tracking successful');
+        } catch (analyticsError) {
+          console.warn('Analytics tracking failed:', analyticsError);
+          // Don't fail the entire initialization for analytics
+        }
       }
 
+      console.log('Setting session:', existingSession);
       setSession(existingSession);
     } catch (err) {
       console.error('Failed to initialize onboarding:', err);
