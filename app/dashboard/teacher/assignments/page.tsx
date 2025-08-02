@@ -192,6 +192,13 @@ export default function TeacherAssignmentsPage() {
                       </Button>
                     </Link>
                   </div>
+                  <div className="mt-2">
+                    <Link href={`/dashboard/teacher/assignments/${assignment.id}/peer-review`} className="w-full">
+                      <Button variant="outline" size="sm" className="w-full">
+                        Create Peer Review
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             );

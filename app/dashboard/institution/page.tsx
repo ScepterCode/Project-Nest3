@@ -48,13 +48,13 @@ export default function InstitutionDashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">View Activity & Reports</CardTitle>
+            <CardTitle className="text-sm font-medium">View Reports & Analytics</CardTitle>
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <CardDescription>Monitor user activity and generate reports.</CardDescription>
+            <CardDescription>Monitor platform usage and generate institutional reports.</CardDescription>
             <Button asChild className="mt-4">
-              <Link href="/dashboard/institution/reports">Go to Activity & Reports</Link>
+              <Link href="/dashboard/institution/reports">View Reports</Link>
             </Button>
           </CardContent>
         </Card>

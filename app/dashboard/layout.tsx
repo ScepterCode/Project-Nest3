@@ -117,16 +117,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 Peer Reviews
               </Link>
             </PermissionGate>
+            <PermissionGate userId={user.id} permission="analytics.read">
+              <Link href="/dashboard/teacher/analytics" className="text-muted-foreground transition-colors hover:text-foreground">
+                Analytics
+              </Link>
+            </PermissionGate>
             <PermissionGate userId={user.id} permission="rubrics.manage">
               <Link href="/dashboard/teacher/rubrics" className="text-muted-foreground transition-colors hover:text-foreground">
                 Rubrics
               </Link>
             </PermissionGate>
-            <PermissionGate userId={user.id} permission="analytics.read">
-              <Link href="/dashboard/teacher/analytics/grades" className="text-muted-foreground transition-colors hover:text-foreground">
-                Analytics
-              </Link>
-            </PermissionGate>
+
           </RoleGate>
 
           {/* Institution Admin Navigation */}
@@ -149,6 +150,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 Reports
               </Link>
             </PermissionGate>
+
           </RoleGate>
 
           {/* Department Admin Navigation */}

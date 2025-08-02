@@ -38,59 +38,35 @@ export default function TeacherRubricsPage() {
             id,
             name,
             description,
-            criteria_count,
-            max_points,
+            total_points,
             usage_count,
             status,
-            created_at
+            created_at,
+            rubric_criteria(count)
           `)
           .eq('teacher_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) {
-          console.log('Database table not found, using mock data');
-          // Use mock data when database tables don't exist
-          const mockRubrics = [
-            {
-              id: '1',
-              name: 'Lab Report Rubric',
-              description: 'Comprehensive rubric for evaluating lab reports',
-              criteria_count: 4,
-              max_points: 100,
-              usage_count: 5,
-              status: 'active',
-              created_at: new Date().toISOString()
-            },
-            {
-              id: '2',
-              name: 'Essay Writing Rubric',
-              description: 'Standard rubric for academic essay evaluation',
-              criteria_count: 5,
-              max_points: 50,
-              usage_count: 8,
-              status: 'active',
-              created_at: new Date().toISOString()
-            }
-          ];
-          setRubrics(mockRubrics);
+          console.error('Error fetching rubrics:', error);
+          setRubrics([]);
         } else {
-          setRubrics(data || []);
+          const formattedRubrics = data?.map(rubric => ({
+            id: rubric.id,
+            name: rubric.name,
+            description: rubric.description || '',
+            criteria_count: rubric.rubric_criteria?.length || 0,
+            max_points: rubric.total_points || 0,
+            usage_count: rubric.usage_count || 0,
+            status: rubric.status,
+            created_at: rubric.created_at
+          })) || [];
+          
+          setRubrics(formattedRubrics);
         }
       } catch (error) {
-        console.log('Error connecting to database, using mock data');
-        // Fallback to mock data
-        setRubrics([
-          {
-            id: '1',
-            name: 'Sample Rubric',
-            description: 'This is a sample rubric',
-            criteria_count: 3,
-            max_points: 100,
-            usage_count: 0,
-            status: 'active',
-            created_at: new Date().toISOString()
-          }
-        ]);
+        console.error('Error connecting to database:', error);
+        setRubrics([]);
       } finally {
         setLoading(false);
       }

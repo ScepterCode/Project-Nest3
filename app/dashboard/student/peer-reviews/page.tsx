@@ -11,7 +11,6 @@ import { useAuth } from "@/contexts/auth-context"
 import { createClient } from "@/lib/supabase/client"
 import {
   Clock,
-  FileText,
   Star,
   MessageSquare,
   CheckCircle,
@@ -22,11 +21,47 @@ import {
   TrendingUp,
 } from "lucide-react"
 
+interface AssignedReview {
+  id: string
+  title: string
+  status: string
+  submission_title: string
+  author_name: string
+  due_date: string
+  time_spent: number
+  progress: number
+  peer_review_assignment_id: string
+}
+
+interface ReceivedReview {
+  id: string
+  assignment_title: string
+  reviewer_name: string
+  submitted_at: string
+  overall_rating: number
+  max_rating: number
+  feedback: {
+    overall_comments?: string
+    strengths: string[]
+    improvements: string[]
+  }
+  helpfulness_rating?: number
+}
+
+interface ReviewStats {
+  totalAssigned: number
+  completed: number
+  pending: number
+  averageRating: number
+  totalTimeSpent: number
+  helpfulnessScore: number
+}
+
 export default function StudentPeerReviewsPage() {
   const [activeTab, setActiveTab] = useState("assigned")
-  const [assignedReviews, setAssignedReviews] = useState<any[]>([])
-  const [receivedReviews, setReceivedReviews] = useState<any[]>([])
-  const [reviewStats, setReviewStats] = useState({
+  const [assignedReviews, setAssignedReviews] = useState<AssignedReview[]>([])
+  const [receivedReviews, setReceivedReviews] = useState<ReceivedReview[]>([])
+  const [reviewStats, setReviewStats] = useState<ReviewStats>({
     totalAssigned: 0,
     completed: 0,
     pending: 0,
@@ -34,6 +69,7 @@ export default function StudentPeerReviewsPage() {
     totalTimeSpent: 0,
     helpfulnessScore: 0,
   })
+  const [loading, setLoading] = useState(true)
 
   const { user, loading: authLoading } = useAuth()
   const supabase = createClient()
@@ -44,38 +80,132 @@ export default function StudentPeerReviewsPage() {
   }, [user])
 
   const fetchReviews = async () => {
+    if (!user) return
+    
+    setLoading(true)
     try {
-      // Fetch assigned reviews
-      const { data: assignedData, error: assignedError } = await supabase
-        .from('peer_review_assignments')
-        .select('*, peer_reviews(*)')
-        .eq('reviewer_id', user?.id)
+      await Promise.all([
+        fetchAssignedReviews(),
+        fetchReceivedReviews()
+      ])
+    } catch (error) {
+      console.error("Error fetching reviews:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
 
-      if (assignedError) throw assignedError
-      setAssignedReviews(assignedData)
-
-      // Fetch received reviews
-      const { data: receivedData, error: receivedError } = await supabase
+  const fetchAssignedReviews = async () => {
+    if (!user) return
+    
+    try {
+      const { data, error } = await supabase
         .from('peer_reviews')
-        .select('*, peer_review_assignments(*)')
-        .eq('submission_owner_id', user?.id)
+        .select(`
+          id,
+          status,
+          time_spent,
+          peer_review_assignments!inner(
+            id,
+            title,
+            end_date
+          ),
+          reviewee:users!reviewee_id(first_name, last_name),
+          submissions(title)
+        `)
+        .eq('reviewer_id', user.id)
+        .order('created_at', { ascending: false })
 
-      if (receivedError) throw receivedError
-      setReceivedReviews(receivedData)
+      if (error) throw error
 
-      // Calculate stats (simplified for now)
-      const completed = assignedData.filter((r) => r.status === "completed").length
-      const pending = assignedData.filter((r) => r.status !== "completed").length
-      setReviewStats({
-        totalAssigned: assignedData.length,
-        completed: completed,
-        pending: pending,
-        averageRating: 0, // To be calculated from received reviews
-        totalTimeSpent: 0, // To be calculated
-        helpfulnessScore: 0, // To be calculated
-      })
-    } catch (error: any) {
-      console.error("Error fetching reviews:", error.message)
+      const formattedReviews = data?.map(review => ({
+        id: review.id,
+        title: review.peer_review_assignments?.title || 'Untitled Review',
+        status: review.status,
+        submission_title: review.submissions?.title || 'Untitled Submission',
+        author_name: `${review.reviewee?.first_name || ''} ${review.reviewee?.last_name || ''}`.trim() || 'Unknown Author',
+        due_date: review.peer_review_assignments?.end_date || '',
+        time_spent: review.time_spent || 0,
+        progress: review.status === 'completed' ? 100 : review.status === 'in_progress' ? 50 : 0,
+        peer_review_assignment_id: review.peer_review_assignments?.id || ''
+      })) || []
+
+      setAssignedReviews(formattedReviews)
+
+      // Calculate stats
+      const completed = formattedReviews.filter(r => r.status === 'completed').length
+      const pending = formattedReviews.filter(r => r.status !== 'completed').length
+      const totalTimeSpent = formattedReviews.reduce((sum, r) => sum + r.time_spent, 0)
+
+      setReviewStats(prev => ({
+        ...prev,
+        totalAssigned: formattedReviews.length,
+        completed,
+        pending,
+        totalTimeSpent
+      }))
+    } catch (error) {
+      console.error("Error fetching assigned reviews:", error)
+    }
+  }
+
+  const fetchReceivedReviews = async () => {
+    if (!user) return
+    
+    try {
+      const { data, error } = await supabase
+        .from('peer_reviews')
+        .select(`
+          id,
+          overall_rating,
+          feedback,
+          helpfulness_rating,
+          submitted_at,
+          peer_review_assignments!inner(title),
+          reviewer:users!reviewer_id(first_name, last_name)
+        `)
+        .eq('reviewee_id', user.id)
+        .eq('status', 'completed')
+        .order('submitted_at', { ascending: false })
+
+      if (error) throw error
+
+      const formattedReviews = data?.map(review => ({
+        id: review.id,
+        assignment_title: review.peer_review_assignments?.title || 'Untitled Assignment',
+        reviewer_name: `${review.reviewer?.first_name || ''} ${review.reviewer?.last_name || ''}`.trim() || 'Anonymous',
+        submitted_at: review.submitted_at ? new Date(review.submitted_at).toLocaleDateString() : 'Unknown date',
+        overall_rating: review.overall_rating || 0,
+        max_rating: 5,
+        feedback: {
+          overall_comments: review.feedback?.overall_comments || '',
+          strengths: review.feedback?.strengths || [],
+          improvements: review.feedback?.improvements || []
+        },
+        helpfulness_rating: review.helpfulness_rating
+      })) || []
+
+      setReceivedReviews(formattedReviews)
+
+      // Calculate average rating received
+      const ratingsReceived = formattedReviews.filter(r => r.overall_rating > 0)
+      const averageRating = ratingsReceived.length > 0
+        ? ratingsReceived.reduce((sum, r) => sum + r.overall_rating, 0) / ratingsReceived.length
+        : 0
+
+      // Calculate helpfulness score
+      const helpfulnessRatings = formattedReviews.filter(r => r.helpfulness_rating)
+      const helpfulnessScore = helpfulnessRatings.length > 0
+        ? helpfulnessRatings.reduce((sum, r) => sum + (r.helpfulness_rating || 0), 0) / helpfulnessRatings.length
+        : 0
+
+      setReviewStats(prev => ({
+        ...prev,
+        averageRating: Math.round(averageRating * 10) / 10,
+        helpfulnessScore: Math.round(helpfulnessScore * 10) / 10
+      }))
+    } catch (error) {
+      console.error("Error fetching received reviews:", error)
     }
   }
 
@@ -95,12 +225,49 @@ export default function StudentPeerReviewsPage() {
     }
   }
 
-  if (authLoading) {
-    return <div>Loading...</div>
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'default'
+      case 'in_progress': return 'secondary'
+      case 'pending': return 'outline'
+      case 'flagged': return 'destructive'
+      default: return 'outline'
+    }
+  }
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'completed': return <CheckCircle className="h-3 w-3" />
+      case 'in_progress': return <Clock className="h-3 w-3" />
+      case 'pending': return <AlertTriangle className="h-3 w-3" />
+      case 'flagged': return <AlertTriangle className="h-3 w-3" />
+      default: return null
+    }
+  }
+
+  if (authLoading || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (!user) {
-    return <div>Access Denied</div>
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center py-12">
+            <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
+            <p className="text-gray-600">You need to be logged in to view peer reviews.</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -187,13 +354,13 @@ export default function StudentPeerReviewsPage() {
                         </div>
 
                         <p className="text-gray-600 mb-2">
-                          Reviewing: <span className="font-medium">{review.submissionTitle}</span>
+                          Reviewing: <span className="font-medium">{review.submission_title}</span>
                         </p>
 
                         <div className="flex items-center space-x-4 text-sm text-gray-500">
-                          <span>Author: {review.authorName}</span>
-                          <span>Due: {review.dueDate}</span>
-                          {review.timeSpent > 0 && <span>Time spent: {review.timeSpent}m</span>}
+                          <span>Author: {review.author_name}</span>
+                          <span>Due: {review.due_date ? new Date(review.due_date).toLocaleDateString() : 'No due date'}</span>
+                          {review.time_spent > 0 && <span>Time spent: {review.time_spent}m</span>}
                         </div>
 
                         {review.status === "in_progress" && (
@@ -211,7 +378,7 @@ export default function StudentPeerReviewsPage() {
                         {review.status === "completed" ? (
                           <Button variant="outline" size="sm" asChild>
                             <Link
-                              href={`/dashboard/student/peer-reviews/${review.reviewAssignmentId}/review/${review.id}`}
+                              href={`/dashboard/student/peer-reviews/${review.peer_review_assignment_id}/review/${review.id}`}
                             >
                               <Eye className="h-4 w-4 mr-2" />
                               View
@@ -220,7 +387,7 @@ export default function StudentPeerReviewsPage() {
                         ) : (
                           <Button size="sm" asChild>
                             <Link
-                              href={`/dashboard/student/peer-reviews/${review.reviewAssignmentId}/review/${review.id}`}
+                              href={`/dashboard/student/peer-reviews/${review.peer_review_assignment_id}/review/${review.id}`}
                             >
                               {review.status === "pending" ? (
                                 <>
@@ -261,14 +428,14 @@ export default function StudentPeerReviewsPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div>
-                        <CardTitle className="text-lg">{review.assignmentTitle}</CardTitle>
+                        <CardTitle className="text-lg">{review.assignment_title}</CardTitle>
                         <CardDescription>
-                          Review by {review.reviewerName} • {review.submittedAt}
+                          Review by {review.reviewer_name} • {review.submitted_at}
                         </CardDescription>
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-blue-600">
-                          {review.overallRating}/{review.maxRating}
+                          {review.overall_rating}/{review.max_rating}
                         </div>
                         <div className="text-sm text-gray-500">Overall Rating</div>
                       </div>
@@ -276,11 +443,11 @@ export default function StudentPeerReviewsPage() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     {/* Overall Comments */}
-                    {review.feedback.overallComments && (
+                    {review.feedback.overall_comments && (
                       <div>
                         <h4 className="font-medium mb-2">Overall Comments</h4>
                         <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
-                          <p className="text-sm">{review.feedback.overallComments}</p>
+                          <p className="text-sm">{review.feedback.overall_comments}</p>
                         </div>
                       </div>
                     )}
@@ -331,7 +498,7 @@ export default function StudentPeerReviewsPage() {
                               size="sm"
                               onClick={() => rateReviewHelpfulness(review.id, rating)}
                               className={`p-1 ${
-                                review.helpfulnessRating && rating <= review.helpfulnessRating
+                                review.helpfulness_rating && rating <= review.helpfulness_rating
                                   ? "text-yellow-500"
                                   : "text-gray-300"
                               }`}
@@ -341,9 +508,9 @@ export default function StudentPeerReviewsPage() {
                           ))}
                         </div>
                       </div>
-                      {review.helpfulnessRating && (
+                      {review.helpfulness_rating && (
                         <p className="text-xs text-gray-500 mt-1 text-right">
-                          You rated this review {review.helpfulnessRating}/5 stars
+                          You rated this review {review.helpfulness_rating}/5 stars
                         </p>
                       )}
                     </div>
