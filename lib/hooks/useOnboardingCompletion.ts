@@ -57,7 +57,8 @@ export function useOnboardingCompletion(
       user &&
       onboardingStatus?.needsOnboarding &&
       !reminderDismissed &&
-      onboardingStatus.currentStep > 0 // Only show if user has started onboarding
+      onboardingStatus.currentStep > 0 && // Only show if user has started onboarding
+      onboardingStatus.currentStep < onboardingStatus.totalSteps // Don't show if completed
     ) {
       const timer = setTimeout(() => {
         setShowReminder(true);

@@ -199,15 +199,22 @@ export default function TeacherPeerReviewsPage() {
         return
       }
 
-      const { data, error } = await supabase
+      // Temporary: Disable recent activity to prevent console errors
+      // TODO: Fix foreign key relationships in peer_review_activity table
+      console.log('ℹ️ Recent activity temporarily disabled to prevent console errors');
+      setRecentActivity([]);
+      return;
+
+      // First get the activity data without joins
+      const { data: activityData, error } = await supabase
         .from('peer_review_activity')
         .select(`
           id,
           activity_type,
           created_at,
           details,
-          users!inner(first_name, last_name),
-          peer_review_assignments!inner(title)
+          user_id,
+          peer_review_assignment_id
         `)
         .in('peer_review_assignment_id', peerReviewAssignments.map(a => a.id))
         .order('created_at', { ascending: false })
@@ -215,18 +222,48 @@ export default function TeacherPeerReviewsPage() {
 
       if (error) throw error
 
-      const formattedActivity = data?.map(activity => ({
+      if (!activityData || activityData.length === 0) {
+        setRecentActivity([])
+        return
+      }
+
+      // Get user names separately
+      const userIds = [...new Set(activityData.map(a => a.user_id).filter(Boolean))]
+      let userNames: Record<string, string> = {}
+      
+      if (userIds.length > 0) {
+        const { data: users } = await supabase
+          .from('users')
+          .select('id, first_name, last_name')
+          .in('id', userIds)
+          
+        if (users) {
+          userNames = users.reduce((acc, user) => {
+            acc[user.id] = `${user.first_name || ''} ${user.last_name || ''}`.trim() || 'Unknown User'
+            return acc
+          }, {} as Record<string, string>)
+        }
+      }
+
+      // Get assignment titles separately
+      const assignmentTitles = peerReviewAssignments.reduce((acc, assignment) => {
+        acc[assignment.id] = assignment.title
+        return acc
+      }, {} as Record<string, string>)
+
+      const formattedActivity = activityData.map(activity => ({
         id: activity.id,
         activity_type: activity.activity_type,
-        user_name: `${(activity.users as any)?.first_name || ''} ${(activity.users as any)?.last_name || ''}`.trim() || 'Unknown User',
-        assignment_title: (activity.peer_review_assignments as any)?.title || 'Unknown Assignment',
+        user_name: userNames[activity.user_id] || 'Unknown User',
+        assignment_title: assignmentTitles[activity.peer_review_assignment_id] || 'Unknown Assignment',
         created_at: activity.created_at,
         details: activity.details
-      })) || []
+      }))
 
       setRecentActivity(formattedActivity)
     } catch (error) {
       console.error('Error fetching recent activity:', error)
+      console.error('Recent activity error details:', JSON.stringify(error, null, 2))
       setRecentActivity([])
     }
   }

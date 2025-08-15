@@ -5,6 +5,7 @@ import { X, ArrowRight, CheckCircle } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
+import { useAuth } from '@/contexts/auth-context';
 import { useOnboardingCompletion } from '@/lib/hooks/useOnboardingCompletion';
 
 interface OnboardingReminderProps {
@@ -182,6 +183,58 @@ export function OnboardingReminder({
 
 // Convenience component for dashboard layouts
 export function DashboardOnboardingReminder() {
+  const { user } = useAuth();
+  const [showCompletionMessage, setShowCompletionMessage] = React.useState(false);
+  const [justCompleted, setJustCompleted] = React.useState(false);
+
+  // Check if user just completed onboarding
+  React.useEffect(() => {
+    if (user && typeof window !== 'undefined') {
+      const completionFlag = sessionStorage.getItem('onboarding-just-completed');
+      if (completionFlag === 'true') {
+        setJustCompleted(true);
+        setShowCompletionMessage(true);
+        
+        // Remove the flag and hide message after 5 seconds
+        setTimeout(() => {
+          sessionStorage.removeItem('onboarding-just-completed');
+          setShowCompletionMessage(false);
+          setJustCompleted(false);
+        }, 5000);
+      }
+    }
+  }, [user]);
+
+  // Show completion message if just completed
+  if (justCompleted && showCompletionMessage) {
+    return (
+      <Card className="border-green-200 bg-green-50 mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="flex-1">
+              <h3 className="font-medium text-green-900">
+                Onboarding Complete!
+              </h3>
+              <p className="text-sm text-green-700">
+                You've successfully completed the onboarding process. Your account is now set up as a teacher.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowCompletionMessage(false)}
+              className="text-green-600 hover:text-green-800"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Show regular onboarding reminder if not complete
   return (
     <OnboardingReminder
       variant="card"

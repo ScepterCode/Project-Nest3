@@ -13,7 +13,7 @@ import { GraduationCap, BookOpen, Users, Settings, ArrowRight, ArrowLeft } from 
 
 interface TeacherOnboardingProps {
   onComplete: (data: TeacherOnboardingData) => void;
-  onBack: () => void;
+  userName?: string;
 }
 
 interface TeacherOnboardingData {
@@ -88,7 +88,7 @@ const TEACHING_TOOLS = [
   'Collaborative documents'
 ];
 
-export function TeacherOnboarding({ onComplete, onBack }: TeacherOnboardingProps) {
+export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<TeacherOnboardingData>({
     firstName: '',
@@ -148,7 +148,7 @@ export function TeacherOnboarding({ onComplete, onBack }: TeacherOnboardingProps
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5" />
-                Welcome, Educator!
+                Welcome, {userName}!
               </CardTitle>
               <CardDescription>
                 Let's set up your teaching profile
@@ -404,13 +404,16 @@ export function TeacherOnboarding({ onComplete, onBack }: TeacherOnboardingProps
 
         {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={currentStep === 0 ? onBack : prevStep}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {currentStep === 0 ? 'Back to Role Selection' : 'Previous'}
-          </Button>
+          {currentStep > 0 && (
+            <Button
+              variant="outline"
+              onClick={prevStep}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+          )}
+          {currentStep === 0 && <div></div>}
 
           <Button
             onClick={currentStep === totalSteps - 1 ? handleComplete : nextStep}

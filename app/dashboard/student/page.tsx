@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function StudentDashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, getUserDisplayName } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -48,26 +48,35 @@ export default function StudentDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome, {user.email}!</h2>
+          <h2 className="text-xl font-semibold mb-4">Welcome, {getUserDisplayName()}!</h2>
           <p className="text-gray-600 mb-6">
             You're logged in as a student. This is your dashboard where you can:
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="border rounded-lg p-4">
+            <button
+              onClick={() => router.push('/dashboard/student/classes')}
+              className="border rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+            >
               <h3 className="font-semibold mb-2">📚 My Classes</h3>
               <p className="text-gray-600 text-sm">View and join your classes</p>
-            </div>
+            </button>
             
-            <div className="border rounded-lg p-4">
+            <button
+              onClick={() => router.push('/dashboard/student/assignments')}
+              className="border rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+            >
               <h3 className="font-semibold mb-2">📝 Assignments</h3>
               <p className="text-gray-600 text-sm">Complete and submit assignments</p>
-            </div>
+            </button>
             
-            <div className="border rounded-lg p-4">
+            <button
+              onClick={() => router.push('/dashboard/student/grades')}
+              className="border rounded-lg p-4 hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+            >
               <h3 className="font-semibold mb-2">📊 Grades</h3>
               <p className="text-gray-600 text-sm">View your grades and progress</p>
-            </div>
+            </button>
           </div>
 
           <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">

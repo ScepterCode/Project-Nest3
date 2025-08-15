@@ -12,7 +12,7 @@ import { BookOpen, Users, Target, ArrowRight, ArrowLeft } from 'lucide-react';
 
 interface StudentOnboardingProps {
   onComplete: (data: StudentOnboardingData) => void;
-  onBack: () => void;
+  userName?: string;
 }
 
 interface StudentOnboardingData {
@@ -60,7 +60,7 @@ const COMMON_INTERESTS = [
   'Psychology'
 ];
 
-export function StudentOnboarding({ onComplete, onBack }: StudentOnboardingProps) {
+export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<StudentOnboardingData>({
     firstName: '',
@@ -112,7 +112,7 @@ export function StudentOnboarding({ onComplete, onBack }: StudentOnboardingProps
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Welcome, Student!
+                Welcome, {userName}!
               </CardTitle>
               <CardDescription>
                 Let's get your profile set up so you can start learning
@@ -316,13 +316,16 @@ export function StudentOnboarding({ onComplete, onBack }: StudentOnboardingProps
 
         {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={currentStep === 0 ? onBack : prevStep}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {currentStep === 0 ? 'Back to Role Selection' : 'Previous'}
-          </Button>
+          {currentStep > 0 && (
+            <Button
+              variant="outline"
+              onClick={prevStep}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+          )}
+          {currentStep === 0 && <div></div>}
 
           <Button
             onClick={currentStep === totalSteps - 1 ? handleComplete : nextStep}

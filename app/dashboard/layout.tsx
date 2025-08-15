@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { DashboardOnboardingReminder } from '@/components/onboarding/onboarding-reminder'
 import { PermissionGate, RoleGate } from '@/components/ui/permission-gate'
+import { NotificationBell } from '@/components/notifications/notification-bell'
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading, onboardingStatus } = useAuth()
@@ -192,6 +193,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
               {/* Search or other header elements */}
             </div>
             <div className="flex items-center gap-2">
+              <NotificationBell />
               <span className="text-sm text-gray-600">
                 Role: <span className="font-medium capitalize">{userRole}</span>
               </span>

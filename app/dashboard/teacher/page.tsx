@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function TeacherDashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, getUserDisplayName } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
@@ -48,33 +48,89 @@ export default function TeacherDashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome, {user.email}!</h2>
+          <h2 className="text-xl font-semibold mb-4">Welcome, {getUserDisplayName()}!</h2>
           <p className="text-gray-600 mb-6">
             You're logged in as a teacher. This is your dashboard where you can:
           </p>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-2">🏫 My Classes</h3>
-              <p className="text-gray-600 text-sm">Create and manage your classes</p>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <button
+              onClick={() => router.push('/dashboard/teacher/classes')}
+              className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-blue-300 hover:bg-blue-50"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">🏫</span>
+                </div>
+                <h3 className="font-semibold text-lg">My Classes</h3>
+              </div>
+              <p className="text-gray-600 text-sm">View and manage all your classes</p>
+            </button>
             
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-2">📋 Assignments</h3>
-              <p className="text-gray-600 text-sm">Create and grade assignments</p>
-            </div>
+            <button
+              onClick={() => router.push('/dashboard/teacher/classes/create')}
+              className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-green-300 hover:bg-green-50"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">➕</span>
+                </div>
+                <h3 className="font-semibold text-lg">Create Class</h3>
+              </div>
+              <p className="text-gray-600 text-sm">Start a new class for your students</p>
+            </button>
             
-            <div className="border rounded-lg p-4">
-              <h3 className="font-semibold mb-2">👥 Students</h3>
-              <p className="text-gray-600 text-sm">Manage your student roster</p>
-            </div>
-          </div>
+            <button
+              onClick={() => router.push('/dashboard/teacher/assignments')}
+              className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-purple-300 hover:bg-purple-50"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">📋</span>
+                </div>
+                <h3 className="font-semibold text-lg">Assignments</h3>
+              </div>
+              <p className="text-gray-600 text-sm">Create and manage assignments</p>
+            </button>
 
-          <div className="mt-8 p-4 bg-green-50 border border-green-200 rounded-lg">
-            <h3 className="font-semibold text-green-800 mb-2">🎉 Onboarding Complete!</h3>
-            <p className="text-green-700 text-sm">
-              You've successfully completed the onboarding process. Your account is now set up as a teacher.
-            </p>
+            <button
+              onClick={() => router.push('/dashboard/teacher/analytics')}
+              className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-orange-300 hover:bg-orange-50"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">📊</span>
+                </div>
+                <h3 className="font-semibold text-lg">Analytics</h3>
+              </div>
+              <p className="text-gray-600 text-sm">View class performance and insights</p>
+            </button>
+
+            <button
+              onClick={() => router.push('/dashboard/teacher/rubrics')}
+              className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-indigo-300 hover:bg-indigo-50"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">📏</span>
+                </div>
+                <h3 className="font-semibold text-lg">Rubrics</h3>
+              </div>
+              <p className="text-gray-600 text-sm">Create and manage grading rubrics</p>
+            </button>
+
+            <button
+              onClick={() => router.push('/dashboard/teacher/peer-reviews')}
+              className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-teal-300 hover:bg-teal-50"
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                  <span className="text-xl">👥</span>
+                </div>
+                <h3 className="font-semibold text-lg">Peer Reviews</h3>
+              </div>
+              <p className="text-gray-600 text-sm">Manage peer review assignments</p>
+            </button>
           </div>
         </div>
       </div>

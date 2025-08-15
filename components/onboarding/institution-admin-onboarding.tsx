@@ -12,7 +12,7 @@ import { Building, Users, Settings, Shield, ArrowRight, ArrowLeft } from 'lucide
 
 interface InstitutionAdminOnboardingProps {
   onComplete: (data: InstitutionAdminOnboardingData) => void;
-  onBack: () => void;
+  userName?: string;
 }
 
 interface InstitutionAdminOnboardingData {
@@ -100,7 +100,7 @@ const ADMIN_PRIORITIES = [
   'Institutional growth'
 ];
 
-export function InstitutionAdminOnboarding({ onComplete, onBack }: InstitutionAdminOnboardingProps) {
+export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: InstitutionAdminOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<InstitutionAdminOnboardingData>({
     firstName: '',
@@ -169,7 +169,7 @@ export function InstitutionAdminOnboarding({ onComplete, onBack }: InstitutionAd
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Welcome, Administrator!
+                Welcome, {userName}!
               </CardTitle>
               <CardDescription>
                 Let's set up your administrative profile
@@ -457,13 +457,16 @@ export function InstitutionAdminOnboarding({ onComplete, onBack }: InstitutionAd
 
         {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
-          <Button
-            variant="outline"
-            onClick={currentStep === 0 ? onBack : prevStep}
-          >
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            {currentStep === 0 ? 'Back to Role Selection' : 'Previous'}
-          </Button>
+          {currentStep > 0 && (
+            <Button
+              variant="outline"
+              onClick={prevStep}
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Previous
+            </Button>
+          )}
+          {currentStep === 0 && <div></div>}
 
           <Button
             onClick={currentStep === totalSteps - 1 ? handleComplete : nextStep}

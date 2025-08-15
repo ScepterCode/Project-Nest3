@@ -197,7 +197,14 @@ export function RoleGate({
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Role check failed');
+          const errorMessage = err instanceof Error ? err.message : 'Role check failed';
+          console.error('RoleGate error details:', {
+            userId,
+            allowedRoles,
+            error: err,
+            errorMessage
+          });
+          setError(errorMessage);
           setHasRole(false);
         }
       } finally {

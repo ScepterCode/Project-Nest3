@@ -2,22 +2,73 @@
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, getUserDisplayName, logout } = useAuth();
   const router = useRouter();
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/auth/login');
+      return;
     }
-  }, [user, loading, router]);
 
-  if (loading) {
+    // CRITICAL SECURITY FIX: Role-based routing
+    if (user && !loading && !redirecting) {
+      setRedirecting(true);
+      
+      const redirectToRoleDashboard = async () => {
+        try {
+          const supabase = createClient();
+          
+          // Get user role from database (not cached)
+          const { data: profile, error } = await supabase
+            .from('users')
+            .select('role, email')
+            .eq('id', user.id)
+            .single();
+
+          if (error || !profile) {
+            console.error('SECURITY: Cannot determine user role, forcing logout');
+            await logout();
+            return;
+          }
+
+          console.log('Dashboard: Redirecting user', profile.email, 'to', profile.role, 'dashboard');
+
+          // Redirect based on role
+          switch (profile.role) {
+            case 'student':
+              router.replace('/dashboard/student');
+              break;
+            case 'teacher':
+              router.replace('/dashboard/teacher');
+              break;
+            case 'institution_admin':
+              router.replace('/dashboard/institution');
+              break;
+            default:
+              console.error('SECURITY: Unknown role', profile.role, 'forcing logout');
+              await logout();
+          }
+        } catch (error) {
+          console.error('SECURITY: Error determining user role, forcing logout:', error);
+          await logout();
+        }
+      };
+
+      redirectToRoleDashboard();
+    }
+  }, [user, loading, router, logout, redirecting]);
+
+  if (loading || redirecting) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span className="ml-2">Redirecting to your dashboard...</span>
       </div>
     );
   }
@@ -48,7 +99,7 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome, {user.email}!</h2>
+          <h2 className="text-xl font-semibold mb-4">Welcome, {getUserDisplayName()}!</h2>
           <p className="text-gray-600 mb-6">
             Welcome to your dashboard. Choose your role to get started:
           </p>

@@ -99,24 +99,31 @@ export default function StudentPeerReviewsPage() {
     if (!user) return
     
     try {
+      console.log('Fetching assigned reviews for student:', user.id)
+      
+      // Check if peer_reviews table exists
+      const { data: testPeerReviews, error: peerReviewTestError } = await supabase
+        .from('peer_reviews')
+        .select('count')
+        .limit(1)
+
+      if (peerReviewTestError) {
+        console.error('Peer reviews table not accessible:', peerReviewTestError)
+        setAssignedReviews([])
+        return
+      }
+
       const { data, error } = await supabase
         .from('peer_reviews')
-        .select(`
-          id,
-          status,
-          time_spent,
-          peer_review_assignments!inner(
-            id,
-            title,
-            end_date
-          ),
-          reviewee:users!reviewee_id(first_name, last_name),
-          submissions(title)
-        `)
+        .select('id, status, time_spent, peer_review_assignment_id, reviewee_id')
         .eq('reviewer_id', user.id)
         .order('created_at', { ascending: false })
 
-      if (error) throw error
+      if (error) {
+        console.error('Error querying peer reviews:', error)
+        setAssignedReviews([])
+        return
+      }
 
       const formattedReviews = data?.map(review => ({
         id: review.id,

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams } from "next/navigation"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -54,48 +55,157 @@ export default function GradingPage() {
   const [newStrength, setNewStrength] = useState("")
   const [newImprovement, setNewImprovement] = useState("")
 
-  // Mock data - replace with API calls
-  const assignment = {
-    id: assignmentId,
-    title: "Cell Structure Lab Report",
-    description: "Complete analysis of cellular structures observed under microscope",
-    dueDate: "2024-01-15",
-    maxPoints: 100,
+  // Real data from database
+  const [assignment, setAssignment] = useState<any>(null)
+  const [submissions, setSubmissions] = useState<Submission[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadAssignmentAndSubmissions()
+  }, [assignmentId])
+
+  const loadAssignmentAndSubmissions = async () => {
+    try {
+      const supabase = createClient()
+      
+      // First check if assignments table exists
+      const { data: testAssignments, error: testError } = await supabase
+        .from('assignments')
+        .select('count')
+        .limit(1)
+
+      if (testError) {
+        console.error('Assignments table not accessible:', testError)
+        setLoading(false)
+        return
+      }
+
+      // Load assignment details with proper error handling
+      const { data: assignmentData, error: assignmentError } = await supabase
+        .from('assignments')
+        .select(`
+          id, title, description, due_date, points, teacher_id, class_id, rubric
+        `)
+        .eq('id', assignmentId)
+        .single()
+
+      if (assignmentError) {
+        console.error('Error loading assignment:', assignmentError)
+        console.error('Assignment error details:', JSON.stringify(assignmentError, null, 2))
+        setLoading(false)
+        return
+      }
+
+      // Verify teacher access
+      const { data: currentUser, error: userError } = await supabase.auth.getUser()
+      if (userError || !currentUser.user) {
+        console.error('Auth error:', userError)
+        setLoading(false)
+        return
+      }
+      
+      if (assignmentData.teacher_id !== currentUser.user.id) {
+        console.error('Access denied: Not the teacher for this assignment')
+        console.error('Expected teacher ID:', assignmentData.teacher_id)
+        console.error('Current user ID:', currentUser.user.id)
+        setLoading(false)
+        return
+      }
+
+      // Get class name
+      const { data: classData } = await supabase
+        .from('classes')
+        .select('name')
+        .eq('id', assignmentData.class_id)
+        .single()
+
+      setAssignment({
+        id: assignmentData.id,
+        title: assignmentData.title,
+        description: assignmentData.description,
+        dueDate: assignmentData.due_date,
+        maxPoints: assignmentData.points || 100,
+        className: classData?.name || 'Unknown Class',
+        rubric: assignmentData.rubric || null
+      })
+
+      // Load submissions for this assignment
+      const { data: submissionsData, error: submissionsError } = await supabase
+        .from('submissions')
+        .select(`
+          id, student_id, content, file_url, link_url, 
+          submitted_at, status, grade, feedback
+        `)
+        .eq('assignment_id', assignmentId)
+
+      if (submissionsError) {
+        console.error('Error loading submissions:', submissionsError)
+        setSubmissions([])
+        setLoading(false)
+        return
+      }
+
+      // Get student names for submissions
+      if (submissionsData && submissionsData.length > 0) {
+        const studentIds = submissionsData.map(s => s.student_id)
+        
+        // Try user_profiles first, fallback to users table
+        let studentsData = null
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('user_profiles')
+          .select('user_id, first_name, last_name, email')
+          .in('user_id', studentIds)
+
+        if (profilesError || !profilesData || profilesData.length === 0) {
+          // Fallback to users table
+          const { data: usersData } = await supabase
+            .from('users')
+            .select('id, first_name, last_name, email')
+            .in('id', studentIds)
+          
+          studentsData = usersData?.map(u => ({
+            user_id: u.id,
+            first_name: u.first_name,
+            last_name: u.last_name,
+            email: u.email
+          }))
+        } else {
+          studentsData = profilesData
+        }
+
+        const submissionsWithNames = submissionsData.map(submission => {
+          const student = studentsData?.find(s => s.user_id === submission.student_id)
+          return {
+            id: submission.id,
+            studentName: student 
+              ? `${student.first_name || ''} ${student.last_name || ''}`.trim() || 'Unknown Student'
+              : 'Unknown Student',
+            studentEmail: student?.email || 'unknown@email.com',
+            submittedAt: new Date(submission.submitted_at).toLocaleString(),
+            content: submission.content || 'No text content',
+            attachments: submission.file_url ? [submission.file_url.split('/').pop() || 'file'] : [],
+            status: submission.status || 'submitted',
+            grade: submission.grade,
+            feedback: submission.feedback
+          }
+        })
+
+        setSubmissions(submissionsWithNames)
+      } else {
+        setSubmissions([])
+      }
+
+    } catch (error) {
+      console.error('Error loading data:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const submissions: Submission[] = [
-    {
-      id: "sub_1",
-      studentName: "John Obi",
-      studentEmail: "john.obi@student.edu",
-      submittedAt: "2024-01-14 14:30",
-      content: "Lab Report Content Here...",
-      attachments: ["lab_report.pdf", "microscope_images.zip"],
-      status: "submitted",
-    },
-    {
-      id: "sub_2",
-      studentName: "Adaeze Nwoko",
-      studentEmail: "adaeze.nwoko@student.edu",
-      submittedAt: "2024-01-14 16:45",
-      content: "Detailed analysis of cellular structures...",
-      attachments: ["report.docx"],
-      status: "submitted",
-    },
-    {
-      id: "sub_3",
-      studentName: "Musa Lawal",
-      studentEmail: "musa.lawal@student.edu",
-      submittedAt: "2024-01-15 09:15",
-      content: "Comprehensive lab report with observations...",
-      attachments: ["final_report.pdf", "data_analysis.xlsx"],
-      status: "graded",
-    },
-  ]
-
-  const rubric = {
-    id: "rubric_1",
-    name: "Lab Report Rubric",
+  // Use rubric from assignment or fallback to default
+  const rubric = assignment?.rubric && assignment.rubric.criteria ? assignment.rubric : {
+    id: "default_rubric",
+    name: "Assignment Rubric",
     criteria: [
       {
         id: "crit_1",
@@ -238,6 +348,49 @@ export default function GradingPage() {
 
   const currentSubmission = submissions[currentSubmissionIndex]
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg">Loading assignment and submissions...</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (!assignment) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg text-red-600">Assignment not found</div>
+        </div>
+      </div>
+    )
+  }
+
+  if (submissions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <header className="bg-white dark:bg-gray-800 border-b">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold">Grading: {assignment.title}</h1>
+                <p className="text-gray-600 dark:text-gray-400">No submissions yet</p>
+              </div>
+            </div>
+          </div>
+        </header>
+        <div className="flex items-center justify-center h-96">
+          <div className="text-center">
+            <div className="text-lg text-gray-600">No submissions to grade yet</div>
+            <p className="text-sm text-gray-500 mt-2">Students haven't submitted their work for this assignment.</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const calculateTotalGrade = () => {
     return gradeData.criteriaGrades.reduce((sum, grade) => sum + (grade.points || 0), 0)
   }
@@ -299,31 +452,41 @@ export default function GradingPage() {
   }
 
   const saveGrade = async (publish = false) => {
-    const gradePayload = {
-      submissionId: currentSubmission.id,
-      assignmentId: assignment.id,
-      studentId: currentSubmission.id, // In real app, get actual student ID
-      rubricId: rubric.id,
-      criteriaGrades: gradeData.criteriaGrades,
-      feedback: {
-        overallComments: gradeData.overallComments,
-        strengths: gradeData.strengths,
-        improvements: gradeData.improvements,
-        annotations: [],
-      },
-      status: publish ? "published" : "draft",
-    }
-
     try {
-      const response = await fetch("/api/grades", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(gradePayload),
-      })
+      const supabase = createClient()
+      
+      const totalGrade = calculateTotalGrade()
+      const feedbackText = [
+        gradeData.overallComments,
+        gradeData.strengths.length > 0 ? `Strengths: ${gradeData.strengths.join(', ')}` : '',
+        gradeData.improvements.length > 0 ? `Areas for improvement: ${gradeData.improvements.join(', ')}` : ''
+      ].filter(Boolean).join('\n\n')
 
-      if (response.ok) {
-        alert(publish ? "Grade published successfully!" : "Grade saved as draft!")
+      const { error } = await supabase
+        .from('submissions')
+        .update({
+          grade: totalGrade,
+          feedback: feedbackText,
+          status: 'graded',
+          graded_at: new Date().toISOString(),
+        })
+        .eq('id', currentSubmission.id)
+
+      if (error) {
+        console.error('Error saving grade:', error)
+        alert('Error saving grade: ' + error.message)
+        return
       }
+
+      // Update local state
+      setSubmissions(prev => prev.map(sub => 
+        sub.id === currentSubmission.id 
+          ? { ...sub, status: 'graded' }
+          : sub
+      ))
+
+      alert(publish ? "Grade published successfully!" : "Grade saved successfully!")
+      
     } catch (error) {
       console.error("Error saving grade:", error)
       alert("Error saving grade")

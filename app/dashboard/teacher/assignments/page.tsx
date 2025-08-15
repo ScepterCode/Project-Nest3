@@ -33,19 +33,10 @@ export default function TeacherAssignmentsPage() {
 
       try {
         const supabase = createClient();
-        const { data, error } = await supabase
+        // Get assignments using manual joins
+        const { data: assignmentsData, error } = await supabase
           .from('assignments')
-          .select(`
-            id,
-            title,
-            description,
-            due_date,
-            status,
-            submission_count,
-            total_students,
-            created_at,
-            classes!inner(name)
-          `)
+          .select('*')
           .eq('teacher_id', user.id)
           .order('created_at', { ascending: false });
 
@@ -58,12 +49,45 @@ export default function TeacherAssignmentsPage() {
             fullError: error
           });
           setAssignments([]);
+        } else if (assignmentsData) {
+          // Get class info and submission counts for each assignment
+          const assignmentsWithCounts = await Promise.all(
+            assignmentsData.map(async (assignment) => {
+              // Get class info manually
+              const { data: classInfo } = await supabase
+                .from('classes')
+                .select('name')
+                .eq('id', assignment.class_id)
+                .single();
+              
+              // Get total students in class
+              const { data: enrollments } = await supabase
+                .from('enrollments')
+                .select('student_id')
+                .eq('class_id', assignment.class_id);
+              
+              const totalStudents = enrollments?.length || 0;
+
+              // Get submission count for this assignment
+              const { data: submissions } = await supabase
+                .from('submissions')
+                .select('id')
+                .eq('assignment_id', assignment.id);
+              
+              const submissionCount = submissions?.length || 0;
+
+              return {
+                ...assignment,
+                class_name: classInfo?.name || 'Unknown Class',
+                submission_count: submissionCount,
+                total_students: totalStudents
+              };
+            })
+          );
+          
+          setAssignments(assignmentsWithCounts);
         } else {
-          const formattedData = (data || []).map(item => ({
-            ...item,
-            class_name: item.classes?.name || 'Unknown Class'
-          }));
-          setAssignments(formattedData);
+          setAssignments([]);
         }
       } catch (error) {
         console.error('Database connection error:', {
@@ -186,9 +210,9 @@ export default function TeacherAssignmentsPage() {
                         View Details
                       </Button>
                     </Link>
-                    <Link href={`/dashboard/teacher/assignments/${assignment.id}/grade`}>
+                    <Link href={`/dashboard/teacher/assignments/${assignment.id}/grade-submissions`}>
                       <Button size="sm">
-                        Grade
+                        Grade ({assignment.submission_count}/{assignment.total_students})
                       </Button>
                     </Link>
                   </div>

@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { StudentOnboarding } from '@/components/onboarding/student-onboarding';
 import { TeacherOnboarding } from '@/components/onboarding/teacher-onboarding';
 import { InstitutionAdminOnboarding } from '@/components/onboarding/institution-admin-onboarding';
+import { Button } from '@/components/ui/button';
 
 export default function OnboardingPage() {
   const { user, loading } = useAuth();
@@ -14,8 +15,8 @@ export default function OnboardingPage() {
   const [mounted, setMounted] = useState(false);
   const [saving, setSaving] = useState(false);
   const [debugInfo, setDebugInfo] = useState('');
-  const [selectedRole, setSelectedRole] = useState<string | null>(null);
-  const [onboardingStep, setOnboardingStep] = useState<'role-selection' | 'role-specific'>('role-selection');
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [loadingUserData, setLoadingUserData] = useState(true);
 
   useEffect(() => {
     setMounted(true);
@@ -29,6 +30,53 @@ export default function OnboardingPage() {
 
     return () => clearTimeout(timeout);
   }, [loading]);
+
+  // Load user role from database or user metadata
+  useEffect(() => {
+    const loadUserRole = async () => {
+      if (!user) {
+        setLoadingUserData(false);
+        return;
+      }
+
+      try {
+        const supabase = createClient();
+        
+        // First try to get role from database
+        const { data: userData, error } = await supabase
+          .from('users')
+          .select('role, first_name, last_name')
+          .eq('id', user.id)
+          .single();
+
+        if (userData && userData.role) {
+          setUserRole(userData.role);
+        } else {
+          // Fallback to user metadata from registration
+          const roleFromMetadata = user.user_metadata?.role;
+          if (roleFromMetadata) {
+            // Map 'institution' to 'institution_admin' for consistency
+            const mappedRole = roleFromMetadata === 'institution' ? 'institution_admin' : roleFromMetadata;
+            setUserRole(mappedRole);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user role:', error);
+        // Fallback to user metadata
+        const roleFromMetadata = user.user_metadata?.role;
+        if (roleFromMetadata) {
+          const mappedRole = roleFromMetadata === 'institution' ? 'institution_admin' : roleFromMetadata;
+          setUserRole(mappedRole);
+        }
+      } finally {
+        setLoadingUserData(false);
+      }
+    };
+
+    if (user) {
+      loadUserRole();
+    }
+  }, [user]);
 
   // Debug logging
   useEffect(() => {
@@ -44,24 +92,24 @@ export default function OnboardingPage() {
     setDebugInfo(JSON.stringify(debugData, null, 2));
   }, [mounted, user, loading]);
 
-  const handleRoleSelect = (role: string) => {
-    setSelectedRole(role);
-    setOnboardingStep('role-specific');
-  };
-
-  const handleOnboardingComplete = async (role: string, onboardingData: any) => {
+  const handleOnboardingComplete = async (onboardingData: any) => {
     if (!user) {
       alert('No user found. Please refresh and try again.');
       return;
     }
     
+    if (!userRole) {
+      alert('Unable to determine your role. Please contact support.');
+      return;
+    }
+
     setSaving(true);
-    console.log('Completing onboarding for user:', user.id, 'role:', role, 'data:', onboardingData);
+    console.log('Completing onboarding for user:', user.id, 'role:', userRole, 'data:', onboardingData);
     
     try {
       const supabase = createClient();
       
-      // Check if user already has a role assigned
+      // Check if user already has onboarding completed
       const { data: existingUser } = await supabase
         .from('users')
         .select('role, onboarding_completed')
@@ -69,18 +117,22 @@ export default function OnboardingPage() {
         .single();
 
       if (existingUser && existingUser.onboarding_completed) {
-        alert('Your role has already been set and cannot be changed. Contact an administrator if you need a role change.');
-        router.push('/dashboard');
+        alert('Your onboarding has already been completed. Redirecting to dashboard.');
+        const dashboardPath = userRole === 'student' ? '/dashboard/student' : 
+                             userRole === 'teacher' ? '/dashboard/teacher' : 
+                             userRole === 'institution_admin' ? '/dashboard/institution' :
+                             '/dashboard';
+        router.push(dashboardPath);
         return;
       }
 
-      // Set role permanently with onboarding data
+      // Complete onboarding with user data (role should already be set from registration)
       const { error: updateError } = await supabase
         .from('users')
         .upsert({ 
           id: user.id,
           email: user.email || '',
-          role: role,
+          role: userRole, // Use the role from registration
           onboarding_completed: true,
           first_name: onboardingData.firstName || user.user_metadata?.first_name || '',
           last_name: onboardingData.lastName || user.user_metadata?.last_name || '',
@@ -91,7 +143,7 @@ export default function OnboardingPage() {
         });
 
       if (updateError) {
-        console.error('Error setting user role:', {
+        console.error('Error completing onboarding:', {
           message: updateError.message,
           details: updateError.details,
           hint: updateError.hint,
@@ -102,12 +154,17 @@ export default function OnboardingPage() {
         return;
       }
       
-      console.log('Onboarding completed for role:', role);
+      console.log('Onboarding completed for role:', userRole);
+
+      // Set flag to show completion message briefly
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('onboarding-just-completed', 'true');
+      }
 
       // Redirect to appropriate dashboard
-      const dashboardPath = role === 'student' ? '/dashboard/student' : 
-                           role === 'teacher' ? '/dashboard/teacher' : 
-                           role === 'institution_admin' ? '/dashboard/institution' :
+      const dashboardPath = userRole === 'student' ? '/dashboard/student' : 
+                           userRole === 'teacher' ? '/dashboard/teacher' : 
+                           userRole === 'institution_admin' ? '/dashboard/institution' :
                            '/dashboard';
       
       console.log('Redirecting to:', dashboardPath);
@@ -124,10 +181,7 @@ export default function OnboardingPage() {
     }
   };
 
-  const handleBackToRoleSelection = () => {
-    setSelectedRole(null);
-    setOnboardingStep('role-selection');
-  };
+
 
   // Debug: Show what's happening
   if (!mounted) {
@@ -138,7 +192,7 @@ export default function OnboardingPage() {
     );
   }
 
-  if (loading && !debugInfo.includes('timeout')) {
+  if ((loading || loadingUserData) && !debugInfo.includes('timeout')) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center max-w-md">
@@ -196,100 +250,78 @@ export default function OnboardingPage() {
     );
   }
 
-  // Show role-specific onboarding if role is selected
-  if (onboardingStep === 'role-specific' && selectedRole) {
-    switch (selectedRole) {
+  // Show role-specific onboarding based on user's registered role
+  if (userRole && !loadingUserData) {
+    const userName = user?.user_metadata?.first_name || user?.user_metadata?.last_name || 'there';
+    
+    switch (userRole) {
       case 'student':
         return (
           <StudentOnboarding
-            onComplete={(data) => handleOnboardingComplete('student', data)}
-            onBack={handleBackToRoleSelection}
+            onComplete={handleOnboardingComplete}
+            userName={userName}
           />
         );
       case 'teacher':
         return (
           <TeacherOnboarding
-            onComplete={(data) => handleOnboardingComplete('teacher', data)}
-            onBack={handleBackToRoleSelection}
+            onComplete={handleOnboardingComplete}
+            userName={userName}
           />
         );
       case 'institution_admin':
         return (
           <InstitutionAdminOnboarding
-            onComplete={(data) => handleOnboardingComplete('institution_admin', data)}
-            onBack={handleBackToRoleSelection}
+            onComplete={handleOnboardingComplete}
+            userName={userName}
           />
         );
       default:
-        setOnboardingStep('role-selection');
-        break;
+        return (
+          <div className="min-h-screen bg-gray-50 py-12">
+            <div className="max-w-2xl mx-auto px-4">
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <h1 className="text-2xl font-bold mb-4">Unknown Role</h1>
+                <p className="text-gray-600 mb-4">
+                  We couldn't determine your role. Please contact support.
+                </p>
+                <p className="text-sm text-gray-500">Role detected: {userRole}</p>
+              </div>
+            </div>
+          </div>
+        );
     }
   }
 
-  // Show role selection
+  // Show loading or error state
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-2xl mx-auto px-4">
-        <div className="bg-white rounded-lg shadow p-8">
-          <h1 className="text-2xl font-bold text-center mb-2">Welcome to the Platform!</h1>
-          <p className="text-gray-600 text-center mb-8">
-            Hi {user?.email}! Let's get you set up. What's your role?
-          </p>
-
-          <div className="space-y-4">
-            <button 
-              onClick={() => handleRoleSelect('student')}
-              disabled={saving}
-              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50"
-            >
-              <div className="flex items-center">
-                <div className="text-2xl mr-4">👨‍🎓</div>
-                <div>
-                  <h3 className="font-semibold">Student</h3>
-                  <p className="text-gray-600 text-sm">I'm here to learn and complete assignments</p>
-                </div>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => handleRoleSelect('teacher')}
-              disabled={saving}
-              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50"
-            >
-              <div className="flex items-center">
-                <div className="text-2xl mr-4">👨‍🏫</div>
-                <div>
-                  <h3 className="font-semibold">Teacher</h3>
-                  <p className="text-gray-600 text-sm">I teach classes and manage student learning</p>
-                </div>
-              </div>
-            </button>
-
-            <button 
-              onClick={() => handleRoleSelect('institution_admin')}
-              disabled={saving}
-              className="w-full p-4 text-left border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors disabled:opacity-50"
-            >
-              <div className="flex items-center">
-                <div className="text-2xl mr-4">👨‍💼</div>
-                <div>
-                  <h3 className="font-semibold">Administrator</h3>
-                  <p className="text-gray-600 text-sm">I manage institution operations</p>
-                </div>
-              </div>
-            </button>
-          </div>
-
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          {loadingUserData ? (
+            <>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+              <h1 className="text-2xl font-bold mb-2">Setting up your onboarding...</h1>
+              <p className="text-gray-600">Please wait while we prepare your personalized setup.</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-2xl font-bold mb-4">Unable to Load Onboarding</h1>
+              <p className="text-gray-600 mb-4">
+                We couldn't determine your role from your registration. Please contact support.
+              </p>
+              <Button onClick={() => router.push('/dashboard')} className="mt-4">
+                Go to Dashboard
+              </Button>
+            </>
+          )}
+          
           {saving && (
-            <div className="mt-6 text-center">
+            <div className="mt-6">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
               <p className="text-gray-600 mt-2">Completing your setup...</p>
             </div>
           )}
-
-          <div className="mt-8 text-center text-sm text-gray-500">
-            <p>Each role has a customized setup process</p>
-          </div>
         </div>
       </div>
     </div>

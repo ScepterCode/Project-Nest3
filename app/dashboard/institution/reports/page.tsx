@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from '@/components/ui/button'
 import { DatabaseStatusBanner } from '@/components/database-status-banner'
+import { RoleGate } from '@/components/ui/permission-gate'
 
 interface InstitutionStats {
   totalUsers: number
@@ -30,23 +31,17 @@ export default function InstitutionReportsPage() {
     totalSubmissions: 0
   })
 
-  console.log('Reports page rendering...')
-  console.log('User:', user)
-  console.log('Loading:', loading)
+
 
   useEffect(() => {
-    console.log('useEffect triggered, user:', user)
     if (user) {
-      console.log('Fetching reports data...')
       fetchReportsData()
     } else {
-      console.log('No user, not fetching data')
       setLoading(false)
     }
   }, [user])
 
   const fetchReportsData = async () => {
-    console.log('fetchReportsData called')
     setLoading(true)
     setError(null)
     
@@ -89,7 +84,6 @@ export default function InstitutionReportsPage() {
       console.error('Error fetching reports data:', error)
       setError('Failed to load reports data')
     } finally {
-      console.log('Setting loading to false')
       setLoading(false)
     }
   }
@@ -102,49 +96,44 @@ export default function InstitutionReportsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <DatabaseStatusBanner />
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <RoleGate allowedRoles={['institution_admin']}>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+          <DatabaseStatusBanner />
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
           </div>
         </div>
-      </div>
+      </RoleGate>
     )
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-        <DatabaseStatusBanner />
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading Reports</h2>
-            <p className="text-red-700 mb-4">{error}</p>
-            <Button onClick={handleRefresh} variant="outline">
-              Try Again
-            </Button>
+      <RoleGate allowedRoles={['institution_admin']}>
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+          <DatabaseStatusBanner />
+          <div className="max-w-7xl mx-auto">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+              <h2 className="text-lg font-semibold text-red-800 mb-2">Error Loading Reports</h2>
+              <p className="text-red-700 mb-4">{error}</p>
+              <Button onClick={handleRefresh} variant="outline">
+                Try Again
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </RoleGate>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
-      <DatabaseStatusBanner />
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Debug Info */}
-        <div className="bg-white p-4 rounded-lg shadow mb-4">
-          <h2 className="text-lg font-semibold mb-2">Debug Info</h2>
-          <p><strong>User:</strong> {user?.email || 'Not logged in'}</p>
-          <p><strong>Role:</strong> {user?.role || 'No role'}</p>
-          <p><strong>Loading:</strong> {loading ? 'Yes' : 'No'}</p>
-          <p><strong>Error:</strong> {error || 'None'}</p>
-          <p><strong>Stats:</strong> {JSON.stringify(institutionStats)}</p>
-        </div>
-
-        {/* Header */}
+    <RoleGate allowedRoles={['institution_admin']}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <DatabaseStatusBanner />
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold">Institution Reports</h1>
@@ -209,7 +198,8 @@ export default function InstitutionReportsPage() {
             Check the debug info above to see the current state and user information.
           </p>
         </div>
+        </div>
       </div>
-    </div>
+    </RoleGate>
   )
 }

@@ -1,16 +1,28 @@
-import { DataImportExportService } from './data-import-export';
-import { DataImportResult, ImportError, ImportWarning } from '@/lib/types/integration';
-
-export interface BulkImportOptions {
-  skipDuplicates?: boolean;
-  updateExisting?: boolean;
-  validateOnly?: boolean;
-  batchSize?: number;
-  createSnapshot?: boolean;
-  sendWelcomeEmails?: boolean;
-  assignDefaultRole?: string;
-  assignToDepartment?: string;
-}
+import { createClient } from '@/lib/supabase/server';
+import { 
+  BulkImportOptions,
+  ImportResult,
+  ImportError,
+  ImportWarning,
+  ValidationResult,
+  ImportStatus,
+  ImportProgress,
+  BulkImport,
+  MigrationSnapshot,
+  RollbackResult,
+  ImportTemplate,
+  ParsedFileData,
+  BatchProcessResult,
+  UserImportData,
+  ImportErrorCodes,
+  ImportWarningCodes,
+  FileFormat,
+  ImportNotification,
+  NotificationType
+} from '@/lib/types/bulk-import';
+import { NotificationService } from './notification-service';
+import { AuditLogger } from './audit-logger';
+import * as XLSX from 'xlsx';
 
 export interface BulkImportTemplate {
   requiredFields: string[];
@@ -19,21 +31,14 @@ export interface BulkImportTemplate {
   sampleData: Record<string, any>[];
 }
 
-export interface ValidationReport {
-  isValid: boolean;
-  errors: ImportError[];
-  warnings: ImportWarning[];
-  suggestions: string[];
-  summary: {
-    totalRecords: number;
-    validRecords: number;
-    duplicateEmails: number;
-    missingRequiredFields: number;
-  };
-}
-
 export class BulkUserImportService {
-  private importService = new DataImportExportService();
+  private supabase = createClient();
+  private notificationService = new NotificationService();
+  private auditLogger = new AuditLogger();
+  
+  private readonly MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+  private readonly MAX_RECORDS_PER_IMPORT = 10000;
+  private readonly DEFAULT_BATCH_SIZE = 100;
 
   /**
    * Get template for bulk user import
