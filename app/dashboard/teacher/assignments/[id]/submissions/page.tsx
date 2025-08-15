@@ -197,11 +197,21 @@ export default function AssignmentSubmissionsPage({ params }: { params: Promise<
           Back to Assignment
         </Button>
         
-        <h1 className="text-3xl font-bold mb-2">Submissions: {assignment.title}</h1>
-        <p className="text-gray-600 mb-2">{assignment.class_name}</p>
-        <p className="text-sm text-gray-500">
-          Due: {new Date(assignment.due_date).toLocaleDateString()}
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Submissions: {assignment.title}</h1>
+            <p className="text-gray-600 mb-2">{assignment.class_name}</p>
+            <p className="text-sm text-gray-500">
+              Due: {new Date(assignment.due_date).toLocaleDateString()}
+            </p>
+          </div>
+          <Button 
+            onClick={() => router.push(`/dashboard/teacher/assignments/${resolvedParams.id}/grade-submissions`)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Grade All Submissions
+          </Button>
+        </div>
       </div>
 
       <div className="mb-6">

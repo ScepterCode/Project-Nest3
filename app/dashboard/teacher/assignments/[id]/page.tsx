@@ -219,9 +219,9 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
               <Edit className="h-4 w-4 mr-2" />
               Edit Assignment
             </Button>
-            <Button onClick={() => router.push(`/dashboard/teacher/assignments/${assignment.id}/submissions`)}>
+            <Button onClick={() => router.push(`/dashboard/teacher/assignments/${assignment.id}/grade-submissions`)}>
               <Users className="h-4 w-4 mr-2" />
-              View Submissions
+              Grade Submissions
             </Button>
           </div>
         </div>

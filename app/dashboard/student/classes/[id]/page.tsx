@@ -1,8 +1,8 @@
 "use client";
 
 import { useAuth } from '@/contexts/auth-context';
-import { useRouter, useParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,11 +45,11 @@ interface Classmate {
   enrollment_date: string;
 }
 
-export default function StudentClassDetailPage() {
+export default function StudentClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const params = useParams();
-  const classId = params.id as string;
+  const resolvedParams = use(params);
+  const classId = resolvedParams.id;
   
   const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
   const [loadingClass, setLoadingClass] = useState(true);

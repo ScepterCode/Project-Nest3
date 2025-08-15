@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,47 +24,42 @@ export default function TeacherRubricsPage() {
   const { user } = useAuth();
   const [rubrics, setRubrics] = useState<Rubric[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchRubrics = async () => {
       if (!user) return;
 
       try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from('rubrics')
-          .select(`
-            id,
-            name,
-            description,
-            total_points,
-            usage_count,
-            status,
-            created_at,
-            rubric_criteria(count)
-          `)
-          .eq('teacher_id', user.id)
-          .order('created_at', { ascending: false });
+        // Fetch from API
+        const response = await fetch('/api/rubrics');
+        const result = await response.json();
+        const apiRubrics = response.ok ? (result.rubrics || []) : [];
 
-        if (error) {
-          console.error('Error fetching rubrics:', error);
-          setRubrics([]);
-        } else {
-          const formattedRubrics = data?.map(rubric => ({
+        // Fetch from localStorage
+        const localRubrics = JSON.parse(localStorage.getItem('teacher_rubrics') || '[]')
+          .filter((rubric: any) => rubric.teacher_id === user.id)
+          .map((rubric: any) => ({
             id: rubric.id,
             name: rubric.name,
             description: rubric.description || '',
-            criteria_count: rubric.rubric_criteria?.length || 0,
-            max_points: rubric.total_points || 0,
-            usage_count: rubric.usage_count || 0,
-            status: rubric.status,
-            created_at: rubric.created_at
-          })) || [];
-          
-          setRubrics(formattedRubrics);
-        }
+            criteria_count: rubric.criteria?.length || 0,
+            max_points: rubric.criteria?.reduce((sum: number, c: any) => 
+              sum + Math.max(...(c.levels?.map((l: any) => l.points) || [0])), 0) || 0,
+            usage_count: 0,
+            status: rubric.status || 'active',
+            created_at: new Date().toISOString()
+          }));
+
+        // Combine and deduplicate
+        const allRubrics = [...apiRubrics, ...localRubrics];
+        const uniqueRubrics = allRubrics.filter((rubric, index, self) => 
+          index === self.findIndex(r => r.id === rubric.id)
+        );
+
+        setRubrics(uniqueRubrics);
       } catch (error) {
-        console.error('Error connecting to database:', error);
+        console.error('Error fetching rubrics:', error);
         setRubrics([]);
       } finally {
         setLoading(false);
@@ -74,6 +68,40 @@ export default function TeacherRubricsPage() {
 
     fetchRubrics();
   }, [user]);
+
+  const handleDeleteRubric = async (rubricId: string, rubricName: string) => {
+    if (!confirm(`Are you sure you want to delete "${rubricName}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    setDeleting(rubricId);
+    try {
+      // Try to delete from API first
+      let apiDeleted = false;
+      try {
+        const response = await fetch(`/api/rubrics?id=${rubricId}`, {
+          method: 'DELETE',
+        });
+        apiDeleted = response.ok;
+      } catch (error) {
+        console.log('API delete failed, trying localStorage');
+      }
+
+      // Delete from localStorage
+      const localRubrics = JSON.parse(localStorage.getItem('teacher_rubrics') || '[]');
+      const updatedRubrics = localRubrics.filter((rubric: any) => rubric.id !== rubricId);
+      localStorage.setItem('teacher_rubrics', JSON.stringify(updatedRubrics));
+
+      // Remove from local state
+      setRubrics(prev => prev.filter(r => r.id !== rubricId));
+      alert('Rubric deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting rubric:', error);
+      alert('Failed to delete rubric. Please try again.');
+    } finally {
+      setDeleting(null);
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -95,6 +123,9 @@ export default function TeacherRubricsPage() {
   return (
     <div className="space-y-6">
       <DatabaseStatusBanner />
+      
+
+
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Rubrics</h1>
@@ -175,6 +206,14 @@ export default function TeacherRubricsPage() {
                       Edit
                     </Button>
                   </Link>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={() => handleDeleteRubric(rubric.id, rubric.name)}
+                    disabled={deleting === rubric.id}
+                  >
+                    {deleting === rubric.id ? 'Deleting...' : 'Delete'}
+                  </Button>
                 </div>
               </CardContent>
             </Card>

@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useState, useEffect, use } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -39,9 +38,14 @@ interface RubricCriterion {
   }>
 }
 
-export default function GradingPage() {
-  const params = useParams()
-  const assignmentId = params.id as string
+export default function GradingPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params)
+  const assignmentId = resolvedParams.id
+  
+  // Redirect to the proper grading interface
+  useEffect(() => {
+    window.location.href = `/dashboard/teacher/assignments/${assignmentId}/grade-submissions`;
+  }, [assignmentId]);
 
   const [currentSubmissionIndex, setCurrentSubmissionIndex] = useState(0)
   const [activeTab, setActiveTab] = useState("rubric")

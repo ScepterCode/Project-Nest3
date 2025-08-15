@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, FileText, Link, Download, Save, Users, Clock, CheckCircle, Star } from 'lucide-react';
+import { RubricSelectorModal } from '@/components/rubric-selector-modal';
 
 interface Assignment {
     id: string;
@@ -54,12 +55,18 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
     const [loadingData, setLoadingData] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
-    const [gradingMode, setGradingMode] = useState(false);
+    const [gradingPanelOpen, setGradingPanelOpen] = useState(false);
 
     // Grading form state
     const [grade, setGrade] = useState('');
     const [feedback, setFeedback] = useState('');
     const [saving, setSaving] = useState(false);
+    
+    // Grading mode state
+    const [gradingMode, setGradingModeType] = useState<'simple' | 'rubric'>('simple');
+    const [rubricScores, setRubricScores] = useState<Record<string, number>>({});
+    const [assignmentRubric, setAssignmentRubric] = useState<any>(null);
+    const [removingRubric, setRemovingRubric] = useState(false);
 
     useEffect(() => {
         if (!loading && !user) {
@@ -90,10 +97,10 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
             console.log('Loading grading data for assignment:', resolvedParams.id);
             const supabase = createClient();
 
-            // Load assignment details
+            // Load assignment details (including rubric field)
             const { data: assignmentData, error: assignmentError } = await supabase
                 .from('assignments')
-                .select('id, title, description, due_date, points, class_id, teacher_id')
+                .select('id, title, description, due_date, points, class_id, teacher_id, rubric')
                 .eq('id', resolvedParams.id)
                 .eq('teacher_id', user.id)
                 .single();
@@ -127,6 +134,19 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
                 points_possible: assignmentData.points || 100,
                 class_name: classData?.name || 'Unknown Class'
             });
+            
+            // Check if assignment has a rubric
+            console.log('Assignment rubric field:', assignmentData.rubric);
+            console.log('Rubric type:', typeof assignmentData.rubric);
+            
+            if (assignmentData.rubric && typeof assignmentData.rubric === 'object') {
+                setAssignmentRubric(assignmentData.rubric);
+                console.log('✅ Assignment has rubric:', assignmentData.rubric.name);
+                console.log('Rubric criteria count:', assignmentData.rubric.criteria?.length || 0);
+            } else {
+                console.log('❌ Assignment has no rubric - using simple grading only');
+                setAssignmentRubric(null);
+            }
 
             // Load submissions with student details (manual join)
             const { data: submissionsData, error: submissionsError } = await supabase
@@ -206,28 +226,137 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
         }
     };
 
+    // Calculate total grade from rubric scores
+    const calculateRubricGrade = () => {
+        if (!assignmentRubric || !assignmentRubric.criteria || !Array.isArray(assignmentRubric.criteria)) return 0;
+        
+        let totalWeightedScore = 0;
+        let totalWeight = 0;
+        
+        assignmentRubric.criteria.forEach((criterion: any) => {
+            const score = rubricScores[criterion.id] || 0;
+            const weight = criterion.weight || 25; // Default weight as percentage
+            
+            // Calculate weighted score: (score * weight) / 100
+            totalWeightedScore += (score * weight / 100);
+            totalWeight += weight;
+        });
+        
+        // The totalWeightedScore is already the final grade out of the maximum possible
+        // Since the rubric levels are designed to give the actual points
+        return Math.round(totalWeightedScore);
+    };
+
+    // Handle rubric removal from assignment
+    const handleRemoveRubric = async () => {
+        if (!assignment || !assignmentRubric || removingRubric) return;
+        
+        const confirmDelete = window.confirm(
+            `Are you sure you want to remove the rubric "${assignmentRubric.name}" from this assignment?\n\n` +
+            'This will:\n' +
+            '• Remove the rubric from the assignment\n' +
+            '• Switch all future grading to simple mode\n' +
+            '• Keep existing rubric-based grades intact\n\n' +
+            'This action cannot be undone.'
+        );
+        
+        if (!confirmDelete) return;
+        
+        setRemovingRubric(true);
+        
+        try {
+            const supabase = createClient();
+            
+            console.log('Removing rubric from assignment:', assignment.id);
+            
+            // Remove rubric from assignment by setting rubric field to null
+            const { error } = await supabase
+                .from('assignments')
+                .update({ rubric: null })
+                .eq('id', assignment.id)
+                .eq('teacher_id', user?.id);
+                
+            if (error) {
+                console.error('Error removing rubric:', error);
+                alert('Error removing rubric: ' + error.message);
+                return;
+            }
+            
+            console.log('✅ Rubric removed from database');
+            
+            // Update local state
+            setAssignmentRubric(null);
+            setGradingModeType('simple');
+            setRubricScores({});
+            
+            alert('Rubric removed successfully! All future grading will use simple mode.');
+            
+        } catch (error) {
+            console.error('Error removing rubric:', error);
+            alert('Error removing rubric');
+        } finally {
+            setRemovingRubric(false);
+        }
+    };
+
     const handleGradeSubmission = async () => {
         if (!selectedSubmission) return;
 
         setSaving(true);
         try {
             const supabase = createClient();
-            const gradeNum = parseInt(grade);
+            let finalGrade: number;
+            let rubricData: any = null;
 
-            if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > (assignment?.points_possible || 100)) {
-                alert(`Please enter a valid grade between 0 and ${assignment?.points_possible || 100}`);
-                return;
+            if (gradingMode === 'rubric' && assignmentRubric) {
+                // Calculate grade from rubric
+                finalGrade = calculateRubricGrade();
+                rubricData = {
+                    scores: rubricScores,
+                    rubric_name: assignmentRubric.name,
+                    graded_with_rubric: true
+                };
+                
+                // Validate rubric scores
+                const hasAllScores = assignmentRubric.criteria && Array.isArray(assignmentRubric.criteria) 
+                    ? assignmentRubric.criteria.every((criterion: any) => 
+                        rubricScores[criterion.id] !== undefined && rubricScores[criterion.id] > 0
+                    )
+                    : false;
+                
+                if (!hasAllScores) {
+                    alert('Please provide scores for all rubric criteria');
+                    setSaving(false);
+                    return;
+                }
+            } else {
+                // Simple grading mode
+                finalGrade = parseInt(grade);
+                
+                if (isNaN(finalGrade) || finalGrade < 0 || finalGrade > (assignment?.points_possible || 100)) {
+                    alert(`Please enter a valid grade between 0 and ${assignment?.points_possible || 100}`);
+                    setSaving(false);
+                    return;
+                }
+            }
+
+            // Prepare update data
+            const updateData: any = {
+                grade: finalGrade,
+                feedback: feedback.trim(),
+                status: 'graded',
+                graded_at: new Date().toISOString(),
+                graded_by: user?.id
+            };
+
+            // Add rubric data if using rubric grading
+            if (rubricData) {
+                updateData.rubric_scores = rubricData;
             }
 
             const { error } = await supabase
                 .from('submissions')
-                .update({
-                    grade: gradeNum,
-                    feedback: feedback.trim(),
-                    status: 'graded',
-                    graded_at: new Date().toISOString(),
-                    graded_by: user?.id
-                })
+                .update(updateData)
                 .eq('id', selectedSubmission.id);
 
             if (error) {
@@ -239,7 +368,7 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
             // Update local state
             setSubmissions(prev => prev.map(sub =>
                 sub.id === selectedSubmission.id
-                    ? { ...sub, grade: gradeNum, feedback: feedback.trim(), status: 'graded' as const }
+                    ? { ...sub, grade: finalGrade, feedback: feedback.trim(), status: 'graded' as const }
                     : sub
             ));
 
@@ -254,10 +383,11 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
             // Reset form
             setGrade('');
             setFeedback('');
-            setGradingMode(false);
+            setRubricScores({});
+            setGradingPanelOpen(false);
             setSelectedSubmission(null);
 
-            alert('Grade saved successfully!');
+            alert(`Grade saved successfully! Final grade: ${finalGrade}/${assignment?.points_possible || 100}`);
 
         } catch (error) {
             console.error('Error saving grade:', error);
@@ -271,7 +401,16 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
         setSelectedSubmission(submission);
         setGrade(submission.grade?.toString() || '');
         setFeedback(submission.feedback || '');
-        setGradingMode(true);
+        setGradingPanelOpen(true);
+        
+        // Initialize rubric scores if rubric exists
+        if (assignmentRubric && assignmentRubric.criteria && Array.isArray(assignmentRubric.criteria)) {
+            const initialScores: Record<string, number> = {};
+            assignmentRubric.criteria.forEach((criterion: any) => {
+                initialScores[criterion.id] = 0;
+            });
+            setRubricScores(initialScores);
+        }
     };
 
     if (loading || loadingData) {
@@ -475,19 +614,138 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
                                     </TabsContent>
 
                                     <TabsContent value="grade" className="space-y-4">
-                                        <div>
-                                            <Label htmlFor="grade">Grade (0-{assignment.points_possible})</Label>
-                                            <Input
-                                                id="grade"
-                                                type="number"
-                                                min="0"
-                                                max={assignment.points_possible}
-                                                value={grade}
-                                                onChange={(e) => setGrade(e.target.value)}
-                                                placeholder="Enter grade"
-                                            />
-                                        </div>
+                                        {/* Grading Mode Toggle */}
+                                        {assignmentRubric && (
+                                            <div className="space-y-2">
+                                                <div className="flex justify-between items-start">
+                                                    <div>
+                                                        <Label>Grading Method</Label>
+                                                        <div className="text-xs text-gray-500 mb-2">
+                                                            Rubric: {assignmentRubric.name} ({assignmentRubric.criteria?.length || 0} criteria)
+                                                        </div>
+                                                    </div>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                        onClick={handleRemoveRubric}
+                                                        disabled={removingRubric}
+                                                    >
+                                                        {removingRubric ? 'Removing...' : 'Remove Rubric'}
+                                                    </Button>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <Button
+                                                        variant={gradingMode === 'simple' ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        onClick={() => setGradingModeType('simple')}
+                                                    >
+                                                        Simple Grade
+                                                    </Button>
+                                                    <Button
+                                                        variant={gradingMode === 'rubric' ? 'default' : 'outline'}
+                                                        size="sm"
+                                                        onClick={() => setGradingModeType('rubric')}
+                                                    >
+                                                        Use Rubric
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+                                        
+                                        {/* No Rubric - Option to Add */}
+                                        {!assignmentRubric && (
+                                            <div className="border border-dashed border-gray-300 rounded-lg p-4 text-center">
+                                                <div className="text-sm text-gray-600 mb-2">
+                                                    This assignment uses simple grading only
+                                                </div>
+                                                <div className="text-xs text-gray-500 mb-3">
+                                                    Add a rubric for structured, consistent grading with detailed criteria
+                                                </div>
+                                                <RubricSelectorModal
+                                                    assignmentId={assignment.id}
+                                                    onRubricSelected={(rubric) => {
+                                                        setAssignmentRubric(rubric);
+                                                        setGradingModeType('rubric');
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
 
+
+                                        {/* Simple Grading Mode */}
+                                        {gradingMode === 'simple' && (
+                                            <div>
+                                                <Label htmlFor="grade">Grade (0-{assignment.points_possible})</Label>
+                                                <Input
+                                                    id="grade"
+                                                    type="number"
+                                                    min="0"
+                                                    max={assignment.points_possible}
+                                                    value={grade}
+                                                    onChange={(e) => setGrade(e.target.value)}
+                                                    placeholder="Enter grade"
+                                                />
+                                            </div>
+                                        )}
+
+                                        {/* Rubric Grading Mode */}
+                                        {gradingMode === 'rubric' && assignmentRubric && assignmentRubric.criteria && (
+                                            <div className="space-y-4">
+                                                <div className="text-sm font-medium">
+                                                    Rubric: {assignmentRubric.name}
+                                                </div>
+                                                
+                                                {assignmentRubric.criteria.map((criterion: any) => (
+                                                    <div key={criterion.id} className="border rounded-lg p-3 space-y-2">
+                                                        <div className="flex justify-between items-start">
+                                                            <div>
+                                                                <div className="font-medium">{criterion.name}</div>
+                                                                <div className="text-sm text-gray-600">{criterion.description}</div>
+                                                                <div className="text-xs text-gray-500">Weight: {criterion.weight}%</div>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <div className="grid grid-cols-2 gap-2">
+                                                            {criterion.levels && Array.isArray(criterion.levels) && criterion.levels.map((level: any, index: number) => (
+                                                                <Button
+                                                                    key={index}
+                                                                    variant={rubricScores[criterion.id] === level.points ? 'default' : 'outline'}
+                                                                    size="sm"
+                                                                    className="text-left justify-start h-auto p-2"
+                                                                    onClick={() => setRubricScores(prev => ({
+                                                                        ...prev,
+                                                                        [criterion.id]: level.points
+                                                                    }))}
+                                                                >
+                                                                    <div>
+                                                                        <div className="font-medium">{level.name}</div>
+                                                                        <div className="text-xs opacity-75">{level.points} pts</div>
+                                                                        <div className="text-xs opacity-75">{level.description}</div>
+                                                                    </div>
+                                                                </Button>
+                                                            ))}
+                                                            {(!criterion.levels || !Array.isArray(criterion.levels)) && (
+                                                                <div className="text-sm text-gray-500">No performance levels defined</div>
+                                                            )}
+                                                        </div>
+                                                        
+                                                        <div className="text-sm">
+                                                            Selected: {rubricScores[criterion.id] || 0} points
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                
+                                                <div className="bg-blue-50 p-3 rounded-lg">
+                                                    <div className="font-medium">Calculated Grade: {calculateRubricGrade()}/{assignment.points_possible}</div>
+                                                    <div className="text-sm text-gray-600">
+                                                        {Math.round((calculateRubricGrade() / (assignment.points_possible || 100)) * 100)}%
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Feedback Section */}
                                         <div>
                                             <Label htmlFor="feedback">Feedback</Label>
                                             <Textarea
@@ -499,6 +757,7 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
                                             />
                                         </div>
 
+                                        {/* Action Buttons */}
                                         <div className="flex gap-2">
                                             <Button
                                                 onClick={handleGradeSubmission}
@@ -512,7 +771,10 @@ export default function GradeSubmissionsPage({ params }: { params: Promise<{ id:
                                                 variant="outline"
                                                 onClick={() => {
                                                     setSelectedSubmission(null);
-                                                    setGradingMode(false);
+                                                    setGradingPanelOpen(false);
+                                                    setGrade('');
+                                                    setFeedback('');
+                                                    setRubricScores({});
                                                 }}
                                             >
                                                 Cancel

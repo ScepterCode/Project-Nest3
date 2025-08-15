@@ -55,8 +55,8 @@ export async function getTeacherAssignmentsWithSubmissions(teacherId: string) {
     return [];
   }
 }
-expor
-t async function getStudentAssignmentsWithGrades(studentId: string) {
+
+export async function getStudentAssignmentsWithGrades(studentId: string) {
   try {
     // Get student's enrollments
     const { data: enrollments, error: enrollmentsError } = await supabase
