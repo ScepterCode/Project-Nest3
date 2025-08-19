@@ -8,13 +8,14 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
-    
+
     // Enhanced type checking options (relaxed for development)
     // "noUnusedLocals": true,
     // "noUnusedParameters": true,
@@ -25,7 +26,7 @@
     "noImplicitOverride": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
-    
+
     // Additional strict checks
     "strictNullChecks": true,
     "strictFunctionTypes": true,
@@ -34,13 +35,13 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
-    
+
     "plugins": [
       {
         "name": "next"
       }
     ],
-  "baseUrl": ".",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
     }
