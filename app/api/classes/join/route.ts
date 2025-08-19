@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   try {
     console.log('Join class API called');
     
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get auth header for user identification
     const authHeader = request.headers.get('authorization');

@@ -22,9 +22,20 @@ import { AuditLogger } from './audit-logger';
 import { NotificationService } from './notification-service';
 
 export class BulkRoleAssignmentService {
-  private supabase = createClient();
+  private supabase: any;
   private auditLogger = new AuditLogger();
   private notificationService = new NotificationService();
+
+  constructor(supabaseClient?: any) {
+    this.supabase = supabaseClient;
+  }
+
+  private async getSupabase() {
+    if (!this.supabase) {
+      this.supabase = await createClient();
+    }
+    return this.supabase;
+  }
 
   /**
    * Validate bulk role assignment before processing
@@ -78,7 +89,8 @@ export class BulkRoleAssignmentService {
       }
 
       // Validate users exist and get their current roles
-      const { data: users, error: usersError } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data: users, error: usersError } = await supabase
         .from('users')
         .select('id, email, role, department_id, is_active')
         .in('id', assignment.userIds)

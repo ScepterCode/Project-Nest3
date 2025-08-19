@@ -9,7 +9,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   try {
     // Check database connection
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data, error } = await supabase
       .from('institutions')
       .select('id')

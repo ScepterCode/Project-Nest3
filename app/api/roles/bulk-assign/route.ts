@@ -28,7 +28,7 @@ interface BulkAssignmentRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
  * Check if user has permission to perform bulk role assignments
  */
 async function checkBulkAssignmentPermission(userId: string, institutionId: string): Promise<boolean> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // Check if user is institution admin or system admin
@@ -178,7 +178,7 @@ async function checkBulkAssignmentPermission(userId: string, institutionId: stri
  * Process bulk assignment with database transaction
  */
 async function processWithTransaction<T>(operation: () => Promise<T>): Promise<T> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     // Start transaction
@@ -220,7 +220,7 @@ async function logBulkAssignmentOperation(
   failed: number,
   validateOnly: boolean
 ): Promise<void> {
-  const supabase = createClient();
+  const supabase = await createClient();
   
   try {
     await supabase
@@ -250,7 +250,7 @@ async function logBulkAssignmentOperation(
  */
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

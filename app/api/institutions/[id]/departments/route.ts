@@ -9,7 +9,7 @@ export async function GET(
 ) {
   try {
     const institutionId = params.id;
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -98,7 +98,7 @@ export async function POST(
 ) {
   try {
     const institutionId = params.id;
-    const supabase = createClient();
+    const supabase = await createClient();
 
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

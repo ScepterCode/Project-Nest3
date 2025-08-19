@@ -4,7 +4,7 @@ import { EnhancedBulkUserImportService } from '@/lib/services/enhanced-bulk-user
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

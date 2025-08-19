@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/supabase/server'
 
 interface SubmissionRequest {
   content?: string
@@ -19,7 +19,7 @@ export async function POST(
 
     console.log('Submitting assignment:', assignmentId, 'for student:', body.student_id)
 
-    const supabase = createClient()
+    const supabase = await createClient()
 
     // Verify assignment exists and is accessible
     const { data: assignment, error: assignmentError } = await supabase

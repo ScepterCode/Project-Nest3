@@ -24,7 +24,7 @@ export async function POST(
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     const integrationManager = new IntegrationConfigManager();
 
     // Get integration details

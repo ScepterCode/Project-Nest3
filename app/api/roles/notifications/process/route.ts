@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     
     if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
       // If no cron secret, check for admin user
-      const supabase = createClient();
+      const supabase = await createClient();
       const { data: { user }, error: authError } = await supabase.auth.getUser();
 
       if (authError || !user) {

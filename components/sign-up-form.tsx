@@ -35,9 +35,7 @@ export function SignUpForm({
   const [role, setRole] = useState<"teacher" | "student" | "institution">(
     "student"
   );
-  const [institutionId, setInstitutionId] = useState("");
   const [institutionName, setInstitutionName] = useState("");
-  const [departmentId, setDepartmentId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -55,6 +53,14 @@ export function SignUpForm({
     }
 
     try {
+      console.log('Attempting registration with data:', {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        role,
+        institution_name: institutionName || undefined,
+      });
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -64,12 +70,12 @@ export function SignUpForm({
             first_name: firstName,
             last_name: lastName,
             role,
-            institution_id: institutionId || undefined,
             institution_name: institutionName || undefined,
-            department_id: departmentId || undefined,
           },
         },
       });
+      
+      console.log('Supabase signUp response:', { data, error });
       if (error) throw error;
       
       // Redirect to success page for email confirmation
@@ -82,6 +88,7 @@ export function SignUpForm({
         router.push("/auth/sign-up-success");
       }
     } catch (error: unknown) {
+      console.error('Registration error details:', error);
       setError(error instanceof Error ? error.message : "An error occurred");
     } finally {
       setIsLoading(false);
@@ -156,30 +163,6 @@ export function SignUpForm({
                     placeholder="University of Example"
                     value={institutionName}
                     onChange={(e) => setInstitutionName(e.target.value)}
-                  />
-                </div>
-              )}
-              {role === "teacher" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="institution-id">Institution ID</Label>
-                  <Input
-                    id="institution-id"
-                    type="text"
-                    placeholder="INST001"
-                    value={institutionId}
-                    onChange={(e) => setInstitutionId(e.target.value)}
-                  />
-                </div>
-              )}
-              {role === "teacher" && (
-                <div className="grid gap-2">
-                  <Label htmlFor="department-id">Department ID</Label>
-                  <Input
-                    id="department-id"
-                    type="text"
-                    placeholder="DEPT001"
-                    value={departmentId}
-                    onChange={(e) => setDepartmentId(e.target.value)}
                   />
                 </div>
               )}

@@ -8,7 +8,18 @@ import {
 } from '@/lib/types/notifications';
 
 export class NotificationService {
-  private supabase = createClient();
+  private supabase: any;
+
+  constructor(supabaseClient?: any) {
+    this.supabase = supabaseClient;
+  }
+
+  private async getSupabase() {
+    if (!this.supabase) {
+      this.supabase = await createClient();
+    }
+    return this.supabase;
+  }
 
   /**
    * Create a new notification
@@ -27,7 +38,8 @@ export class NotificationService {
     } = {}
   ): Promise<string | null> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('create_notification', {
           p_user_id: userId,
           p_type: type,
@@ -65,7 +77,8 @@ export class NotificationService {
     } = {}
   ): Promise<Notification[]> {
     try {
-      let query = this.supabase
+      const supabase = await this.getSupabase();
+      let query = supabase
         .from('notifications')
         .select('*')
         .eq('user_id', userId)
@@ -109,7 +122,8 @@ export class NotificationService {
    */
   async getNotificationSummary(userId: string): Promise<NotificationSummary> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('get_notification_summary', { p_user_id: userId });
 
       if (error) {
@@ -152,7 +166,8 @@ export class NotificationService {
    */
   async markAsRead(userId: string, notificationIds?: string[]): Promise<boolean> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .rpc('mark_notifications_read', {
           p_user_id: userId,
           p_notification_ids: notificationIds || null
@@ -175,7 +190,8 @@ export class NotificationService {
    */
   async getUserPreferences(userId: string): Promise<NotificationPreferences | null> {
     try {
-      const { data, error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { data, error } = await supabase
         .from('notification_preferences')
         .select('*')
         .eq('user_id', userId)
@@ -201,7 +217,8 @@ export class NotificationService {
     preferences: Partial<Omit<NotificationPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
   ): Promise<boolean> {
     try {
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
         .from('notification_preferences')
         .upsert({
           user_id: userId,
@@ -226,7 +243,8 @@ export class NotificationService {
    */
   async deleteNotification(userId: string, notificationId: string): Promise<boolean> {
     try {
-      const { error } = await this.supabase
+      const supabase = await this.getSupabase();
+      const { error } = await supabase
         .from('notifications')
         .delete()
         .eq('id', notificationId)

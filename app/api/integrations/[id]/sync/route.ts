@@ -24,7 +24,7 @@ export async function POST(
       );
     }
 
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Get integration details
     const { data: integration, error: integrationError } = await supabase
@@ -81,7 +81,7 @@ export async function POST(
 }
 
 async function startSyncProcess(integrationId: string, jobId: string, syncType: string) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const dataService = new DataImportExportService();
 
   try {
