@@ -92,7 +92,7 @@ export class TenantSecurityService {
    * Create tenant-aware query builder
    */
   createTenantQuery(tableName: string, context: TenantContext) {
-    let query = this.supabase.from(tableName);
+    const query = this.supabase.from(tableName);
 
     // Apply tenant filters based on table and user role
     if (context.role === 'system_admin') {

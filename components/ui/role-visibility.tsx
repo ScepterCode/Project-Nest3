@@ -4,7 +4,10 @@
  */
 
 import React from 'react';
-import { usePermissionCheck, useBulkPermissionCheck } from '@/lib/hooks/usePermissions';
+import {
+  usePermissionCheck,
+  useBulkPermissionCheck,
+} from '@/lib/hooks/usePermissions';
 import { ResourceContext } from '@/lib/services/permission-checker';
 
 interface ConditionalRenderProps {
@@ -17,7 +20,12 @@ interface ConditionalRenderProps {
 /**
  * Base conditional render component
  */
-function ConditionalRender({ condition, loading, fallback = null, children }: ConditionalRenderProps) {
+function ConditionalRender({
+  condition,
+  loading,
+  fallback = null,
+  children,
+}: ConditionalRenderProps) {
   if (loading !== undefined) {
     return <>{loading}</>;
   }
@@ -43,9 +51,13 @@ export function ShowIfPermission({
   context,
   loading,
   fallback = null,
-  children
+  children,
 }: ShowIfPermissionProps) {
-  const { hasAccess, loading: isLoading, error } = usePermissionCheck(userId, permission, context);
+  const {
+    hasAccess,
+    loading: isLoading,
+    error,
+  } = usePermissionCheck(userId, permission, context);
 
   if (error) {
     console.error('ShowIfPermission error:', error);
@@ -81,9 +93,13 @@ export function HideIfPermission({
   context,
   loading,
   fallback = null,
-  children
+  children,
 }: HideIfPermissionProps) {
-  const { hasAccess, loading: isLoading, error } = usePermissionCheck(userId, permission, context);
+  const {
+    hasAccess,
+    loading: isLoading,
+    error,
+  } = usePermissionCheck(userId, permission, context);
 
   if (error) {
     console.error('HideIfPermission error:', error);
@@ -117,9 +133,13 @@ export function ShowIfAnyPermission({
   permissions,
   loading,
   fallback = null,
-  children
+  children,
 }: ShowIfAnyPermissionProps) {
-  const { results, loading: isLoading, error } = useBulkPermissionCheck(userId, permissions);
+  const {
+    results,
+    loading: isLoading,
+    error,
+  } = useBulkPermissionCheck(userId, permissions);
 
   if (error) {
     console.error('ShowIfAnyPermission error:', error);
@@ -155,16 +175,21 @@ export function ShowIfAllPermissions({
   permissions,
   loading,
   fallback = null,
-  children
+  children,
 }: ShowIfAllPermissionsProps) {
-  const { results, loading: isLoading, error } = useBulkPermissionCheck(userId, permissions);
+  const {
+    results,
+    loading: isLoading,
+    error,
+  } = useBulkPermissionCheck(userId, permissions);
 
   if (error) {
     console.error('ShowIfAllPermissions error:', error);
     return <>{fallback}</>;
   }
 
-  const hasAllPermissions = permissions.length > 0 && 
+  const hasAllPermissions =
+    permissions.length > 0 &&
     permissions.every(p => results[p.permission] === true);
 
   return (
@@ -192,7 +217,7 @@ export function RoleBasedContent({
   userId,
   roleContent,
   defaultContent = null,
-  loading
+  loading,
 }: RoleBasedContentProps) {
   const [userRoles, setUserRoles] = React.useState<string[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -211,10 +236,10 @@ export function RoleBasedContent({
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        
+
         const { data: roleAssignments, error: rolesError } = await supabase
           .from('user_role_assignments')
           .select('role')
@@ -228,13 +253,15 @@ export function RoleBasedContent({
         }
 
         const roles = (roleAssignments || []).map(ra => ra.role);
-        
+
         if (isMounted) {
           setUserRoles(roles);
         }
       } catch (err) {
         if (isMounted) {
-          setError(err instanceof Error ? err.message : 'Failed to fetch user roles');
+          setError(
+            err instanceof Error ? err.message : 'Failed to fetch user roles'
+          );
           setUserRoles([]);
         }
       } finally {
@@ -266,13 +293,15 @@ export function RoleBasedContent({
     institution_admin: 4,
     department_admin: 3,
     teacher: 2,
-    student: 1
+    student: 1,
   };
 
   // Find the highest role
   const highestRole = userRoles.reduce((highest, current) => {
-    const currentWeight = roleHierarchy[current as keyof typeof roleHierarchy] || 0;
-    const highestWeight = roleHierarchy[highest as keyof typeof roleHierarchy] || 0;
+    const currentWeight =
+      roleHierarchy[current as keyof typeof roleHierarchy] || 0;
+    const highestWeight =
+      roleHierarchy[highest as keyof typeof roleHierarchy] || 0;
     return currentWeight > highestWeight ? current : highest;
   }, '');
 
@@ -305,7 +334,7 @@ export function RoleStyled({
   userId,
   roleStyles,
   defaultStyle = '',
-  children
+  children,
 }: RoleStyledProps) {
   const [appliedStyle, setAppliedStyle] = React.useState(defaultStyle);
 
@@ -321,7 +350,7 @@ export function RoleStyled({
       try {
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        
+
         const { data: roleAssignments, error } = await supabase
           .from('user_role_assignments')
           .select('role')
@@ -336,7 +365,7 @@ export function RoleStyled({
         }
 
         const roles = roleAssignments.map(ra => ra.role);
-        
+
         // Apply style for the first matching role
         for (const role of roles) {
           if (roleStyles[role]) {
@@ -359,17 +388,14 @@ export function RoleStyled({
     };
   }, [userId, roleStyles, defaultStyle]);
 
-  return (
-    <div className={appliedStyle}>
-      {children}
-    </div>
-  );
+  return <div className={appliedStyle}>{children}</div>;
 }
 
 /**
  * Button that's only enabled if user has permission
  */
-interface PermissionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface PermissionButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   userId?: string;
   permission: string;
   context?: ResourceContext;
@@ -385,14 +411,18 @@ export function PermissionButton({
   children,
   ...buttonProps
 }: PermissionButtonProps) {
-  const { hasAccess, loading, error } = usePermissionCheck(userId, permission, context);
+  const { hasAccess, loading, error } = usePermissionCheck(
+    userId,
+    permission,
+    context
+  );
 
   const isDisabled = loading || error || !hasAccess || buttonProps.disabled;
 
   return (
     <button
       {...buttonProps}
-      disabled={isDisabled}
+      disabled={isDisabled as boolean}
       title={!hasAccess ? disabledMessage : buttonProps.title}
     >
       {children}

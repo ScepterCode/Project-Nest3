@@ -1,8 +1,9 @@
-"use client";
+'use client';
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import DashboardHeader from '../components/dashboardheader';
 
 export default function TeacherDashboard() {
   const { user, loading, getUserDisplayName } = useAuth();
@@ -28,31 +29,18 @@ export default function TeacherDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-2xl font-bold text-gray-900">Teacher Dashboard</h1>
-            <button
-              onClick={async () => {
-                const { logout } = await import('@/contexts/auth-context');
-                await logout();
-                router.push('/');
-              }}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
+      <DashboardHeader text="Teacher" />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome, {getUserDisplayName()}!</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Welcome, {getUserDisplayName()}!
+          </h2>
           <p className="text-gray-600 mb-6">
-            You're logged in as a teacher. This is your dashboard where you can:
+            You are logged in as a teacher. This is your dashboard where you
+            can:
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <button
               onClick={() => router.push('/dashboard/teacher/classes')}
@@ -64,9 +52,11 @@ export default function TeacherDashboard() {
                 </div>
                 <h3 className="font-semibold text-lg">My Classes</h3>
               </div>
-              <p className="text-gray-600 text-sm">View and manage all your classes</p>
+              <p className="text-gray-600 text-sm">
+                View and manage all your classes
+              </p>
             </button>
-            
+
             <button
               onClick={() => router.push('/dashboard/teacher/classes/create')}
               className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-green-300 hover:bg-green-50"
@@ -77,9 +67,11 @@ export default function TeacherDashboard() {
                 </div>
                 <h3 className="font-semibold text-lg">Create Class</h3>
               </div>
-              <p className="text-gray-600 text-sm">Start a new class for your students</p>
+              <p className="text-gray-600 text-sm">
+                Start a new class for your students
+              </p>
             </button>
-            
+
             <button
               onClick={() => router.push('/dashboard/teacher/assignments')}
               className="p-6 text-left border rounded-lg hover:shadow-md transition-all duration-200 bg-white hover:border-purple-300 hover:bg-purple-50"
@@ -90,7 +82,9 @@ export default function TeacherDashboard() {
                 </div>
                 <h3 className="font-semibold text-lg">Assignments</h3>
               </div>
-              <p className="text-gray-600 text-sm">Create and manage assignments</p>
+              <p className="text-gray-600 text-sm">
+                Create and manage assignments
+              </p>
             </button>
 
             <button
@@ -103,7 +97,9 @@ export default function TeacherDashboard() {
                 </div>
                 <h3 className="font-semibold text-lg">Analytics</h3>
               </div>
-              <p className="text-gray-600 text-sm">View class performance and insights</p>
+              <p className="text-gray-600 text-sm">
+                View class performance and insights
+              </p>
             </button>
 
             <button
@@ -116,7 +112,9 @@ export default function TeacherDashboard() {
                 </div>
                 <h3 className="font-semibold text-lg">Rubrics</h3>
               </div>
-              <p className="text-gray-600 text-sm">Create and manage grading rubrics</p>
+              <p className="text-gray-600 text-sm">
+                Create and manage grading rubrics
+              </p>
             </button>
 
             <button
@@ -129,7 +127,9 @@ export default function TeacherDashboard() {
                 </div>
                 <h3 className="font-semibold text-lg">Peer Reviews</h3>
               </div>
-              <p className="text-gray-600 text-sm">Manage peer review assignments</p>
+              <p className="text-gray-600 text-sm">
+                Manage peer review assignments
+              </p>
             </button>
           </div>
         </div>
