@@ -16,7 +16,7 @@ async function handleRoleApproval(
   { params, user }: { params: { id: string }; user: any }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const requestId = params.id;
     const body = await request.json();
     const { notes } = body;
@@ -206,7 +206,7 @@ export const PUT = withPermission(
   {
     permission: 'role_requests.approve',
     getResourceContext: async (request, params) => {
-      const supabase = createClient();
+      const supabase = await createClient();
       const { data: roleRequest } = await supabase
         .from('role_requests')
         .select('institution_id, department_id')

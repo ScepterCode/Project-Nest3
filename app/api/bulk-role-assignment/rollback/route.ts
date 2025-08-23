@@ -6,7 +6,7 @@ const bulkRoleAssignmentService = new BulkRoleAssignmentService();
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

@@ -7,7 +7,7 @@ export async function POST(
   { params }: { params: { id: string; studentId: string } }
 ) {
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     
     // Verify user authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

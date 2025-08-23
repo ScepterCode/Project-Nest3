@@ -17,8 +17,12 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
     // Enhanced type checking options (relaxed for development)
     // "noUnusedLocals": true,
     // "noUnusedParameters": true,
@@ -29,6 +33,10 @@
     "noImplicitOverride": true,
     "allowUnreachableCode": false,
     "allowUnusedLabels": false,
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
     // Additional strict checks
     "strictNullChecks": true,
     "strictFunctionTypes": true,
@@ -37,11 +45,16 @@
     "noImplicitAny": true,
     "noImplicitThis": true,
     "useUnknownInCatchVariables": true,
+<<<<<<< HEAD
+=======
+
+>>>>>>> master
     "plugins": [
       {
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
