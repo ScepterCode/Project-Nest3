@@ -1,11 +1,17 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -24,13 +30,13 @@ export default function SubmitAssignmentPage() {
   const params = useParams();
   const router = useRouter();
   const { user, loading } = useAuth();
-  
+
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  
+
   // Form states
   const [textContent, setTextContent] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -49,17 +55,19 @@ export default function SubmitAssignmentPage() {
     }
   }, [user, params.id]);
 
-  const loadAssignmentData = async () => {
+  const loadAssignmentData = useCallback(async () => {
     try {
       const supabase = createClient();
-      
+
       // Load assignment details with class info
       const { data: assignmentData, error: assignmentError } = await supabase
         .from('assignments')
-        .select(`
+        .select(
+          `
           id, title, description, due_date,
           classes!inner(name)
-        `)
+        `
+        )
         .eq('id', params.id)
         .single();
 
@@ -73,25 +81,24 @@ export default function SubmitAssignmentPage() {
         title: assignmentData.title,
         description: assignmentData.description,
         due_date: assignmentData.due_date,
-        class_name: assignmentData.classes?.name || 'Unknown Class'
+        class_name: assignmentData.classes?.[0]?.name || 'Unknown Class',
       });
-
     } catch (error) {
       console.error('Error loading assignment:', error);
       setError('Failed to load assignment');
     } finally {
       setLoadingData(false);
     }
-  };
-
+  }, [params.id]);
+  type SubmissionData = Record<'content' | 'link_url' | 'file_url', string>;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
     try {
-      const supabase = createClient();
-      
+      const supabase = await createClient();
+
       // Validate input
       if (activeTab === 'text' && !textContent.trim()) {
         setError('Please enter your response');
@@ -107,10 +114,13 @@ export default function SubmitAssignmentPage() {
       }
 
       // Prepare submission data
-      let submissionData: any = {
-        assignment_id: params.id,
-        student_id: user?.id,
-        status: 'submitted'
+      const submissionData: SubmissionData = {
+        content: '',
+        link_url: '',
+        file_url: '',
+        // assignment_id: params.id,
+        // student_id: user?.id,
+        // status: 'submitted',
       };
 
       // Add content based on active tab
@@ -128,7 +138,7 @@ export default function SubmitAssignmentPage() {
         // Upload file
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${user?.id}/${params.id}/${Date.now()}.${fileExt}`;
-        
+
         const { error: uploadError } = await supabase.storage
           .from('submissions')
           .upload(fileName, selectedFile);
@@ -138,9 +148,9 @@ export default function SubmitAssignmentPage() {
           return;
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('submissions')
-          .getPublicUrl(fileName);
+        const {
+          data: { publicUrl },
+        } = supabase.storage.from('submissions').getPublicUrl(fileName);
 
         submissionData.file_url = publicUrl;
       }
@@ -159,10 +169,11 @@ export default function SubmitAssignmentPage() {
       setTimeout(() => {
         router.push('/dashboard/student/assignments');
       }, 2000);
-
-    } catch (error: any) {
-      console.error('Submission error:', error);
-      setError('Failed to submit assignment: ' + error.message);
+    } catch (error) {
+      if (error instanceof Error) {
+        console.error('Submission error:', error);
+        setError('Failed to submit assignment: ' + error.message);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -195,7 +206,9 @@ export default function SubmitAssignmentPage() {
         <Card>
           <CardContent className="text-center py-12">
             <div className="text-green-600 text-6xl mb-4">✓</div>
-            <h2 className="text-2xl font-bold mb-2">Assignment Submitted Successfully!</h2>
+            <h2 className="text-2xl font-bold mb-2">
+              Assignment Submitted Successfully!
+            </h2>
             <p className="text-gray-600">Redirecting to assignments...</p>
           </CardContent>
         </Card>
@@ -206,15 +219,15 @@ export default function SubmitAssignmentPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => router.push('/dashboard/student/assignments')}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Assignments
         </Button>
-        
+
         <h1 className="text-3xl font-bold mb-2">Submit Assignment</h1>
         {assignment && (
           <div className="text-gray-600">
@@ -232,7 +245,7 @@ export default function SubmitAssignmentPage() {
         <CardHeader>
           <CardTitle>Submit Your Work</CardTitle>
           <CardDescription>
-            Choose how you'd like to submit your assignment
+            Choose how you would like to submit your assignment
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -265,7 +278,7 @@ export default function SubmitAssignmentPage() {
                   <Textarea
                     id="content"
                     value={textContent}
-                    onChange={(e) => setTextContent(e.target.value)}
+                    onChange={e => setTextContent(e.target.value)}
                     placeholder="Enter your assignment response here..."
                     rows={8}
                     className="mt-1"
@@ -280,17 +293,19 @@ export default function SubmitAssignmentPage() {
                   <Input
                     id="file"
                     type="file"
-                    onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                    onChange={e => setSelectedFile(e.target.files?.[0] || null)}
                     accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
                     className="mt-1"
                     required={activeTab === 'file'}
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    Max file size: 200KB. Supported formats: PDF, DOC, DOCX, TXT, JPG, PNG
+                    Max file size: 200KB. Supported formats: PDF, DOC, DOCX,
+                    TXT, JPG, PNG
                   </p>
                   {selectedFile && (
                     <p className="text-sm text-blue-600 mt-1">
-                      Selected: {selectedFile.name} ({Math.round(selectedFile.size / 1024)}KB)
+                      Selected: {selectedFile.name} (
+                      {Math.round(selectedFile.size / 1024)}KB)
                     </p>
                   )}
                 </div>
@@ -303,7 +318,7 @@ export default function SubmitAssignmentPage() {
                     id="link"
                     type="url"
                     value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
+                    onChange={e => setLinkUrl(e.target.value)}
                     placeholder="https://docs.google.com/document/..."
                     className="mt-1"
                     required={activeTab === 'link'}
@@ -316,11 +331,7 @@ export default function SubmitAssignmentPage() {
             </Tabs>
 
             <div className="flex gap-2 mt-6">
-              <Button
-                type="submit"
-                disabled={submitting}
-                className="flex-1"
-              >
+              <Button type="submit" disabled={submitting} className="flex-1">
                 {submitting ? 'Submitting...' : 'Submit Assignment'}
               </Button>
               <Button

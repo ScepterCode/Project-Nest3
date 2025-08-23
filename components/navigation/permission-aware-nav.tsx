@@ -6,7 +6,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ShowIfPermission, ShowIfAnyPermission, RoleBasedContent } from '@/components/ui/role-visibility';
+import {
+  ShowIfPermission,
+  ShowIfAnyPermission,
+  RoleBasedContent,
+} from '@/components/ui/role-visibility';
 import { ResourceContext } from '@/lib/services/permission-checker';
 import { cn } from '@/lib/utils';
 
@@ -40,13 +44,14 @@ export function PermissionAwareNav({
   className = '',
   itemClassName = '',
   activeClassName = 'text-foreground',
-  orientation = 'horizontal'
+  orientation = 'horizontal',
 }: PermissionAwareNavProps) {
   const pathname = usePathname();
 
   const renderNavItem = (item: NavItem, index: number) => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-    
+    const isActive =
+      pathname === item.href || pathname.startsWith(item.href + '/');
+
     const linkContent = (
       <Link
         href={item.href}
@@ -69,9 +74,9 @@ export function PermissionAwareNav({
       return (
         <ShowIfPermission
           key={index}
-          userId={userId}
+          userId={userId as string}
           permission={item.permission}
-          context={item.context}
+          context={item.context as ResourceContext}
         >
           {linkContent}
         </ShowIfPermission>
@@ -79,7 +84,7 @@ export function PermissionAwareNav({
     }
 
     // If item has multiple permission requirements (any)
-    if (item.permissions) {
+    if (item.permissions && userId) {
       return (
         <ShowIfAnyPermission
           key={index}
@@ -87,12 +92,12 @@ export function PermissionAwareNav({
           permissions={item.permissions}
         >
           {linkContent}
-        </ShowIfPermission>
+        </ShowIfAnyPermission>
       );
     }
 
     // If item has role requirements
-    if (item.roles) {
+    if (item.roles && userId) {
       return (
         <RoleBasedContent
           key={index}
@@ -114,11 +119,7 @@ export function PermissionAwareNav({
     className
   );
 
-  return (
-    <nav className={navClass}>
-      {items.map(renderNavItem)}
-    </nav>
-  );
+  return <nav className={navClass}>{items.map(renderNavItem)}</nav>;
 }
 
 /**
@@ -134,9 +135,10 @@ export function SidebarNav({ userId, items, className = '' }: SidebarNavProps) {
   const pathname = usePathname();
 
   const renderNavItem = (item: NavItem, level: number = 0) => {
-    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+    const isActive =
+      pathname === item.href || pathname.startsWith(item.href + '/');
     const hasChildren = item.children && item.children.length > 0;
-    
+
     const itemContent = (
       <div className={`pl-${level * 4}`}>
         <Link
@@ -152,37 +154,36 @@ export function SidebarNav({ userId, items, className = '' }: SidebarNavProps) {
         </Link>
         {hasChildren && (
           <div className="ml-4 mt-1">
-            {item.children!.map((child, index) => renderNavItem(child, level + 1))}
+            {item.children!.map((child) =>
+              renderNavItem(child, level + 1)
+            )}
           </div>
         )}
       </div>
     );
 
     // Apply permission/role checks
-    if (item.permission) {
+    if (item.permission && userId) {
       return (
         <ShowIfPermission
           userId={userId}
           permission={item.permission}
-          context={item.context}
+          context={item.context as ResourceContext}
         >
           {itemContent}
         </ShowIfPermission>
       );
     }
 
-    if (item.permissions) {
+    if (item.permissions && userId) {
       return (
-        <ShowIfAnyPermission
-          userId={userId}
-          permissions={item.permissions}
-        >
+        <ShowIfAnyPermission userId={userId} permissions={item.permissions}>
           {itemContent}
         </ShowIfAnyPermission>
       );
     }
 
-    if (item.roles) {
+    if (item.roles && userId) {
       return (
         <RoleBasedContent
           userId={userId}
@@ -199,9 +200,7 @@ export function SidebarNav({ userId, items, className = '' }: SidebarNavProps) {
   return (
     <nav className={cn('space-y-1', className)}>
       {items.map((item, index) => (
-        <div key={index}>
-          {renderNavItem(item)}
-        </div>
+        <div key={index}>{renderNavItem(item)}</div>
       ))}
     </nav>
   );
@@ -228,9 +227,13 @@ export function PermissionBreadcrumb({
   userId,
   items,
   separator = '/',
-  className = ''
+  className = '',
 }: PermissionBreadcrumbProps) {
-  const renderBreadcrumbItem = (item: BreadcrumbItem, index: number, isLast: boolean) => {
+  const renderBreadcrumbItem = (
+    item: BreadcrumbItem,
+    index: number,
+    isLast: boolean
+  ) => {
     const content = item.href ? (
       <Link href={item.href} className="hover:text-primary">
         {item.label}
@@ -248,13 +251,13 @@ export function PermissionBreadcrumb({
       </span>
     );
 
-    if (item.permission) {
+    if (item.permission && userId) {
       return (
         <ShowIfPermission
           key={index}
           userId={userId}
           permission={item.permission}
-          context={item.context}
+          context={item.context as ResourceContext}
         >
           {itemWithSeparator}
         </ShowIfPermission>
@@ -265,8 +268,13 @@ export function PermissionBreadcrumb({
   };
 
   return (
-    <nav className={cn('flex items-center space-x-1 text-sm text-muted-foreground', className)}>
-      {items.map((item, index) => 
+    <nav
+      className={cn(
+        'flex items-center space-x-1 text-sm text-muted-foreground',
+        className
+      )}
+    >
+      {items.map((item, index) =>
         renderBreadcrumbItem(item, index, index === items.length - 1)
       )}
     </nav>
@@ -300,7 +308,7 @@ export function PermissionTabs({
   items,
   activeTab,
   onTabChange,
-  className = ''
+  className = '',
 }: PermissionTabsProps) {
   const [internalActiveTab, setInternalActiveTab] = React.useState(
     activeTab || items[0]?.id || ''
@@ -318,7 +326,7 @@ export function PermissionTabs({
 
   const renderTab = (item: TabItem) => {
     const isActive = currentActiveTab === item.id;
-    
+
     const tabButton = (
       <button
         onClick={() => handleTabClick(item.id)}
@@ -333,30 +341,27 @@ export function PermissionTabs({
       </button>
     );
 
-    if (item.permission) {
+    if (item.permission && userId) {
       return (
         <ShowIfPermission
           userId={userId}
           permission={item.permission}
-          context={item.context}
+          context={item.context as ResourceContext}
         >
           {tabButton}
         </ShowIfPermission>
       );
     }
 
-    if (item.permissions) {
+    if (item.permissions && userId) {
       return (
-        <ShowIfAnyPermission
-          userId={userId}
-          permissions={item.permissions}
-        >
+        <ShowIfAnyPermission userId={userId} permissions={item.permissions}>
           {tabButton}
         </ShowIfAnyPermission>
       );
     }
 
-    if (item.roles) {
+    if (item.roles && userId) {
       return (
         <RoleBasedContent
           userId={userId}
@@ -375,16 +380,12 @@ export function PermissionTabs({
   return (
     <div className={className}>
       <div className="flex border-b">
-        {items.map((item) => (
-          <div key={item.id}>
-            {renderTab(item)}
-          </div>
+        {items.map(item => (
+          <div key={item.id}>{renderTab(item)}</div>
         ))}
       </div>
       {activeTabItem?.content && (
-        <div className="mt-4">
-          {activeTabItem.content}
-        </div>
+        <div className="mt-4">{activeTabItem.content}</div>
       )}
     </div>
   );
@@ -415,7 +416,7 @@ export function PermissionContextMenu({
   userId,
   items,
   trigger,
-  className = ''
+  className = '',
 }: PermissionContextMenuProps) {
   const [isOpen, setIsOpen] = React.useState(false);
 
@@ -438,12 +439,12 @@ export function PermissionContextMenu({
       </button>
     );
 
-    if (item.permission) {
+    if (item.permission && userId) {
       return (
         <ShowIfPermission
           userId={userId}
           permission={item.permission}
-          context={item.context}
+          context={item.context as ResourceContext}
         >
           {menuItem}
         </ShowIfPermission>
@@ -455,15 +456,11 @@ export function PermissionContextMenu({
 
   return (
     <div className={cn('relative', className)}>
-      <div onClick={() => setIsOpen(!isOpen)}>
-        {trigger}
-      </div>
+      <div onClick={() => setIsOpen(!isOpen)}>{trigger}</div>
       {isOpen && (
         <div className="absolute right-0 z-50 mt-1 w-48 rounded-md border bg-popover p-1 shadow-lg">
-          {items.map((item) => (
-            <div key={item.id}>
-              {renderMenuItem(item)}
-            </div>
+          {items.map(item => (
+            <div key={item.id}>{renderMenuItem(item)}</div>
           ))}
         </div>
       )}
