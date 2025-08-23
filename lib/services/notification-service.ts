@@ -1,15 +1,24 @@
 import { createClient } from '@/lib/supabase/server';
-import { 
-  Notification, 
-  NotificationPreferences, 
-  NotificationSummary, 
-  NotificationType, 
-  NotificationPriority 
+import {
+  Notification,
+  NotificationPreferences,
+  NotificationSummary,
+  NotificationType,
+  NotificationPriority,
 } from '@/lib/types/notifications';
 
 export class NotificationService {
-  private supabase = createClient();
+  private supabase: Awaited<ReturnType<typeof createClient>>;
 
+  private constructor(supabase: Awaited<ReturnType<typeof createClient>>) {
+    this.supabase = supabase;
+  }
+
+  // Async factory method
+  static async init() {
+    const supabase = await createClient();
+    return new NotificationService(supabase);
+  }
   /**
    * Create a new notification
    */
@@ -27,18 +36,17 @@ export class NotificationService {
     } = {}
   ): Promise<string | null> {
     try {
-      const { data, error } = await this.supabase
-        .rpc('create_notification', {
-          p_user_id: userId,
-          p_type: type,
-          p_title: title,
-          p_message: message,
-          p_priority: options.priority || 'medium',
-          p_action_url: options.actionUrl,
-          p_action_label: options.actionLabel,
-          p_metadata: options.metadata || {},
-          p_expires_at: options.expiresAt?.toISOString()
-        });
+      const { data, error } = await this.supabase.rpc('create_notification', {
+        p_user_id: userId,
+        p_type: type,
+        p_title: title,
+        p_message: message,
+        p_priority: options.priority || 'medium',
+        p_action_url: options.actionUrl,
+        p_action_label: options.actionLabel,
+        p_metadata: options.metadata || {},
+        p_expires_at: options.expiresAt?.toISOString(),
+      });
 
       if (error) {
         console.error('Error creating notification:', error);
@@ -76,7 +84,10 @@ export class NotificationService {
       }
 
       if (options.offset) {
-        query = query.range(options.offset, options.offset + (options.limit || 50) - 1);
+        query = query.range(
+          options.offset,
+          options.offset + (options.limit || 50) - 1
+        );
       }
 
       if (options.unreadOnly) {
@@ -88,7 +99,9 @@ export class NotificationService {
       }
 
       // Filter out expired notifications
-      query = query.or('expires_at.is.null,expires_at.gt.' + new Date().toISOString());
+      query = query.or(
+        'expires_at.is.null,expires_at.gt.' + new Date().toISOString()
+      );
 
       const { data, error } = await query;
 
@@ -109,8 +122,10 @@ export class NotificationService {
    */
   async getNotificationSummary(userId: string): Promise<NotificationSummary> {
     try {
-      const { data, error } = await this.supabase
-        .rpc('get_notification_summary', { p_user_id: userId });
+      const { data, error } = await this.supabase.rpc(
+        'get_notification_summary',
+        { p_user_id: userId }
+      );
 
       if (error) {
         console.error('Error fetching notification summary:', error);
@@ -118,23 +133,23 @@ export class NotificationService {
           total_count: 0,
           unread_count: 0,
           high_priority_count: 0,
-          recent_notifications: []
+          recent_notifications: [],
         };
       }
 
       const summary = data[0];
-      
+
       // Get recent notifications
-      const recentNotifications = await this.getUserNotifications(userId, { 
-        limit: 5, 
-        unreadOnly: false 
+      const recentNotifications = await this.getUserNotifications(userId, {
+        limit: 5,
+        unreadOnly: false,
       });
 
       return {
         total_count: summary.total_count,
         unread_count: summary.unread_count,
         high_priority_count: summary.high_priority_count,
-        recent_notifications: recentNotifications
+        recent_notifications: recentNotifications,
       };
     } catch (error) {
       console.error('Error fetching notification summary:', error);
@@ -142,7 +157,7 @@ export class NotificationService {
         total_count: 0,
         unread_count: 0,
         high_priority_count: 0,
-        recent_notifications: []
+        recent_notifications: [],
       };
     }
   }
@@ -150,13 +165,18 @@ export class NotificationService {
   /**
    * Mark notifications as read
    */
-  async markAsRead(userId: string, notificationIds?: string[]): Promise<boolean> {
+  async markAsRead(
+    userId: string,
+    notificationIds?: string[]
+  ): Promise<boolean> {
     try {
-      const { data, error } = await this.supabase
-        .rpc('mark_notifications_read', {
+      const { data, error } = await this.supabase.rpc(
+        'mark_notifications_read',
+        {
           p_user_id: userId,
-          p_notification_ids: notificationIds || null
-        });
+          p_notification_ids: notificationIds || null,
+        }
+      );
 
       if (error) {
         console.error('Error marking notifications as read:', error);
@@ -173,7 +193,9 @@ export class NotificationService {
   /**
    * Get user notification preferences
    */
-  async getUserPreferences(userId: string): Promise<NotificationPreferences | null> {
+  async getUserPreferences(
+    userId: string
+  ): Promise<NotificationPreferences | null> {
     try {
       const { data, error } = await this.supabase
         .from('notification_preferences')
@@ -197,8 +219,13 @@ export class NotificationService {
    * Update user notification preferences
    */
   async updateUserPreferences(
-    userId: string, 
-    preferences: Partial<Omit<NotificationPreferences, 'id' | 'user_id' | 'created_at' | 'updated_at'>>
+    userId: string,
+    preferences: Partial<
+      Omit<
+        NotificationPreferences,
+        'id' | 'user_id' | 'created_at' | 'updated_at'
+      >
+    >
   ): Promise<boolean> {
     try {
       const { error } = await this.supabase
@@ -206,7 +233,7 @@ export class NotificationService {
         .upsert({
           user_id: userId,
           ...preferences,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         });
 
       if (error) {
@@ -224,7 +251,10 @@ export class NotificationService {
   /**
    * Delete a notification
    */
-  async deleteNotification(userId: string, notificationId: string): Promise<boolean> {
+  async deleteNotification(
+    userId: string,
+    notificationId: string
+  ): Promise<boolean> {
     try {
       const { error } = await this.supabase
         .from('notifications')
@@ -257,7 +287,7 @@ export class NotificationService {
     assignmentId: string
   ): Promise<void> {
     const percentage = totalPoints > 0 ? (grade / totalPoints) * 100 : 0;
-    
+
     await this.createNotification(
       studentId,
       'assignment_graded',
@@ -271,8 +301,8 @@ export class NotificationService {
           assignment_id: assignmentId,
           grade,
           total_points: totalPoints,
-          percentage
-        }
+          percentage,
+        },
       }
     );
   }
@@ -286,8 +316,10 @@ export class NotificationService {
     dueDate: Date,
     assignmentId: string
   ): Promise<void> {
-    const hoursUntilDue = Math.ceil((dueDate.getTime() - Date.now()) / (1000 * 60 * 60));
-    
+    const hoursUntilDue = Math.ceil(
+      (dueDate.getTime() - Date.now()) / (1000 * 60 * 60)
+    );
+
     await this.createNotification(
       studentId,
       'assignment_due_soon',
@@ -300,9 +332,9 @@ export class NotificationService {
         metadata: {
           assignment_id: assignmentId,
           due_date: dueDate.toISOString(),
-          hours_until_due: hoursUntilDue
+          hours_until_due: hoursUntilDue,
         },
-        expiresAt: dueDate
+        expiresAt: dueDate,
       }
     );
   }
@@ -329,8 +361,8 @@ export class NotificationService {
         metadata: {
           assignment_id: assignmentId,
           class_name: className,
-          due_date: dueDate.toISOString()
-        }
+          due_date: dueDate.toISOString(),
+        },
       }
     );
   }
@@ -356,8 +388,8 @@ export class NotificationService {
         metadata: {
           old_role: oldRole,
           new_role: newRole,
-          changed_by: changedBy
-        }
+          changed_by: changedBy,
+        },
       }
     );
   }
@@ -384,8 +416,8 @@ export class NotificationService {
         metadata: {
           class_id: classId,
           class_name: className,
-          announcement_title: title
-        }
+          announcement_title: title,
+        },
       }
     );
   }
@@ -411,8 +443,8 @@ export class NotificationService {
         metadata: {
           class_id: classId,
           class_name: className,
-          class_code: classCode
-        }
+          class_code: classCode,
+        },
       }
     );
   }
