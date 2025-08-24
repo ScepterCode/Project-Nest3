@@ -10,76 +10,16 @@ import {
   Mail,
   Phone,
   MapPin,
-<<<<<<< HEAD
-  Play,
-} from 'lucide-react';
-import PageHeader from '@/components/Header/page-header';
-=======
   Star,
   Play,
 } from 'lucide-react';
->>>>>>> master
+import PageHeader from '@/components/Header/page-header';
 
 export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Navigation Header */}
-<<<<<<< HEAD
       <PageHeader />
-=======
-      <nav className="bg-white/80 backdrop-blur-md border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <BookOpen className="h-8 w-8 text-blue-600" />
-              <span className="text-xl font-bold text-gray-900">
-                ProjectNest
-              </span>
-            </div>
-            <div className="hidden md:flex items-center space-x-8">
-              <a
-                href="#features"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Features
-              </a>
-              <a
-                href="#about"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                About
-              </a>
-              <a
-                href="#demo"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Demo
-              </a>
-              <a
-                href="#contact"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Contact
-              </a>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/auth/login"
-                className="text-gray-600 hover:text-blue-600 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/auth/sign-up"
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
->>>>>>> master
 
       {/* Hero Section */}
       <section className="pt-20 pb-32 px-4 sm:px-6 lg:px-8">
