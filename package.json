@@ -9,7 +9,7 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "quality-check": "npm run type-check && npm run lint",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
