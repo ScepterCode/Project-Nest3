@@ -2,7 +2,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:realtime": "node -r ts-node/register lib/server/realtime-server.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -15,7 +14,6 @@
     "test:coverage": "jest --coverage",
     "test:performance": "jest --testPathPattern=performance --runInBand",
     "test:integration": "jest --testPathPattern=integration --runInBand",
-    "stress-test": "node scripts/database-stress-test.js",
     "test:db-performance": "node scripts/test-database-performance.js",
     "db:optimize": "node -e \"console.log('Run SQL files in lib/database/ against your database')\"",
     "db:monitor": "node -e \"console.log('Database monitoring available at /dashboard/admin/database-performance')\""
