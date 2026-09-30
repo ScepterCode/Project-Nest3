@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClient } from '@/lib/supabase/client';
+import { selectInChunks } from '@/lib/supabase/chunked-in';
 import { ROLE_LABELS } from '@/lib/bulk/roles';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
@@ -80,10 +81,12 @@ export default function RoleRequestsPage() {
     const all = [...(open.data ?? []), ...(done.data ?? [])] as RoleRequest[];
     const ids = Array.from(new Set(all.map(r => r.user_id)));
     if (ids.length) {
-      const { data } = await supabase
-        .from('users')
-        .select('id, email, first_name, last_name')
-        .in('id', ids);
+      const data = await selectInChunks(ids, chunk =>
+        supabase
+          .from('users')
+          .select('id, email, first_name, last_name')
+          .in('id', chunk)
+      ).catch(() => [] as Person[]);
       setPeople(Object.fromEntries((data ?? []).map(p => [p.id, p as Person])));
     }
     setPending((open.data as RoleRequest[]) ?? []);

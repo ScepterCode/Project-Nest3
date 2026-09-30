@@ -150,11 +150,9 @@ export default function StudentAssignmentsPage() {
         await supabase.from('submissions').select('count').limit(1);
 
       if (!submissionTestError) {
-        const assignmentIds = assignmentsData.map(a => a.id);
         const { data: submissions } = await supabase
           .from('submissions')
           .select('assignment_id, submitted_at, grade, status')
-          .in('assignment_id', assignmentIds)
           .eq('student_id', user.id);
 
         submissionsData = submissions || [];

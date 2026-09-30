@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { one } from '@/lib/supabase/relations';
 import {
   Card,
   CardContent,
@@ -64,179 +65,122 @@ export default function StudentClassesPage() {
     try {
       const supabase = createClient();
 
-      console.log('Loading classes for student:', user.id);
-
-      // First, check if enrollments table exists and is accessible
-      const { data: testEnrollments, error: testError } = await supabase
-        .from('enrollments')
-        .select('count')
-        .limit(1);
-
-      if (testError) {
-        console.error('Enrollments table not accessible:', testError);
-        setError(
-          'Enrollments system not set up. Please contact your administrator.'
-        );
-        return;
-      }
-
-      console.log(
-        'Enrollments table accessible, loading student enrollments...'
-      );
-
-      // Get classes the student is enrolled in with simpler query first
+      // One query for the student's current classes, each with its
+      // assignments and the student's own submissions (RLS returns only
+      // theirs), then one query for all their teachers' names.
       const { data: enrollments, error } = await supabase
         .from('enrollments')
         .select(
           `
-          id,
           enrolled_at,
-          status,
-          class_id
-        `
-        )
-        .eq('student_id', user.id);
-
-      if (error) {
-        console.error('Error loading enrollments:', error);
-        console.error('Error details:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-        });
-        setError(`Failed to load enrollments: ${error.message}`);
-        return;
-      }
-
-      console.log('Found enrollments:', enrollments?.length || 0);
-
-      if (!enrollments || enrollments.length === 0) {
-        setClasses([]);
-        return;
-      }
-
-      // Get class details for each enrollment
-      const classIds = enrollments.map(e => e.class_id);
-      const { data: classesData, error: classesError } = await supabase
-        .from('classes')
-        .select(
-          `
-          id,
-          name,
-          description,
-          teacher_id,
-          status,
-          created_at
-        `
-        )
-        .in('id', classIds);
-
-      if (classesError) {
-        console.error('Error loading class details:', classesError);
-        setError(`Failed to load class details: ${classesError.message}`);
-        return;
-      }
-
-      console.log('Found classes:', classesData?.length || 0);
-
-      // Combine enrollment and class data
-      const classesWithStats = await Promise.all(
-        enrollments.map(async enrollment => {
-          const classData = classesData?.find(
-            c => c.id === enrollment.class_id
-          );
-
-          if (!classData) {
-            console.warn(
-              'Class not found for enrollment:',
-              enrollment.class_id
-            );
-            return null;
-          }
-
-          // Get assignments for this class
-          const { data: assignments } = await supabase
-            .from('assignments')
-            .select(
-              `
+          classes (
+            id,
+            name,
+            description,
+            teacher_id,
+            assignments (
               id,
               title,
               due_date,
-              submissions(
-                id,
-                grade,
-                submitted_at
-              )
-            `
+              submissions ( id, grade, submitted_at )
             )
-            .eq('class_id', classData.id);
+          )
+        `
+        )
+        .eq('student_id', user.id)
+        .in('status', ['enrolled', 'active']);
 
-          // Calculate statistics
-          const totalAssignments = assignments?.length || 0;
-          const submittedAssignments =
-            assignments?.filter(a => a.submissions.some(s => s.submitted_at))
-              .length || 0;
-          const gradedAssignments =
-            assignments?.filter(a => a.submissions.some(s => s.grade !== null))
-              .length || 0;
+      if (error) {
+        console.error('Error loading enrollments:', error);
+        setError(`Failed to load your classes: ${error.message}`);
+        return;
+      }
 
-          // Calculate average grade
-          const grades =
-            assignments
-              ?.map(a => a.submissions[0]?.grade)
-              .filter(g => g !== null && g !== undefined) || [];
-          const averageGrade =
-            grades.length > 0
-              ? grades.reduce((sum, grade) => sum + grade, 0) / grades.length
-              : 0;
+      type Submission = {
+        id: string;
+        grade: number | null;
+        submitted_at: string | null;
+      };
+      type ClassRow = {
+        id: string;
+        name: string;
+        description: string | null;
+        teacher_id: string;
+        assignments: {
+          id: string;
+          title: string;
+          due_date: string | null;
+          submissions: Submission[];
+        }[];
+      };
+      const rows = (enrollments ?? [])
+        .map(e => ({
+          enrolledAt: e.enrolled_at as string,
+          cls: one(e.classes as ClassRow | ClassRow[] | null),
+        }))
+        .filter((r): r is { enrolledAt: string; cls: ClassRow } => !!r.cls);
 
-          // Find next assignment due
-          const upcomingAssignments =
-            assignments
-              ?.filter(
-                a =>
-                  new Date(a.due_date) > new Date() &&
-                  !a.submissions.some(s => s.submitted_at)
-              )
-              .sort(
-                (a, b) =>
-                  new Date(a.due_date).getTime() -
-                  new Date(b.due_date).getTime()
-              ) || [];
-
-          // Get teacher information separately
-          const { data: teacherData } = await supabase
+      const teacherIds = Array.from(new Set(rows.map(r => r.cls.teacher_id)));
+      const { data: teachers } = teacherIds.length
+        ? await supabase
             .from('users')
-            .select('first_name, last_name')
-            .eq('id', classData.teacher_id)
-            .single();
+            .select('id, first_name, last_name')
+            .in('id', teacherIds)
+        : { data: [] };
+      const teacherNames = new Map(
+        (teachers ?? []).map(t => [
+          t.id,
+          `${t.first_name ?? ''} ${t.last_name ?? ''}`.trim() ||
+            'Unknown Teacher',
+        ])
+      );
 
-          const teacherName = teacherData
-            ? `${teacherData.first_name} ${teacherData.last_name}`
-            : 'Unknown Teacher';
+      const now = new Date();
+      setClasses(
+        rows.map(({ enrolledAt, cls }) => {
+          const assignments = cls.assignments ?? [];
+          const submitted = assignments.filter(a =>
+            a.submissions.some(s => s.submitted_at)
+          );
+          const grades = assignments
+            .map(a => a.submissions[0]?.grade)
+            .filter((g): g is number => g !== null && g !== undefined);
+          const upcoming = assignments
+            .filter(
+              a =>
+                a.due_date &&
+                new Date(a.due_date) > now &&
+                !a.submissions.some(s => s.submitted_at)
+            )
+            .sort(
+              (a, b) =>
+                new Date(a.due_date!).getTime() -
+                new Date(b.due_date!).getTime()
+            );
 
           return {
-            id: classData.id,
-            name: classData.name,
-            description: classData.description,
-            teacher_name: teacherName,
-            teacher_id: classData.teacher_id,
-            enrollment_date: enrollment.enrolled_at,
+            id: cls.id,
+            name: cls.name,
+            description: cls.description ?? '',
+            teacher_name: teacherNames.get(cls.teacher_id) ?? 'Unknown Teacher',
+            teacher_id: cls.teacher_id,
+            enrollment_date: enrolledAt,
             status: 'active' as const,
-            total_assignments: totalAssignments,
-            completed_assignments: submittedAssignments,
-            pending_assignments: totalAssignments - submittedAssignments,
-            average_grade: averageGrade,
-            next_assignment_due: upcomingAssignments[0]?.due_date,
-            next_assignment_title: upcomingAssignments[0]?.title,
+            total_assignments: assignments.length,
+            completed_assignments: submitted.length,
+            pending_assignments: assignments.length - submitted.length,
+            average_grade: grades.length
+              ? grades.reduce((sum, g) => sum + g, 0) / grades.length
+              : 0,
+            ...(upcoming[0]
+              ? {
+                  next_assignment_due: upcoming[0].due_date!,
+                  next_assignment_title: upcoming[0].title,
+                }
+              : {}),
           };
         })
       );
-
-      // Filter out null entries and set classes
-      const validClasses = classesWithStats.filter(c => c !== null);
-      setClasses(validClasses);
-      console.log('Loaded classes successfully:', validClasses.length);
     } catch (error) {
       console.error('Error loading classes:', error);
       setError('Failed to load classes');

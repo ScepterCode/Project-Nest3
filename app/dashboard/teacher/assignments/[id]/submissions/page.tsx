@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { selectInChunks } from '@/lib/supabase/chunked-in';
 import { one } from '@/lib/supabase/relations';
 import {
   Card,
@@ -118,14 +119,23 @@ export default function AssignmentSubmissionsPage({
       // Get student names
       if (submissionsData && submissionsData.length > 0) {
         const studentIds = submissionsData.map(s => s.student_id);
-        const { data: studentsData } = await supabase
-          .from('user_profiles')
-          .select('user_id, first_name, last_name')
-          .in('user_id', studentIds);
+        const studentsData = await selectInChunks(studentIds, chunk =>
+          supabase
+            .from('users')
+            .select('id, first_name, last_name')
+            .in('id', chunk)
+        ).catch(
+          () =>
+            [] as {
+              id: string;
+              first_name: string | null;
+              last_name: string | null;
+            }[]
+        );
 
         const submissionsWithNames = submissionsData.map(submission => {
           const student = studentsData?.find(
-            s => s.user_id === submission.student_id
+            s => s.id === submission.student_id
           );
           return {
             ...submission,

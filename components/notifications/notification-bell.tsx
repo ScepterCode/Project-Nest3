@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Bell, BellRing } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -12,61 +12,62 @@ import {
 import { NotificationDropdown } from './notification-dropdown';
 import { useAuth } from '@/contexts/auth-context';
 import { NotificationSummary } from '@/lib/types/notifications';
+import { createClient } from '@/lib/supabase/client';
+import {
+  EMPTY_SUMMARY,
+  loadNotificationSummary as fetchSummary,
+} from '@/lib/notifications/load-summary';
+
+// Notifications aren't time-critical. Refreshing every 2 minutes, only while
+// the tab is visible (plus when it becomes visible again and after marking
+// read), keeps load proportional to people actually looking at the app.
+const REFRESH_MS = 2 * 60 * 1000;
 
 export function NotificationBell() {
   const { user } = useAuth();
-  const [summary, setSummary] = useState<NotificationSummary>({
-    total_count: 0,
-    unread_count: 0,
-    high_priority_count: 0,
-    recent_notifications: [],
-  });
+  const [summary, setSummary] = useState<NotificationSummary>(EMPTY_SUMMARY);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) {
-      loadNotificationSummary();
-
-      // Set up polling for real-time updates
-      const interval = setInterval(loadNotificationSummary, 30000); // Poll every 30 seconds
-
-      return () => clearInterval(interval);
-    }
-    return undefined;
-  }, [user]);
-
-  const loadNotificationSummary = async () => {
+  const loadNotificationSummary = useCallback(async () => {
+    if (!user) return;
     try {
-      const response = await fetch('/api/notifications/summary');
-      if (response.ok) {
-        const data = await response.json();
-        setSummary(data);
-      } else {
-        // Silently handle API errors - don't spam console
-        setSummary({
-          total_count: 0,
-          unread_count: 0,
-          high_priority_count: 0,
-          recent_notifications: [],
-        });
-      }
-    } catch (error) {
-      // Silently handle fetch errors - don't spam console
-      setSummary({
-        total_count: 0,
-        unread_count: 0,
-        high_priority_count: 0,
-        recent_notifications: [],
-      });
+      setSummary(await fetchSummary(createClient(), user.id));
+    } catch {
+      // Keep the last known summary; the next refresh retries.
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const handleNotificationRead = () => {
-    // Refresh summary when notifications are read
+  useEffect(() => {
+    if (!user) return undefined;
+
+    let timer: ReturnType<typeof setInterval> | undefined;
+    const start = () => {
+      if (timer === undefined)
+        timer = setInterval(loadNotificationSummary, REFRESH_MS);
+    };
+    const stop = () => {
+      if (timer !== undefined) clearInterval(timer);
+      timer = undefined;
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadNotificationSummary();
+        start();
+      } else {
+        stop();
+      }
+    };
+
     loadNotificationSummary();
-  };
+    if (document.visibilityState === 'visible') start();
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [user, loadNotificationSummary]);
 
   if (!user || loading) {
     return (
@@ -103,7 +104,7 @@ export function NotificationBell() {
       <DropdownMenuContent align="end" className="w-80 p-0">
         <NotificationDropdown
           summary={summary}
-          onNotificationRead={handleNotificationRead}
+          onNotificationRead={loadNotificationSummary}
         />
       </DropdownMenuContent>
     </DropdownMenu>

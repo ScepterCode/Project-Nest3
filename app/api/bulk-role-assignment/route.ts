@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requireInstitutionAdmin } from '@/lib/bulk/institution-admin';
+import { selectInChunks } from '@/lib/supabase/chunked-in';
 import {
   ASSIGNABLE_ROLES,
   AssignableRole,
@@ -68,20 +69,27 @@ export async function POST(request: NextRequest) {
       : null;
 
   // Current roles of the selected users who are in this institution.
-  const { data: members, error: membersError } = await supabase
-    .from('users')
-    .select('id, role')
-    .in('id', userIds)
-    .eq('institution_id', auth.institutionId);
+  // Up to 500 ids: batched so the id filter never exceeds URL limits.
+  let members: { id: string; role: string }[] = [];
+  let membersError: unknown = null;
+  try {
+    members = await selectInChunks(userIds, chunk =>
+      supabase
+        .from('users')
+        .select('id, role')
+        .in('id', chunk)
+        .eq('institution_id', auth.institutionId)
+    );
+  } catch (error) {
+    membersError = error;
+  }
   if (membersError) {
     return NextResponse.json(
       { error: 'Could not load the selected users' },
       { status: 500 }
     );
   }
-  const previousRole = new Map(
-    (members ?? []).map(m => [m.id, m.role as string])
-  );
+  const previousRole = new Map(members.map(m => [m.id, m.role]));
 
   const { data: run, error: runError } = await supabase
     .from('bulk_role_assignments')
@@ -111,14 +119,20 @@ export async function POST(request: NextRequest) {
   let changed = new Set<string>();
   let updateErrorMessage: string | null = null;
   if (toChange.length > 0) {
-    const { data: updated, error: updateError } = await supabase
-      .from('users')
-      .update({ role: targetRole, updated_at: new Date().toISOString() })
-      .in('id', toChange)
-      .eq('institution_id', auth.institutionId)
-      .select('id');
-    if (updateError) updateErrorMessage = updateError.message;
-    changed = new Set((updated ?? []).map(u => u.id));
+    try {
+      const updated = await selectInChunks(toChange, chunk =>
+        supabase
+          .from('users')
+          .update({ role: targetRole, updated_at: new Date().toISOString() })
+          .in('id', chunk)
+          .eq('institution_id', auth.institutionId)
+          .select('id')
+      );
+      changed = new Set(updated.map(u => u.id));
+    } catch (error) {
+      updateErrorMessage =
+        (error as { message?: string })?.message ?? 'Update failed';
+    }
   }
 
   const items = userIds.map(id => {
