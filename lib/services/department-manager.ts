@@ -7,7 +7,7 @@ import {
   ValidationError,
   DepartmentStatus,
   DepartmentSettings,
-  TenantContext
+  TenantContext,
 } from '@/lib/types/institution';
 
 export interface DepartmentTransferOptions {
@@ -49,10 +49,14 @@ export class DepartmentManager {
    * Create a new department with validation and hierarchy support
    */
   async createDepartment(
-    institutionId: string, 
+    institutionId: string,
     data: DepartmentCreationData,
     context: TenantContext
-  ): Promise<{ success: boolean; department?: Department; errors?: ValidationError[] }> {
+  ): Promise<{
+    success: boolean;
+    department?: Department;
+    errors?: ValidationError[];
+  }> {
     try {
       // Validate input data
       const validation = await this.validateDepartmentData(data, institutionId);
@@ -61,17 +65,29 @@ export class DepartmentManager {
       }
 
       // Check department code uniqueness within institution
-      const codeCheck = await this.checkDepartmentCodeUniqueness(data.code, institutionId);
+      const codeCheck = await this.checkDepartmentCodeUniqueness(
+        data.code,
+        institutionId
+      );
       if (!codeCheck.isUnique) {
-        return { 
-          success: false, 
-          errors: [{ field: 'code', message: codeCheck.message, code: 'CODE_CONFLICT' }] 
+        return {
+          success: false,
+          errors: [
+            {
+              field: 'code',
+              message: codeCheck.message,
+              code: 'CODE_CONFLICT',
+            },
+          ],
         };
       }
 
       // Validate hierarchical structure if parent department is specified
       if (data.parentDepartmentId) {
-        const hierarchyValidation = await this.validateHierarchy(data.parentDepartmentId, institutionId);
+        const hierarchyValidation = await this.validateHierarchy(
+          data.parentDepartmentId,
+          institutionId
+        );
         if (!hierarchyValidation.isValid) {
           return { success: false, errors: hierarchyValidation.errors };
         }
@@ -89,26 +105,42 @@ export class DepartmentManager {
 
       if (error) {
         console.error('Error creating department:', error);
-        return { 
-          success: false, 
-          errors: [{ field: 'general', message: 'Failed to create department', code: 'DATABASE_ERROR' }] 
+        return {
+          success: false,
+          errors: [
+            {
+              field: 'general',
+              message: 'Failed to create department',
+              code: 'DATABASE_ERROR',
+            },
+          ],
         };
       }
 
       // Transform database result to Department type
-      const transformedDepartment = this.transformDatabaseToDepartment(department);
+      const transformedDepartment =
+        this.transformDatabaseToDepartment(department);
 
       // Create default admin assignment if adminId is provided
       if (data.adminId) {
-        await this.assignDepartmentAdmin(transformedDepartment.id, data.adminId);
+        await this.assignDepartmentAdmin(
+          transformedDepartment.id,
+          data.adminId
+        );
       }
 
       return { success: true, department: transformedDepartment };
     } catch (error) {
       console.error('Unexpected error creating department:', error);
-      return { 
-        success: false, 
-        errors: [{ field: 'general', message: 'Unexpected error occurred', code: 'INTERNAL_ERROR' }] 
+      return {
+        success: false,
+        errors: [
+          {
+            field: 'general',
+            message: 'Unexpected error occurred',
+            code: 'INTERNAL_ERROR',
+          },
+        ],
       };
     }
   }
@@ -117,17 +149,23 @@ export class DepartmentManager {
    * Update department with validation
    */
   async updateDepartment(
-    id: string, 
+    id: string,
     updates: Partial<DepartmentCreationData>,
     context: TenantContext
-  ): Promise<{ success: boolean; department?: Department; errors?: ValidationError[] }> {
+  ): Promise<{
+    success: boolean;
+    department?: Department;
+    errors?: ValidationError[];
+  }> {
     try {
       // Get current department to validate updates
       const currentDepartment = await this.getDepartmentById(id);
       if (!currentDepartment) {
         return {
           success: false,
-          errors: [{ field: 'id', message: 'Department not found', code: 'NOT_FOUND' }]
+          errors: [
+            { field: 'id', message: 'Department not found', code: 'NOT_FOUND' },
+          ],
         };
       }
 
@@ -135,17 +173,33 @@ export class DepartmentManager {
       if (currentDepartment.institutionId !== context.institutionId) {
         return {
           success: false,
-          errors: [{ field: 'access', message: 'Access denied', code: 'ACCESS_DENIED' }]
+          errors: [
+            {
+              field: 'access',
+              message: 'Access denied',
+              code: 'ACCESS_DENIED',
+            },
+          ],
         };
       }
 
       // Validate code uniqueness if code is being updated
       if (updates.code && updates.code !== currentDepartment.code) {
-        const codeCheck = await this.checkDepartmentCodeUniqueness(updates.code, currentDepartment.institutionId, id);
+        const codeCheck = await this.checkDepartmentCodeUniqueness(
+          updates.code,
+          currentDepartment.institutionId,
+          id
+        );
         if (!codeCheck.isUnique) {
-          return { 
-            success: false, 
-            errors: [{ field: 'code', message: codeCheck.message, code: 'CODE_CONFLICT' }] 
+          return {
+            success: false,
+            errors: [
+              {
+                field: 'code',
+                message: codeCheck.message,
+                code: 'CODE_CONFLICT',
+              },
+            ],
           };
         }
       }
@@ -153,7 +207,11 @@ export class DepartmentManager {
       // Validate hierarchy changes
       if (updates.parentDepartmentId !== undefined) {
         if (updates.parentDepartmentId) {
-          const hierarchyValidation = await this.validateHierarchy(updates.parentDepartmentId, currentDepartment.institutionId, id);
+          const hierarchyValidation = await this.validateHierarchy(
+            updates.parentDepartmentId,
+            currentDepartment.institutionId,
+            id
+          );
           if (!hierarchyValidation.isValid) {
             return { success: false, errors: hierarchyValidation.errors };
           }
@@ -172,9 +230,15 @@ export class DepartmentManager {
 
       if (error) {
         console.error('Error updating department:', error);
-        return { 
-          success: false, 
-          errors: [{ field: 'general', message: 'Failed to update department', code: 'DATABASE_ERROR' }] 
+        return {
+          success: false,
+          errors: [
+            {
+              field: 'general',
+              message: 'Failed to update department',
+              code: 'DATABASE_ERROR',
+            },
+          ],
         };
       }
 
@@ -187,9 +251,15 @@ export class DepartmentManager {
       return { success: true, department: transformedDepartment };
     } catch (error) {
       console.error('Unexpected error updating department:', error);
-      return { 
-        success: false, 
-        errors: [{ field: 'general', message: 'Unexpected error occurred', code: 'INTERNAL_ERROR' }] 
+      return {
+        success: false,
+        errors: [
+          {
+            field: 'general',
+            message: 'Unexpected error occurred',
+            code: 'INTERNAL_ERROR',
+          },
+        ],
       };
     }
   }
@@ -198,7 +268,7 @@ export class DepartmentManager {
    * Delete department with data preservation options
    */
   async deleteDepartment(
-    id: string, 
+    id: string,
     options: DepartmentDeletionOptions,
     context: TenantContext
   ): Promise<{ success: boolean; errors?: ValidationError[] }> {
@@ -208,7 +278,9 @@ export class DepartmentManager {
       if (!department) {
         return {
           success: false,
-          errors: [{ field: 'id', message: 'Department not found', code: 'NOT_FOUND' }]
+          errors: [
+            { field: 'id', message: 'Department not found', code: 'NOT_FOUND' },
+          ],
         };
       }
 
@@ -216,22 +288,37 @@ export class DepartmentManager {
       if (department.institutionId !== context.institutionId) {
         return {
           success: false,
-          errors: [{ field: 'access', message: 'Access denied', code: 'ACCESS_DENIED' }]
+          errors: [
+            {
+              field: 'access',
+              message: 'Access denied',
+              code: 'ACCESS_DENIED',
+            },
+          ],
         };
       }
 
       // Check if department can be deleted
       const canDelete = await this.canDeleteDepartment(id, options);
       if (!canDelete.canDelete) {
-        return { 
-          success: false, 
-          errors: [{ field: 'general', message: canDelete.reason, code: 'DELETE_RESTRICTED' }] 
+        return {
+          success: false,
+          errors: [
+            {
+              field: 'general',
+              message: canDelete.reason,
+              code: 'DELETE_RESTRICTED',
+            },
+          ],
         };
       }
 
       // Handle data preservation and transfers
       if (options.preserveData) {
-        const preservationResult = await this.preserveDepartmentData(id, options);
+        const preservationResult = await this.preserveDepartmentData(
+          id,
+          options
+        );
         if (!preservationResult.success) {
           return preservationResult;
         }
@@ -239,12 +326,16 @@ export class DepartmentManager {
 
       // Handle user transfers
       if (options.transferUsersTo) {
-        const transferResult = await this.transferDepartmentUsers(id, options.transferUsersTo, {
-          preserveUserData: true,
-          preserveClassData: false,
-          preserveAnalytics: options.archiveAnalytics,
-          notifyUsers: true
-        });
+        const transferResult = await this.transferDepartmentUsers(
+          id,
+          options.transferUsersTo,
+          {
+            preserveUserData: true,
+            preserveClassData: false,
+            preserveAnalytics: options.archiveAnalytics,
+            notifyUsers: true,
+          }
+        );
         if (!transferResult.success) {
           return { success: false, errors: transferResult.errors };
         }
@@ -263,26 +354,38 @@ export class DepartmentManager {
       // Soft delete by setting status to archived
       const { error } = await this.supabase
         .from('departments')
-        .update({ 
-          status: 'archived' as DepartmentStatus, 
-          updated_at: new Date().toISOString() 
+        .update({
+          status: 'archived' as DepartmentStatus,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', id);
 
       if (error) {
         console.error('Error deleting department:', error);
-        return { 
-          success: false, 
-          errors: [{ field: 'general', message: 'Failed to delete department', code: 'DATABASE_ERROR' }] 
+        return {
+          success: false,
+          errors: [
+            {
+              field: 'general',
+              message: 'Failed to delete department',
+              code: 'DATABASE_ERROR',
+            },
+          ],
         };
       }
 
       return { success: true };
     } catch (error) {
       console.error('Unexpected error deleting department:', error);
-      return { 
-        success: false, 
-        errors: [{ field: 'general', message: 'Unexpected error occurred', code: 'INTERNAL_ERROR' }] 
+      return {
+        success: false,
+        errors: [
+          {
+            field: 'general',
+            message: 'Unexpected error occurred',
+            code: 'INTERNAL_ERROR',
+          },
+        ],
       };
     }
   }
@@ -312,9 +415,13 @@ export class DepartmentManager {
   /**
    * List departments with filtering and hierarchy support
    */
-  async listDepartments(filters: DepartmentFilters = {}): Promise<{ departments: Department[]; total: number }> {
+  async listDepartments(
+    filters: DepartmentFilters = {}
+  ): Promise<{ departments: Department[]; total: number }> {
     try {
-      let query = this.supabase.from('departments').select('*', { count: 'exact' });
+      let query = this.supabase
+        .from('departments')
+        .select('*', { count: 'exact' });
 
       // Apply filters
       if (filters.institutionId) {
@@ -334,7 +441,9 @@ export class DepartmentManager {
         }
       }
       if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,code.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+        query = query.or(
+          `name.ilike.%${filters.search}%,code.ilike.%${filters.search}%,description.ilike.%${filters.search}%`
+        );
       }
 
       // Apply pagination
@@ -342,7 +451,10 @@ export class DepartmentManager {
         query = query.limit(filters.limit);
       }
       if (filters.offset) {
-        query = query.range(filters.offset, (filters.offset + (filters.limit || 10)) - 1);
+        query = query.range(
+          filters.offset,
+          filters.offset + (filters.limit || 10) - 1
+        );
       }
 
       // Order by name by default
@@ -355,7 +467,9 @@ export class DepartmentManager {
         return { departments: [], total: 0 };
       }
 
-      const departments = (data || []).map(item => this.transformDatabaseToDepartment(item));
+      const departments = (data || []).map(item =>
+        this.transformDatabaseToDepartment(item)
+      );
       return { departments, total: count || 0 };
     } catch (error) {
       console.error('Unexpected error listing departments:', error);
@@ -366,21 +480,25 @@ export class DepartmentManager {
   /**
    * Get department hierarchy for an institution
    */
-  async getDepartmentHierarchy(institutionId: string): Promise<DepartmentHierarchyNode[]> {
+  async getDepartmentHierarchy(
+    institutionId: string
+  ): Promise<DepartmentHierarchyNode[]> {
     try {
       // Get all departments for the institution
-      const { departments } = await this.listDepartments({ 
-        institutionId, 
+      const { departments } = await this.listDepartments({
+        institutionId,
         status: 'active',
-        limit: 1000 // Get all departments
+        limit: 1000, // Get all departments
       });
 
       // Get user and class counts for each department
-      const departmentStats = await this.getDepartmentStats(departments.map(d => d.id));
+      const departmentStats = await this.getDepartmentStats(
+        departments.map(d => d.id)
+      );
 
       // Build hierarchy tree
       const hierarchy = this.buildHierarchyTree(departments, departmentStats);
-      
+
       return hierarchy;
     } catch (error) {
       console.error('Error getting department hierarchy:', error);
@@ -392,7 +510,7 @@ export class DepartmentManager {
    * Transfer users between departments
    */
   async transferDepartmentUsers(
-    fromDepartmentId: string, 
+    fromDepartmentId: string,
     toDepartmentId: string,
     options: DepartmentTransferOptions
   ): Promise<UserTransferResult> {
@@ -406,7 +524,13 @@ export class DepartmentManager {
           success: false,
           transferredUsers: 0,
           failedTransfers: [],
-          errors: [{ field: 'departments', message: 'One or both departments not found', code: 'NOT_FOUND' }]
+          errors: [
+            {
+              field: 'departments',
+              message: 'One or both departments not found',
+              code: 'NOT_FOUND',
+            },
+          ],
         };
       }
 
@@ -415,7 +539,13 @@ export class DepartmentManager {
           success: false,
           transferredUsers: 0,
           failedTransfers: [],
-          errors: [{ field: 'departments', message: 'Departments must be in the same institution', code: 'INVALID_TRANSFER' }]
+          errors: [
+            {
+              field: 'departments',
+              message: 'Departments must be in the same institution',
+              code: 'INVALID_TRANSFER',
+            },
+          ],
         };
       }
 
@@ -431,7 +561,13 @@ export class DepartmentManager {
           success: false,
           transferredUsers: 0,
           failedTransfers: [],
-          errors: [{ field: 'users', message: 'Failed to fetch users', code: 'DATABASE_ERROR' }]
+          errors: [
+            {
+              field: 'users',
+              message: 'Failed to fetch users',
+              code: 'DATABASE_ERROR',
+            },
+          ],
         };
       }
 
@@ -444,9 +580,9 @@ export class DepartmentManager {
           // Update user's department assignment
           const { error: updateError } = await this.supabase
             .from('user_departments')
-            .update({ 
+            .update({
               department_id: toDepartmentId,
-              updated_at: new Date().toISOString()
+              updated_at: new Date().toISOString(),
             })
             .eq('user_id', userDept.user_id)
             .eq('department_id', fromDepartmentId);
@@ -458,7 +594,11 @@ export class DepartmentManager {
 
           // Handle class enrollments if preserveClassData is false
           if (!options.preserveClassData) {
-            await this.transferUserClassEnrollments(userDept.user_id, fromDepartmentId, toDepartmentId);
+            await this.transferUserClassEnrollments(
+              userDept.user_id,
+              fromDepartmentId,
+              toDepartmentId
+            );
           }
 
           transferredCount++;
@@ -467,9 +607,11 @@ export class DepartmentManager {
           if (options.notifyUsers) {
             await this.notifyUserTransfer(userDept.users, fromDept, toDept);
           }
-
         } catch (error) {
-          console.error(`Error transferring user ${userDept.users.email}:`, error);
+          console.error(
+            `Error transferring user ${userDept.users.email}:`,
+            error
+          );
           failedTransfers.push(userDept.users.email);
         }
       }
@@ -477,16 +619,21 @@ export class DepartmentManager {
       return {
         success: failedTransfers.length === 0,
         transferredUsers: transferredCount,
-        failedTransfers
+        failedTransfers,
       };
-
     } catch (error) {
       console.error('Unexpected error transferring users:', error);
       return {
         success: false,
         transferredUsers: 0,
         failedTransfers: [],
-        errors: [{ field: 'general', message: 'Unexpected error occurred', code: 'INTERNAL_ERROR' }]
+        errors: [
+          {
+            field: 'general',
+            message: 'Unexpected error occurred',
+            code: 'INTERNAL_ERROR',
+          },
+        ],
       };
     }
   }
@@ -494,30 +641,53 @@ export class DepartmentManager {
   /**
    * Validate department data
    */
-  private async validateDepartmentData(data: DepartmentCreationData, institutionId: string): Promise<ValidationResult> {
+  private async validateDepartmentData(
+    data: DepartmentCreationData,
+    institutionId: string
+  ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
 
     // Required fields
     if (!data.name || data.name.trim().length === 0) {
-      errors.push({ field: 'name', message: 'Department name is required', code: 'REQUIRED' });
+      errors.push({
+        field: 'name',
+        message: 'Department name is required',
+        code: 'REQUIRED',
+      });
     }
 
     if (!data.code || data.code.trim().length === 0) {
-      errors.push({ field: 'code', message: 'Department code is required', code: 'REQUIRED' });
+      errors.push({
+        field: 'code',
+        message: 'Department code is required',
+        code: 'REQUIRED',
+      });
     }
 
     if (!data.adminId || data.adminId.trim().length === 0) {
-      errors.push({ field: 'adminId', message: 'Department admin is required', code: 'REQUIRED' });
+      errors.push({
+        field: 'adminId',
+        message: 'Department admin is required',
+        code: 'REQUIRED',
+      });
     }
 
     // Validate code format (alphanumeric, uppercase)
     if (data.code && !/^[A-Z0-9]{2,10}$/.test(data.code)) {
-      errors.push({ field: 'code', message: 'Department code must be 2-10 uppercase alphanumeric characters', code: 'INVALID_FORMAT' });
+      errors.push({
+        field: 'code',
+        message:
+          'Department code must be 2-10 uppercase alphanumeric characters',
+        code: 'INVALID_FORMAT',
+      });
     }
 
     // Validate admin exists and belongs to institution
     if (data.adminId) {
-      const adminValidation = await this.validateDepartmentAdmin(data.adminId, institutionId);
+      const adminValidation = await this.validateDepartmentAdmin(
+        data.adminId,
+        institutionId
+      );
       if (!adminValidation.isValid) {
         errors.push(...adminValidation.errors);
       }
@@ -525,14 +695,18 @@ export class DepartmentManager {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
   /**
    * Check department code uniqueness within institution
    */
-  private async checkDepartmentCodeUniqueness(code: string, institutionId: string, excludeId?: string): Promise<{ isUnique: boolean; message: string }> {
+  private async checkDepartmentCodeUniqueness(
+    code: string,
+    institutionId: string,
+    excludeId?: string
+  ): Promise<{ isUnique: boolean; message: string }> {
     try {
       let query = this.supabase
         .from('departments')
@@ -547,7 +721,10 @@ export class DepartmentManager {
       const { data } = await query;
 
       if (data && data.length > 0) {
-        return { isUnique: false, message: 'Department code is already in use within this institution' };
+        return {
+          isUnique: false,
+          message: 'Department code is already in use within this institution',
+        };
       }
 
       return { isUnique: true, message: 'Department code is available' };
@@ -560,48 +737,77 @@ export class DepartmentManager {
   /**
    * Validate hierarchical structure
    */
-  private async validateHierarchy(parentDepartmentId: string, institutionId: string, excludeId?: string): Promise<ValidationResult> {
+  private async validateHierarchy(
+    parentDepartmentId: string,
+    institutionId: string,
+    excludeId?: string
+  ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
 
     try {
       // Check if parent department exists and belongs to same institution
       const parentDept = await this.getDepartmentById(parentDepartmentId);
       if (!parentDept) {
-        errors.push({ field: 'parentDepartmentId', message: 'Parent department not found', code: 'NOT_FOUND' });
+        errors.push({
+          field: 'parentDepartmentId',
+          message: 'Parent department not found',
+          code: 'NOT_FOUND',
+        });
         return { isValid: false, errors };
       }
 
       if (parentDept.institutionId !== institutionId) {
-        errors.push({ field: 'parentDepartmentId', message: 'Parent department must be in the same institution', code: 'INVALID_PARENT' });
+        errors.push({
+          field: 'parentDepartmentId',
+          message: 'Parent department must be in the same institution',
+          code: 'INVALID_PARENT',
+        });
         return { isValid: false, errors };
       }
 
       // Check for circular reference
-      if (excludeId && await this.wouldCreateCircularReference(parentDepartmentId, excludeId)) {
-        errors.push({ field: 'parentDepartmentId', message: 'Cannot create circular department hierarchy', code: 'CIRCULAR_REFERENCE' });
+      if (
+        excludeId &&
+        (await this.wouldCreateCircularReference(parentDepartmentId, excludeId))
+      ) {
+        errors.push({
+          field: 'parentDepartmentId',
+          message: 'Cannot create circular department hierarchy',
+          code: 'CIRCULAR_REFERENCE',
+        });
       }
 
       // Check hierarchy depth (max 5 levels)
       const depth = await this.getHierarchyDepth(parentDepartmentId);
       if (depth >= 5) {
-        errors.push({ field: 'parentDepartmentId', message: 'Maximum hierarchy depth (5 levels) exceeded', code: 'MAX_DEPTH_EXCEEDED' });
+        errors.push({
+          field: 'parentDepartmentId',
+          message: 'Maximum hierarchy depth (5 levels) exceeded',
+          code: 'MAX_DEPTH_EXCEEDED',
+        });
       }
-
     } catch (error) {
       console.error('Error validating hierarchy:', error);
-      errors.push({ field: 'parentDepartmentId', message: 'Error validating hierarchy', code: 'VALIDATION_ERROR' });
+      errors.push({
+        field: 'parentDepartmentId',
+        message: 'Error validating hierarchy',
+        code: 'VALIDATION_ERROR',
+      });
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
   /**
    * Validate department admin
    */
-  private async validateDepartmentAdmin(adminId: string, institutionId: string): Promise<ValidationResult> {
+  private async validateDepartmentAdmin(
+    adminId: string,
+    institutionId: string
+  ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
 
     try {
@@ -613,38 +819,57 @@ export class DepartmentManager {
         .single();
 
       if (error || !user) {
-        errors.push({ field: 'adminId', message: 'Admin user not found', code: 'NOT_FOUND' });
+        errors.push({
+          field: 'adminId',
+          message: 'Admin user not found',
+          code: 'NOT_FOUND',
+        });
         return { isValid: false, errors };
       }
 
       // Check if user has appropriate role
-      const validAdminRoles = ['institution_admin', 'department_admin', 'teacher'];
+      const validAdminRoles = [
+        'institution_admin',
+        'department_admin',
+        'teacher',
+      ];
       if (!validAdminRoles.includes(user.role)) {
-        errors.push({ field: 'adminId', message: 'User does not have appropriate role for department administration', code: 'INVALID_ROLE' });
+        errors.push({
+          field: 'adminId',
+          message:
+            'User does not have appropriate role for department administration',
+          code: 'INVALID_ROLE',
+        });
       }
 
       // In a real implementation, you would also check if user belongs to the institution
       // This would require a user_institutions or similar table
-
     } catch (error) {
       console.error('Error validating department admin:', error);
-      errors.push({ field: 'adminId', message: 'Error validating admin user', code: 'VALIDATION_ERROR' });
+      errors.push({
+        field: 'adminId',
+        message: 'Error validating admin user',
+        code: 'VALIDATION_ERROR',
+      });
     }
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 
   /**
    * Check if assignment would create circular reference
    */
-  private async wouldCreateCircularReference(parentId: string, childId: string): Promise<boolean> {
+  private async wouldCreateCircularReference(
+    parentId: string,
+    childId: string
+  ): Promise<boolean> {
     try {
       // Get all ancestors of the proposed parent
       const ancestors = await this.getDepartmentAncestors(parentId);
-      
+
       // Check if the child is already an ancestor of the parent
       return ancestors.some(ancestor => ancestor.id === childId);
     } catch (error) {
@@ -669,7 +894,9 @@ export class DepartmentManager {
   /**
    * Get all ancestors of a department
    */
-  private async getDepartmentAncestors(departmentId: string): Promise<Department[]> {
+  private async getDepartmentAncestors(
+    departmentId: string
+  ): Promise<Department[]> {
     const ancestors: Department[] = [];
     let currentId = departmentId;
 
@@ -679,7 +906,7 @@ export class DepartmentManager {
         if (!dept || !dept.parentDepartmentId) {
           break;
         }
-        
+
         ancestors.push(dept);
         currentId = dept.parentDepartmentId;
 
@@ -698,7 +925,10 @@ export class DepartmentManager {
   /**
    * Prepare department data for database insertion
    */
-  private prepareDepartmentData(data: DepartmentCreationData, institutionId: string): any {
+  private prepareDepartmentData(
+    data: DepartmentCreationData,
+    institutionId: string
+  ): any {
     const now = new Date().toISOString();
 
     // Default settings
@@ -709,7 +939,7 @@ export class DepartmentManager {
         requireApproval: false,
         allowSelfEnrollment: true,
         gradingScale: 'letter',
-        passingGrade: 70
+        passingGrade: 70,
       },
       gradingPolicies: [
         {
@@ -720,11 +950,11 @@ export class DepartmentManager {
             { min: 80, max: 89, grade: 'B' },
             { min: 70, max: 79, grade: 'C' },
             { min: 60, max: 69, grade: 'D' },
-            { min: 0, max: 59, grade: 'F' }
+            { min: 0, max: 59, grade: 'F' },
           ],
           allowExtraCredit: true,
-          roundingRule: 'nearest'
-        }
+          roundingRule: 'nearest',
+        },
       ],
       assignmentDefaults: {
         allowLateSubmissions: true,
@@ -733,7 +963,7 @@ export class DepartmentManager {
         allowResubmissions: false,
         maxResubmissions: 0,
         defaultDueDays: 7,
-        requireRubric: false
+        requireRubric: false,
       },
       collaborationRules: {
         allowPeerReview: true,
@@ -741,9 +971,9 @@ export class DepartmentManager {
         allowCrossClassCollaboration: false,
         allowExternalCollaboration: false,
         defaultGroupSize: 3,
-        maxGroupSize: 6
+        maxGroupSize: 6,
       },
-      customFields: []
+      customFields: [],
     };
 
     return {
@@ -756,7 +986,7 @@ export class DepartmentManager {
       settings: { ...defaultSettings, ...data.settings },
       status: 'active' as DepartmentStatus,
       created_at: now,
-      updated_at: now
+      updated_at: now,
     };
   }
 
@@ -765,14 +995,16 @@ export class DepartmentManager {
    */
   private prepareUpdateData(updates: Partial<DepartmentCreationData>): any {
     const updateData: any = {
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     };
 
     if (updates.name) updateData.name = updates.name;
-    if (updates.description !== undefined) updateData.description = updates.description;
+    if (updates.description !== undefined)
+      updateData.description = updates.description;
     if (updates.code) updateData.code = updates.code.toUpperCase();
     if (updates.adminId) updateData.admin_id = updates.adminId;
-    if (updates.parentDepartmentId !== undefined) updateData.parent_department_id = updates.parentDepartmentId;
+    if (updates.parentDepartmentId !== undefined)
+      updateData.parent_department_id = updates.parentDepartmentId;
     if (updates.settings) updateData.settings = updates.settings;
 
     return updateData;
@@ -793,17 +1025,22 @@ export class DepartmentManager {
       parentDepartmentId: data.parent_department_id,
       status: data.status,
       createdAt: new Date(data.created_at),
-      updatedAt: new Date(data.updated_at)
+      updatedAt: new Date(data.updated_at),
     };
   }
 
   /**
    * Check if department can be deleted
    */
-  private async canDeleteDepartment(id: string, options: DepartmentDeletionOptions): Promise<{ canDelete: boolean; reason: string }> {
+  private async canDeleteDepartment(
+    id: string,
+    options: DepartmentDeletionOptions
+  ): Promise<{ canDelete: boolean; reason: string }> {
     try {
       // Check for child departments
-      const { departments: children } = await this.listDepartments({ parentDepartmentId: id });
+      const { departments: children } = await this.listDepartments({
+        parentDepartmentId: id,
+      });
       if (children.length > 0 && !options.preserveData) {
         return { canDelete: false, reason: 'Department has child departments' };
       }
@@ -814,7 +1051,12 @@ export class DepartmentManager {
         .select('user_id')
         .eq('department_id', id);
 
-      if (users && users.length > 0 && !options.transferUsersTo && !options.preserveData) {
+      if (
+        users &&
+        users.length > 0 &&
+        !options.transferUsersTo &&
+        !options.preserveData
+      ) {
         return { canDelete: false, reason: 'Department has active users' };
       }
 
@@ -825,24 +1067,37 @@ export class DepartmentManager {
         .eq('department_id', id)
         .neq('status', 'archived');
 
-      if (classes && classes.length > 0 && !options.transferClassesTo && !options.preserveData) {
+      if (
+        classes &&
+        classes.length > 0 &&
+        !options.transferClassesTo &&
+        !options.preserveData
+      ) {
         return { canDelete: false, reason: 'Department has active classes' };
       }
 
       return { canDelete: true, reason: 'Department can be deleted' };
     } catch (error) {
       console.error('Error checking if department can be deleted:', error);
-      return { canDelete: false, reason: 'Error checking deletion eligibility' };
+      return {
+        canDelete: false,
+        reason: 'Error checking deletion eligibility',
+      };
     }
   }
 
   /**
    * Preserve department data before deletion
    */
-  private async preserveDepartmentData(id: string, options: DepartmentDeletionOptions): Promise<{ success: boolean; errors?: ValidationError[] }> {
+  private async preserveDepartmentData(
+    id: string,
+    options: DepartmentDeletionOptions
+  ): Promise<{ success: boolean; errors?: ValidationError[] }> {
     try {
       // Archive child departments
-      const { departments: children } = await this.listDepartments({ parentDepartmentId: id });
+      const { departments: children } = await this.listDepartments({
+        parentDepartmentId: id,
+      });
       for (const child of children) {
         await this.supabase
           .from('departments')
@@ -860,7 +1115,13 @@ export class DepartmentManager {
       console.error('Error preserving department data:', error);
       return {
         success: false,
-        errors: [{ field: 'preservation', message: 'Failed to preserve department data', code: 'PRESERVATION_ERROR' }]
+        errors: [
+          {
+            field: 'preservation',
+            message: 'Failed to preserve department data',
+            code: 'PRESERVATION_ERROR',
+          },
+        ],
       };
     }
   }
@@ -868,13 +1129,16 @@ export class DepartmentManager {
   /**
    * Transfer department classes to another department
    */
-  private async transferDepartmentClasses(fromDepartmentId: string, toDepartmentId: string): Promise<void> {
+  private async transferDepartmentClasses(
+    fromDepartmentId: string,
+    toDepartmentId: string
+  ): Promise<void> {
     try {
       await this.supabase
         .from('classes')
-        .update({ 
+        .update({
           department_id: toDepartmentId,
-          updated_at: new Date().toISOString()
+          updated_at: new Date().toISOString(),
         })
         .eq('department_id', fromDepartmentId);
     } catch (error) {
@@ -885,7 +1149,9 @@ export class DepartmentManager {
   /**
    * Archive department analytics
    */
-  private async archiveDepartmentAnalytics(departmentId: string): Promise<void> {
+  private async archiveDepartmentAnalytics(
+    departmentId: string
+  ): Promise<void> {
     try {
       // Get existing analytics data
       const { data: analyticsData } = await this.supabase
@@ -898,7 +1164,7 @@ export class DepartmentManager {
         const archiveData = analyticsData.map(record => ({
           ...record,
           archived_at: new Date().toISOString(),
-          original_id: record.id
+          original_id: record.id,
         }));
 
         // Insert into archive table
@@ -920,18 +1186,19 @@ export class DepartmentManager {
   /**
    * Assign department admin
    */
-  private async assignDepartmentAdmin(departmentId: string, adminId: string): Promise<void> {
+  private async assignDepartmentAdmin(
+    departmentId: string,
+    adminId: string
+  ): Promise<void> {
     try {
       // Update user's department assignment with admin role
-      await this.supabase
-        .from('user_departments')
-        .upsert({
-          user_id: adminId,
-          department_id: departmentId,
-          role: 'department_admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        });
+      await this.supabase.from('user_departments').upsert({
+        user_id: adminId,
+        department_id: departmentId,
+        role: 'department_admin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     } catch (error) {
       console.error('Error assigning department admin:', error);
     }
@@ -940,7 +1207,11 @@ export class DepartmentManager {
   /**
    * Transfer user class enrollments
    */
-  private async transferUserClassEnrollments(userId: string, fromDepartmentId: string, toDepartmentId: string): Promise<void> {
+  private async transferUserClassEnrollments(
+    userId: string,
+    fromDepartmentId: string,
+    toDepartmentId: string
+  ): Promise<void> {
     try {
       // Get classes from the old department that the user is enrolled in
       const { data: enrollments } = await this.supabase
@@ -969,23 +1240,25 @@ export class DepartmentManager {
   /**
    * Notify user about department transfer
    */
-  private async notifyUserTransfer(user: any, fromDept: Department, toDept: Department): Promise<void> {
+  private async notifyUserTransfer(
+    user: any,
+    fromDept: Department,
+    toDept: Department
+  ): Promise<void> {
     try {
       // Create notification record
-      await this.supabase
-        .from('notifications')
-        .insert({
-          user_id: user.id,
-          type: 'department_transfer',
-          title: 'Department Transfer',
-          message: `You have been transferred from ${fromDept.name} to ${toDept.name}`,
-          data: {
-            fromDepartment: fromDept.name,
-            toDepartment: toDept.name,
-            transferDate: new Date().toISOString()
-          },
-          created_at: new Date().toISOString()
-        });
+      await this.supabase.from('notifications').insert({
+        user_id: user.id,
+        type: 'department_transfer',
+        title: 'Department Transfer',
+        message: `You have been transferred from ${fromDept.name} to ${toDept.name}`,
+        data: {
+          fromDepartment: fromDept.name,
+          toDepartment: toDept.name,
+          transferDate: new Date().toISOString(),
+        },
+        created_at: new Date().toISOString(),
+      });
 
       // In a real implementation, you might also send an email notification
       // await this.emailService.sendDepartmentTransferNotification(user, fromDept, toDept);
@@ -997,13 +1270,15 @@ export class DepartmentManager {
   /**
    * Get department statistics
    */
-  private async getDepartmentStats(departmentIds: string[]): Promise<Record<string, { userCount: number; classCount: number }>> {
+  private async getDepartmentStats(
+    departmentIds: string[]
+  ): Promise<Record<string, { userCount: number; classCount: number }>> {
     const stats: Record<string, { userCount: number; classCount: number }> = {};
 
     try {
-      // Get user counts
+      // Get user counts (department membership is users.department_id)
       const { data: userCounts } = await this.supabase
-        .from('user_departments')
+        .from('users')
         .select('department_id')
         .in('department_id', departmentIds);
 
@@ -1048,7 +1323,7 @@ export class DepartmentManager {
    * Build hierarchy tree from flat department list
    */
   private buildHierarchyTree(
-    departments: Department[], 
+    departments: Department[],
     stats: Record<string, { userCount: number; classCount: number }>
   ): DepartmentHierarchyNode[] {
     const nodeMap = new Map<string, DepartmentHierarchyNode>();
@@ -1060,7 +1335,7 @@ export class DepartmentManager {
         department: dept,
         children: [],
         userCount: stats[dept.id]?.userCount || 0,
-        classCount: stats[dept.id]?.classCount || 0
+        classCount: stats[dept.id]?.classCount || 0,
       };
       nodeMap.set(dept.id, node);
     });

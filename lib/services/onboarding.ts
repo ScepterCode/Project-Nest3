@@ -10,7 +10,7 @@ import {
   DepartmentSearchResult,
   OnboardingError,
   OnboardingErrorCode,
-  UserRole
+  UserRole,
 } from '@/lib/types/onboarding';
 
 export class OnboardingService {
@@ -21,16 +21,18 @@ export class OnboardingService {
     try {
       const { data, error } = await this.supabase
         .from('onboarding_sessions')
-        .insert([{
-          user_id: userId,
-          current_step: 0,
-          total_steps: 5,
-          data: {
-            userId,
-            currentStep: 0,
-            skippedSteps: []
-          }
-        }])
+        .insert([
+          {
+            user_id: userId,
+            current_step: 0,
+            total_steps: 5,
+            data: {
+              userId,
+              currentStep: 0,
+              skippedSteps: [],
+            },
+          },
+        ])
         .select()
         .single();
 
@@ -47,7 +49,9 @@ export class OnboardingService {
     }
   }
 
-  async getOnboardingSession(userId: string): Promise<OnboardingSession | null> {
+  async getOnboardingSession(
+    userId: string
+  ): Promise<OnboardingSession | null> {
     try {
       const { data, error } = await this.supabase
         .from('onboarding_sessions')
@@ -80,7 +84,7 @@ export class OnboardingService {
           current_step: updates.currentStep,
           data: updates.data,
           last_activity: new Date().toISOString(),
-          completed_at: updates.completedAt?.toISOString()
+          completed_at: updates.completedAt?.toISOString(),
         })
         .eq('user_id', userId)
         .select()
@@ -118,7 +122,6 @@ export class OnboardingService {
       if (!result.success) {
         throw new Error(result.error || 'Onboarding completion failed');
       }
-
     } catch (error: unknown) {
       throw new OnboardingError(
         'Failed to complete onboarding',
@@ -132,12 +135,15 @@ export class OnboardingService {
   // Institution management
   async searchInstitutions(query: string): Promise<InstitutionSearchResult[]> {
     try {
-      const response = await fetch(`/api/institutions/search?q=${encodeURIComponent(query)}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `/api/institutions/search?q=${encodeURIComponent(query)}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -154,44 +160,6 @@ export class OnboardingService {
     } catch (error: unknown) {
       throw new OnboardingError(
         'Failed to search institutions',
-        OnboardingErrorCode.VALIDATION_FAILED,
-        undefined,
-        error instanceof Error ? error.message : 'Unknown error'
-      );
-    }
-  }
-
-  async requestNewInstitution(institutionData: {
-    name: string;
-    domain?: string;
-    type?: string;
-    contactEmail?: string;
-    description?: string;
-  }): Promise<{ id: string; message: string }> {
-    try {
-      const response = await fetch('/api/institutions/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(institutionData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to request institution');
-      }
-
-      const result = await response.json();
-
-      if (!result.success) {
-        throw new Error(result.error || 'Request failed');
-      }
-
-      return result.data;
-    } catch (error: unknown) {
-      throw new OnboardingError(
-        'Failed to request new institution',
         OnboardingErrorCode.VALIDATION_FAILED,
         undefined,
         error instanceof Error ? error.message : 'Unknown error'
@@ -221,14 +189,19 @@ export class OnboardingService {
     }
   }
 
-  async getDepartmentsByInstitution(institutionId: string): Promise<DepartmentSearchResult[]> {
+  async getDepartmentsByInstitution(
+    institutionId: string
+  ): Promise<DepartmentSearchResult[]> {
     try {
-      const response = await fetch(`/api/institutions/${institutionId}/departments`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await fetch(
+        `/api/institutions/${institutionId}/departments`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -291,7 +264,7 @@ export class OnboardingService {
           role: updates.role,
           institution_id: updates.institutionId,
           department_id: updates.departmentId,
-          onboarding_data: updates.onboardingData
+          onboarding_data: updates.onboardingData,
         })
         .eq('id', userId);
 
@@ -307,7 +280,10 @@ export class OnboardingService {
   }
 
   // Validation helpers
-  async validateInstitutionAccess(userId: string, institutionId: string): Promise<boolean> {
+  async validateInstitutionAccess(
+    userId: string,
+    institutionId: string
+  ): Promise<boolean> {
     try {
       const { data, error } = await this.supabase
         .from('institutions')
@@ -347,7 +323,9 @@ export class OnboardingService {
   }
 
   // Private mapping methods
-  private mapOnboardingSession(data: Record<string, unknown>): OnboardingSession {
+  private mapOnboardingSession(
+    data: Record<string, unknown>
+  ): OnboardingSession {
     return {
       id: data.id as string,
       userId: data.user_id as string,
@@ -355,8 +333,10 @@ export class OnboardingService {
       totalSteps: data.total_steps as number,
       data: data.data as OnboardingData,
       startedAt: new Date(data.started_at as string),
-      completedAt: data.completed_at ? new Date(data.completed_at as string) : undefined,
-      lastActivity: new Date(data.last_activity as string)
+      completedAt: data.completed_at
+        ? new Date(data.completed_at as string)
+        : undefined,
+      lastActivity: new Date(data.last_activity as string),
     };
   }
 
@@ -375,15 +355,15 @@ export class OnboardingService {
         allowSelfRegistration: false,
         requireEmailVerification: true,
         defaultUserRole: UserRole.STUDENT,
-        allowCrossInstitutionCollaboration: false
+        allowCrossInstitutionCollaboration: false,
       },
       branding: (data.branding as any) || {
         primaryColor: '#3b82f6',
-        secondaryColor: '#64748b'
+        secondaryColor: '#64748b',
       },
       createdAt: new Date(data.created_at as string),
       updatedAt: new Date(data.updated_at as string),
-      createdBy: data.created_by as string | undefined
+      createdBy: data.created_by as string | undefined,
     };
   }
 
@@ -399,7 +379,7 @@ export class OnboardingService {
       settings: (data.settings as Record<string, unknown>) || {},
       status: data.status as any, // DepartmentStatus enum
       createdAt: new Date(data.created_at as string),
-      updatedAt: new Date(data.updated_at as string)
+      updatedAt: new Date(data.updated_at as string),
     };
   }
 }
