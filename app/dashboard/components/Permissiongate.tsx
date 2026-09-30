@@ -72,6 +72,12 @@ export const InstitutionRolegate = [
   },
   {
     permission: 'users.manage',
+    text: 'Role Requests',
+    href: '/dashboard/institution/role-requests',
+    icon: <ClipboardCheck />,
+  },
+  {
+    permission: 'users.manage',
     text: 'Bulk Import',
     href: '/dashboard/institution/bulk-import',
     icon: <Upload />,

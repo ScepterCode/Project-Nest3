@@ -1,14 +1,20 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { 
-  History, 
-  ChevronDown, 
-  ChevronUp, 
+import { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  History,
+  ChevronDown,
+  ChevronUp,
   Calendar,
   User,
   ArrowRight,
@@ -16,69 +22,74 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  RefreshCw
-} from "lucide-react"
-import { UserRole, RoleAuditLog, AuditAction } from "@/lib/types/role-management"
-import { useSupabase } from "@/components/session-provider"
+  RefreshCw,
+} from 'lucide-react';
+import {
+  UserRole,
+  RoleAuditLog,
+  AuditAction,
+} from '@/lib/types/role-management';
+import { useSupabase } from '@/components/session-provider';
 
 interface RoleChangeHistoryProps {
-  userId: string
-  className?: string
+  userId: string;
+  className?: string;
 }
 
 interface RoleHistoryEntry {
-  id: string
-  action: AuditAction
-  oldRole?: UserRole
-  newRole?: UserRole
-  changedBy: string
-  changedByName?: string
-  reason?: string
-  timestamp: Date
-  status: 'completed' | 'pending' | 'failed'
-  metadata?: Record<string, any>
+  id: string;
+  action: AuditAction;
+  oldRole?: UserRole;
+  newRole?: UserRole;
+  changedBy: string;
+  changedByName?: string;
+  reason?: string;
+  timestamp: Date;
+  status: 'completed' | 'pending' | 'failed';
+  metadata?: Record<string, any>;
 }
 
-export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps) {
-  const supabase = useSupabase()
-  const [history, setHistory] = useState<RoleHistoryEntry[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showAll, setShowAll] = useState(false)
-  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(new Set())
+export function RoleChangeHistory({
+  userId,
+  className,
+}: RoleChangeHistoryProps) {
+  const supabase = useSupabase();
+  const [history, setHistory] = useState<RoleHistoryEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [expandedEntries, setExpandedEntries] = useState<Set<string>>(
+    new Set()
+  );
 
   useEffect(() => {
-    fetchRoleHistory()
-  }, [userId])
+    fetchRoleHistory();
+  }, [userId]);
 
   const fetchRoleHistory = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
       // Fetch role audit logs
+      // Reviewer names aren't embedded: RLS on users doesn't let a member read
+      // their institution admins' profiles, and the embed would fail.
       const { data: auditData, error: auditError } = await supabase
         .from('role_audit_log')
-        .select(`
-          *,
-          changed_by_user:users!role_audit_log_changed_by_fkey(first_name, last_name)
-        `)
+        .select('*')
         .eq('user_id', userId)
-        .order('timestamp', { ascending: false })
+        .order('timestamp', { ascending: false });
 
-      if (auditError) throw auditError
+      if (auditError) throw auditError;
 
       // Also fetch role requests for pending/denied status
       const { data: requestsData, error: requestsError } = await supabase
         .from('role_requests')
-        .select(`
-          *,
-          reviewed_by_user:users!role_requests_reviewed_by_fkey(first_name, last_name)
-        `)
+        .select('*')
         .eq('user_id', userId)
-        .order('requested_at', { ascending: false })
+        .order('requested_at', { ascending: false });
 
-      if (requestsError) throw requestsError
+      if (requestsError) throw requestsError;
 
       // Combine and format the data
       const auditEntries: RoleHistoryEntry[] = (auditData || []).map(entry => ({
@@ -87,152 +98,169 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
         oldRole: entry.old_role as UserRole,
         newRole: entry.new_role as UserRole,
         changedBy: entry.changed_by,
-        changedByName: entry.changed_by_user 
-          ? `${entry.changed_by_user.first_name} ${entry.changed_by_user.last_name}`.trim()
-          : 'System',
+        changedByName: entry.changed_by ? 'Institution admin' : 'System',
         reason: entry.reason,
         timestamp: new Date(entry.timestamp),
         status: 'completed',
-        metadata: entry.metadata || {}
-      }))
+        metadata: entry.metadata || {},
+      }));
 
       const requestEntries: RoleHistoryEntry[] = (requestsData || [])
         .filter(request => request.status !== 'approved') // Approved requests are already in audit log
         .map(request => ({
           id: `request-${request.id}`,
-          action: request.status === 'pending' ? AuditAction.REQUESTED : 
-                  request.status === 'denied' ? AuditAction.DENIED : AuditAction.REQUESTED,
-          oldRole: request.current_role as UserRole,
+          action:
+            request.status === 'pending'
+              ? AuditAction.REQUESTED
+              : request.status === 'denied'
+                ? AuditAction.DENIED
+                : AuditAction.REQUESTED,
+          oldRole: request.existing_role as UserRole,
           newRole: request.requested_role as UserRole,
-          changedBy: request.status === 'denied' && request.reviewed_by ? request.reviewed_by : request.user_id,
-          changedByName: request.status === 'denied' && request.reviewed_by_user
-            ? `${request.reviewed_by_user.first_name} ${request.reviewed_by_user.last_name}`.trim()
-            : 'You',
-          reason: request.status === 'denied' ? request.review_notes : request.justification,
-          timestamp: request.status === 'denied' && request.reviewed_at 
-            ? new Date(request.reviewed_at) 
-            : new Date(request.requested_at),
-          status: request.status === 'pending' ? 'pending' : 
-                  request.status === 'denied' ? 'failed' : 'completed',
-          metadata: { requestId: request.id, justification: request.justification }
-        }))
+          changedBy:
+            request.status === 'denied' && request.reviewed_by
+              ? request.reviewed_by
+              : request.user_id,
+          changedByName:
+            request.status === 'denied' ? 'Institution admin' : 'You',
+          reason:
+            request.status === 'denied'
+              ? request.review_notes
+              : request.justification,
+          timestamp:
+            request.status === 'denied' && request.reviewed_at
+              ? new Date(request.reviewed_at)
+              : new Date(request.requested_at),
+          status:
+            request.status === 'pending'
+              ? 'pending'
+              : request.status === 'denied'
+                ? 'failed'
+                : 'completed',
+          metadata: {
+            requestId: request.id,
+            justification: request.justification,
+          },
+        }));
 
       // Combine and sort all entries
-      const allEntries = [...auditEntries, ...requestEntries]
-        .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+      const allEntries = [...auditEntries, ...requestEntries].sort(
+        (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
+      );
 
-      setHistory(allEntries)
-
+      setHistory(allEntries);
     } catch (err) {
-      console.error('Error fetching role history:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load role history')
+      console.error('Error fetching role history:', err);
+      setError(
+        err instanceof Error ? err.message : 'Failed to load role history'
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const getRoleDisplayName = (role?: UserRole): string => {
-    if (!role) return 'Unknown'
-    return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())
-  }
+    if (!role) return 'Unknown';
+    return role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   const getActionDisplayName = (action: AuditAction): string => {
     switch (action) {
       case AuditAction.ASSIGNED:
-        return 'Role Assigned'
+        return 'Role Assigned';
       case AuditAction.REVOKED:
-        return 'Role Revoked'
+        return 'Role Revoked';
       case AuditAction.CHANGED:
-        return 'Role Changed'
+        return 'Role Changed';
       case AuditAction.EXPIRED:
-        return 'Role Expired'
+        return 'Role Expired';
       case AuditAction.REQUESTED:
-        return 'Role Requested'
+        return 'Role Requested';
       case AuditAction.APPROVED:
-        return 'Request Approved'
+        return 'Request Approved';
       case AuditAction.DENIED:
-        return 'Request Denied'
+        return 'Request Denied';
       default:
-        return action
+        return action;
     }
-  }
+  };
 
   const getActionIcon = (action: AuditAction, status: string) => {
     if (status === 'pending') {
-      return <Clock className="h-4 w-4 text-yellow-600" />
+      return <Clock className="h-4 w-4 text-yellow-600" />;
     }
     if (status === 'failed') {
-      return <XCircle className="h-4 w-4 text-red-600" />
+      return <XCircle className="h-4 w-4 text-red-600" />;
     }
 
     switch (action) {
       case AuditAction.ASSIGNED:
       case AuditAction.APPROVED:
-        return <CheckCircle className="h-4 w-4 text-green-600" />
+        return <CheckCircle className="h-4 w-4 text-green-600" />;
       case AuditAction.REVOKED:
       case AuditAction.DENIED:
-        return <XCircle className="h-4 w-4 text-red-600" />
+        return <XCircle className="h-4 w-4 text-red-600" />;
       case AuditAction.CHANGED:
-        return <ArrowRight className="h-4 w-4 text-blue-600" />
+        return <ArrowRight className="h-4 w-4 text-blue-600" />;
       case AuditAction.EXPIRED:
-        return <AlertCircle className="h-4 w-4 text-orange-600" />
+        return <AlertCircle className="h-4 w-4 text-orange-600" />;
       case AuditAction.REQUESTED:
-        return <Clock className="h-4 w-4 text-blue-600" />
+        return <Clock className="h-4 w-4 text-blue-600" />;
       default:
-        return <History className="h-4 w-4 text-gray-600" />
+        return <History className="h-4 w-4 text-gray-600" />;
     }
-  }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="secondary">Pending</Badge>
+        return <Badge variant="secondary">Pending</Badge>;
       case 'failed':
-        return <Badge variant="destructive">Denied</Badge>
+        return <Badge variant="destructive">Denied</Badge>;
       case 'completed':
-        return <Badge variant="default">Completed</Badge>
+        return <Badge variant="default">Completed</Badge>;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   const formatTimestamp = (date: Date): string => {
-    const now = new Date()
-    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60)
-    
+    const now = new Date();
+    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);
+
     if (diffInHours < 24) {
       return date.toLocaleTimeString('en-US', {
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
-      })
+        hour12: true,
+      });
     } else if (diffInHours < 24 * 7) {
       return date.toLocaleDateString('en-US', {
         weekday: 'short',
         hour: 'numeric',
         minute: '2-digit',
-        hour12: true
-      })
+        hour12: true,
+      });
     } else {
       return date.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
-      })
+        year: 'numeric',
+      });
     }
-  }
+  };
 
   const toggleExpanded = (entryId: string) => {
-    const newExpanded = new Set(expandedEntries)
+    const newExpanded = new Set(expandedEntries);
     if (newExpanded.has(entryId)) {
-      newExpanded.delete(entryId)
+      newExpanded.delete(entryId);
     } else {
-      newExpanded.add(entryId)
+      newExpanded.add(entryId);
     }
-    setExpandedEntries(newExpanded)
-  }
+    setExpandedEntries(newExpanded);
+  };
 
-  const displayedHistory = showAll ? history : history.slice(0, 5)
+  const displayedHistory = showAll ? history : history.slice(0, 5);
 
   if (isLoading) {
     return (
@@ -244,7 +272,7 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -260,7 +288,7 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -279,7 +307,9 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
           <div className="text-center py-8 text-muted-foreground">
             <History className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p>No role history available</p>
-            <p className="text-sm">Role changes and requests will appear here</p>
+            <p className="text-sm">
+              Role changes and requests will appear here
+            </p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -289,13 +319,13 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
                 {index < displayedHistory.length - 1 && (
                   <div className="absolute left-6 top-12 w-px h-8 bg-border" />
                 )}
-                
+
                 <div className="flex items-start space-x-4">
                   {/* Icon */}
                   <div className="flex-shrink-0 mt-1">
                     {getActionIcon(entry.action, entry.status)}
                   </div>
-                  
+
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -310,7 +340,7 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
                         {formatTimestamp(entry.timestamp)}
                       </div>
                     </div>
-                    
+
                     {/* Role change display */}
                     <div className="mt-1 flex items-center space-x-2 text-sm">
                       {entry.oldRole && (
@@ -327,13 +357,13 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
                         </Badge>
                       )}
                     </div>
-                    
+
                     {/* Changed by */}
                     <div className="mt-1 flex items-center text-xs text-muted-foreground">
                       <User className="h-3 w-3 mr-1" />
                       {entry.changedByName || 'System'}
                     </div>
-                    
+
                     {/* Reason (expandable) */}
                     {entry.reason && (
                       <div className="mt-2">
@@ -355,30 +385,32 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
                             </>
                           )}
                         </Button>
-                        
+
                         {expandedEntries.has(entry.id) && (
                           <div className="mt-2 p-3 bg-muted rounded-md">
                             <p className="text-xs text-muted-foreground">
                               <strong>Reason:</strong> {entry.reason}
                             </p>
-                            {entry.metadata?.justification && entry.metadata.justification !== entry.reason && (
-                              <p className="text-xs text-muted-foreground mt-1">
-                                <strong>Original request:</strong> {entry.metadata.justification}
-                              </p>
-                            )}
+                            {entry.metadata?.justification &&
+                              entry.metadata.justification !== entry.reason && (
+                                <p className="text-xs text-muted-foreground mt-1">
+                                  <strong>Original request:</strong>{' '}
+                                  {entry.metadata.justification}
+                                </p>
+                              )}
                           </div>
                         )}
                       </div>
                     )}
                   </div>
                 </div>
-                
+
                 {index < displayedHistory.length - 1 && (
                   <Separator className="mt-4" />
                 )}
               </div>
             ))}
-            
+
             {/* Show more/less button */}
             {history.length > 5 && (
               <div className="text-center pt-4">
@@ -405,5 +437,5 @@ export function RoleChangeHistory({ userId, className }: RoleChangeHistoryProps)
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

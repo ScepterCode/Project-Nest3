@@ -1,0 +1,47 @@
+{
+  "policies": [
+    {
+      "tablename": "role_audit_log",
+      "policyname": "Users can view own audit log",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "role_requests",
+      "policyname": "Users can create own role requests",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "tablename": "role_requests",
+      "policyname": "Users can view own role requests",
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    }
+  ],
+  "fks": [
+    {
+      "t": "role_requests",
+      "conname": "fk_role_requests_reviewed_by",
+      "d": "FOREIGN KEY (reviewed_by) REFERENCES user_profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "t": "role_requests",
+      "conname": "fk_role_requests_user",
+      "d": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    },
+    {
+      "t": "role_audit_log",
+      "conname": "fk_role_audit_log_changed_by",
+      "d": "FOREIGN KEY (changed_by) REFERENCES user_profiles(id) ON DELETE SET NULL"
+    },
+    {
+      "t": "role_audit_log",
+      "conname": "fk_role_audit_log_user",
+      "d": "FOREIGN KEY (user_id) REFERENCES user_profiles(id) ON DELETE CASCADE"
+    }
+  ]
+}
