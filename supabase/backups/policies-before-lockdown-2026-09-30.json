@@ -1,0 +1,902 @@
+{
+  "policies": [
+    {
+      "schemaname": "public",
+      "tablename": "assignments",
+      "policyname": "Allow authenticated users full access",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(auth.uid() IS NOT NULL)",
+      "with_check": "(auth.uid() IS NOT NULL)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "assignments",
+      "policyname": "Teachers can create assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = teacher_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "assignments",
+      "policyname": "Teachers can delete their own assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "DELETE",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "assignments",
+      "policyname": "Teachers can update their own assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "assignments",
+      "policyname": "Teachers can view their own assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "assignments",
+      "policyname": "Users can view assignments they have access to",
+      "permissive": "PERMISSIVE",
+      "roles": ["authenticated"],
+      "cmd": "SELECT",
+      "qual": "((auth.uid() IN ( SELECT enrollments.student_id\n   FROM enrollments\n  WHERE (enrollments.class_id = assignments.class_id))) OR (auth.uid() IN ( SELECT classes.teacher_id\n   FROM classes\n  WHERE (classes.id = assignments.class_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "bulk_imports",
+      "policyname": "Institution admins can manage bulk imports",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM users\n  WHERE ((users.id = auth.uid()) AND (users.institution_id = bulk_imports.institution_id) AND (users.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "bulk_imports",
+      "policyname": "Users can view their institution's bulk imports",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM users\n  WHERE ((users.id = auth.uid()) AND (users.institution_id = bulk_imports.institution_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "bulk_role_assignment_items",
+      "policyname": "Institution admins can view bulk assignment items",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (bulk_role_assignments bra\n     JOIN users u ON ((u.id = auth.uid())))\n  WHERE ((bra.id = bulk_role_assignment_items.bulk_assignment_id) AND (u.institution_id = bra.institution_id) AND (u.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "bulk_role_assignment_items",
+      "policyname": "Users can view their own assignment items",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "bulk_role_assignments",
+      "policyname": "Institution admins can manage bulk role assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM users\n  WHERE ((users.id = auth.uid()) AND (users.institution_id = bulk_role_assignments.institution_id) AND (users.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "classes",
+      "policyname": "Allow authenticated users full access",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(auth.uid() IS NOT NULL)",
+      "with_check": "(auth.uid() IS NOT NULL)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "classes",
+      "policyname": "Teachers can create classes",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = teacher_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "classes",
+      "policyname": "Teachers can delete their own classes",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "DELETE",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "classes",
+      "policyname": "Teachers can update their own classes",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "classes",
+      "policyname": "Teachers can view their own classes",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "classes",
+      "policyname": "authenticated_users_can_read_classes",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() IS NOT NULL)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "classes",
+      "policyname": "teachers_can_manage_own_classes",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(teacher_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "enrollments",
+      "policyname": "enrollments_students_all_access",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(student_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "enrollments",
+      "policyname": "enrollments_teachers_view_class",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM classes\n  WHERE ((classes.id = enrollments.class_id) AND (classes.teacher_id = auth.uid()))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "import_errors",
+      "policyname": "Users can view errors for their institution's imports",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (bulk_imports bi\n     JOIN users u ON ((u.id = auth.uid())))\n  WHERE ((bi.id = import_errors.import_id) AND (u.institution_id = bi.institution_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "import_notifications",
+      "policyname": "Users can view their own import notifications",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(recipient_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "import_progress",
+      "policyname": "Users can view progress for their institution's imports",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (bulk_imports bi\n     JOIN users u ON ((u.id = auth.uid())))\n  WHERE ((bi.id = import_progress.import_id) AND (u.institution_id = bi.institution_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "import_warnings",
+      "policyname": "Users can view warnings for their institution's imports",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (bulk_imports bi\n     JOIN users u ON ((u.id = auth.uid())))\n  WHERE ((bi.id = import_warnings.import_id) AND (u.institution_id = bi.institution_id))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "institutional_role_policies",
+      "policyname": "Institution admins can manage role policies",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM users\n  WHERE ((users.id = auth.uid()) AND (users.institution_id = institutional_role_policies.institution_id) AND (users.role = 'institution_admin'::text))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "migration_snapshots",
+      "policyname": "Institution admins can manage snapshots",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM users\n  WHERE ((users.id = auth.uid()) AND (users.institution_id = migration_snapshots.institution_id) AND (users.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "notification_delivery_log",
+      "policyname": "Admins can view delivery logs",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM users\n  WHERE ((users.id = auth.uid()) AND (users.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "notification_preferences",
+      "policyname": "Users can manage their own preferences",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "notifications",
+      "policyname": "System can insert notifications",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "true"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "notifications",
+      "policyname": "Users can update their own notifications",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "UPDATE",
+      "qual": "(user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "notifications",
+      "policyname": "Users can view their own notifications",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "onboarding_sessions",
+      "policyname": "Users can insert own onboarding session",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "onboarding_sessions",
+      "policyname": "Users can manage own onboarding",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "onboarding_sessions",
+      "policyname": "Users can update own onboarding session",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "onboarding_sessions",
+      "policyname": "Users can view own onboarding session",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "peer_review_activity",
+      "policyname": "Users can create activity records",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "peer_review_activity",
+      "policyname": "Users can view activity for their peer reviews",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "((auth.uid() = user_id) OR (EXISTS ( SELECT 1\n   FROM peer_review_assignments\n  WHERE ((peer_review_assignments.id = peer_review_activity.peer_review_assignment_id) AND (peer_review_assignments.teacher_id = auth.uid())))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "peer_review_assignments",
+      "policyname": "Teachers can manage their peer review assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "peer_reviews",
+      "policyname": "Teachers can view peer reviews for their assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM peer_review_assignments\n  WHERE ((peer_review_assignments.id = peer_reviews.peer_review_assignment_id) AND (peer_review_assignments.teacher_id = auth.uid()))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "peer_reviews",
+      "policyname": "Users can manage their own peer reviews",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "((auth.uid() = reviewer_id) OR (auth.uid() = reviewee_id))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "permissions",
+      "policyname": "Anyone can view permissions",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_assignment_audit",
+      "policyname": "Institution admins can view audit trail",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM users\n  WHERE ((users.id = auth.uid()) AND (users.institution_id = role_assignment_audit.institution_id) AND (users.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_assignment_audit",
+      "policyname": "Users can view their own audit records",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_assignment_conflicts",
+      "policyname": "Institution admins can manage conflicts",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (bulk_role_assignments bra\n     JOIN users u ON ((u.id = auth.uid())))\n  WHERE ((bra.id = role_assignment_conflicts.bulk_assignment_id) AND (u.institution_id = bra.institution_id) AND (u.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_assignment_notifications",
+      "policyname": "Institution admins can manage notifications",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (bulk_role_assignments bra\n     JOIN users u ON ((u.id = auth.uid())))\n  WHERE ((bra.id = role_assignment_notifications.bulk_assignment_id) AND (u.institution_id = bra.institution_id) AND (u.role = ANY (ARRAY['institution_admin'::text, 'department_admin'::text])))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_assignment_notifications",
+      "policyname": "Users can view their own notifications",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(user_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_audit_log",
+      "policyname": "Users can view own audit log",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_permissions",
+      "policyname": "Anyone can view role permissions",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "true",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_requests",
+      "policyname": "Users can create own role requests",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "role_requests",
+      "policyname": "Users can view own role requests",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rubric_assignments",
+      "policyname": "Teachers can manage rubric assignments for their assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM assignments a\n  WHERE ((a.id = rubric_assignments.assignment_id) AND (a.teacher_id = auth.uid()))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rubric_templates",
+      "policyname": "Anyone can view public templates",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "((is_public = true) OR (created_by = auth.uid()))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rubric_templates",
+      "policyname": "Authenticated users can create templates",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() IS NOT NULL)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rubric_templates",
+      "policyname": "Users can update their own templates",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "UPDATE",
+      "qual": "(created_by = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "rubrics",
+      "policyname": "Teachers can manage their own rubrics",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "submissions",
+      "policyname": "students_can_manage_own_submissions",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(student_id = auth.uid())",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "submissions",
+      "policyname": "teachers_can_manage_class_submissions",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (assignments\n     JOIN classes ON ((assignments.class_id = classes.id)))\n  WHERE ((assignments.id = submissions.assignment_id) AND (classes.teacher_id = auth.uid()))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "user_profiles",
+      "policyname": "Users can insert own profile",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = id)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "user_profiles",
+      "policyname": "Users can update own profile",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "user_profiles",
+      "policyname": "Users can view own profile",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "user_role_assignments",
+      "policyname": "Admins can view all role assignments in their institution",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM (user_profiles up\n     JOIN user_role_assignments ura ON ((up.id = ura.user_id)))\n  WHERE ((up.id = auth.uid()) AND ((ura.role)::text = ANY ((ARRAY['institution_admin'::character varying, 'system_admin'::character varying])::text[])) AND (ura.institution_id = user_role_assignments.institution_id) AND ((ura.status)::text = 'active'::text))))",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "user_role_assignments",
+      "policyname": "Users can view own role assignments",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = user_id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "users",
+      "policyname": "Allow authenticated users full access",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "ALL",
+      "qual": "(auth.uid() IS NOT NULL)",
+      "with_check": "(auth.uid() IS NOT NULL)"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "users",
+      "policyname": "Allow registration",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "true"
+    },
+    {
+      "schemaname": "public",
+      "tablename": "users",
+      "policyname": "Users can read own profile",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "(auth.uid() = id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "public",
+      "tablename": "users",
+      "policyname": "Users can update own profile",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "UPDATE",
+      "qual": "(auth.uid() = id)",
+      "with_check": null
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "Students can upload their own submissions",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((bucket_id = 'submissions'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))"
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "Students can view their own submissions",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'submissions'::text) AND ((auth.uid())::text = (storage.foldername(name))[1]))",
+      "with_check": null
+    },
+    {
+      "schemaname": "storage",
+      "tablename": "objects",
+      "policyname": "Teachers can view class submissions",
+      "permissive": "PERMISSIVE",
+      "roles": ["public"],
+      "cmd": "SELECT",
+      "qual": "((bucket_id = 'submissions'::text) AND (EXISTS ( SELECT 1\n   FROM ((submissions s\n     JOIN assignments a ON ((s.assignment_id = a.id)))\n     JOIN classes c ON ((a.class_id = c.id)))\n  WHERE ((s.file_url ~~ (('%'::text || c.name) || '%'::text)) AND (c.teacher_id = auth.uid())))))",
+      "with_check": null
+    }
+  ],
+  "rls": [
+    {
+      "relname": "submissions",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "user_role_assignments",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "role_requests",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "user_profiles",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "role_audit_log",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "institution_domains",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "permissions",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "role_permissions",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "enrollment_requests",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "waitlist_entries",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "waitlist_notifications",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "class_prerequisites",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "enrollment_restrictions",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "enrollment_audit_log",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "class_invitations",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "invitation_audit_log",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "enrollment_statistics",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "onboarding_sessions",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "bulk_role_assignments",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "bulk_role_assignment_items",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "role_assignment_conflicts",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "role_assignment_notifications",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "institutional_role_policies",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "bulk_imports",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "role_assignment_audit",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "enrollments",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "classes",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "assignments",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "users",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "notifications",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "notification_preferences",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "notification_delivery_log",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "institutions",
+      "relrowsecurity": false
+    },
+    {
+      "relname": "departments",
+      "relrowsecurity": false
+    },
+    {
+      "relname": "import_errors",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "import_warnings",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "import_progress",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "migration_snapshots",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "peer_review_assignments",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "peer_reviews",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "peer_review_activity",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "import_notifications",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "rubrics",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "rubric_criteria",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "rubric_levels",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "rubric_quality_indicators",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "rubric_templates",
+      "relrowsecurity": true
+    },
+    {
+      "relname": "rubric_assignments",
+      "relrowsecurity": true
+    }
+  ],
+  "functions": [
+    {
+      "proname": "create_default_notification_preferences",
+      "d": "CREATE OR REPLACE FUNCTION public.create_default_notification_preferences()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n  INSERT INTO notification_preferences (user_id)\r\n  VALUES (NEW.id)\r\n  ON CONFLICT (user_id) DO NOTHING;\r\n  RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "proname": "handle_new_user",
+      "d": "CREATE OR REPLACE FUNCTION public.handle_new_user()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\nAS $function$\r\nBEGIN\r\n    INSERT INTO public.users (id, email, first_name, last_name, role, onboarding_completed)\r\n    VALUES (\r\n        NEW.id,\r\n        NEW.email,\r\n        COALESCE(NEW.raw_user_meta_data->>'first_name', ''),\r\n        COALESCE(NEW.raw_user_meta_data->>'last_name', ''),\r\n        COALESCE(NEW.raw_user_meta_data->>'role', 'student'),\r\n        false\r\n    )\r\n    ON CONFLICT (id) DO NOTHING;\r\n    RETURN NEW;\r\nEND;\r\n$function$\n"
+    },
+    {
+      "proname": "update_enrollment_count",
+      "d": "CREATE OR REPLACE FUNCTION public.update_enrollment_count()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n    IF TG_OP = 'INSERT' THEN\r\n        UPDATE public.classes \r\n        SET enrollment_count = COALESCE(enrollment_count, 0) + 1\r\n        WHERE id = NEW.class_id;\r\n        RETURN NEW;\r\n    ELSIF TG_OP = 'DELETE' THEN\r\n        UPDATE public.classes \r\n        SET enrollment_count = GREATEST(COALESCE(enrollment_count, 1) - 1, 0)\r\n        WHERE id = OLD.class_id;\r\n        RETURN OLD;\r\n    END IF;\r\n    RETURN NULL;\r\nEND;\r\n$function$\n"
+    }
+  ]
+}
