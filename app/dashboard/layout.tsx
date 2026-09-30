@@ -65,13 +65,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
             </p>
             <div className="space-y-3">
               <Button
-                onClick={() => (window.location.href = '/debug')}
-                className="w-full"
-              >
-                Go to Debug Page
-              </Button>
-              <Button
-                variant="outline"
                 onClick={() => (window.location.href = '/onboarding')}
                 className="w-full"
               >
