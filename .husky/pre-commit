@@ -1,8 +1,7 @@
 #!/usr/bin/env sh
-# . "$(dirname -- "$0")/_/husky.sh"
 
-# Run lint-staged to check staged files
+# ESLint + Prettier on staged files
 npx lint-staged
 
-# Skip type checking temporarily to allow commit
-# npm run type-check
+# Whole-project type check (incremental; a few seconds)
+npm run type-check
