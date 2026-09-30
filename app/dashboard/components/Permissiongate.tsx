@@ -6,7 +6,9 @@ import {
   GraduationCap,
   Layers,
   LineChart,
+  Upload,
   User,
+  UserCog,
 } from 'lucide-react';
 
 export const studentsRolegate = [
@@ -67,6 +69,18 @@ export const InstitutionRolegate = [
     text: 'Users',
     href: '/dashboard/institution/users',
     icon: <User />,
+  },
+  {
+    permission: 'users.manage',
+    text: 'Bulk Import',
+    href: '/dashboard/institution/bulk-import',
+    icon: <Upload />,
+  },
+  {
+    permission: 'users.manage',
+    text: 'Bulk Roles',
+    href: '/dashboard/institution/bulk-role-assignment',
+    icon: <UserCog />,
   },
   {
     permission: 'departments.manage',
