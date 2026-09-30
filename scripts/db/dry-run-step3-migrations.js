@@ -1,6 +1,6 @@
 // Applies the step-3 migrations (no department_admin assignment, peer reviews)
 // inside a transaction, tests them as real users, then ROLLS BACK.
-// Usage: node scripts/dry-run-step3-migrations.js  (reads SUPABASE_DATABASE_URL from .env.local)
+// Usage: node scripts/db/dry-run-step3-migrations.js  (reads SUPABASE_DATABASE_URL from .env.local)
 require('dotenv').config({ path: '.env.local', quiet: true });
 const { Client } = require('pg');
 const fs = require('fs');

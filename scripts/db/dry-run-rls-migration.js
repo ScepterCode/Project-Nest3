@@ -1,6 +1,6 @@
 // Applies supabase/migrations/20260930120000_lock_down_rls.sql inside a
 // transaction, tests it as real users, then ROLLS BACK. Nothing is persisted.
-// Usage: node scripts/dry-run-rls-migration.js  (reads SUPABASE_DATABASE_URL from .env.local)
+// Usage: node scripts/db/dry-run-rls-migration.js  (reads SUPABASE_DATABASE_URL from .env.local)
 require('dotenv').config({ path: '.env.local', quiet: true });
 const { Client } = require('pg');
 const fs = require('fs');
