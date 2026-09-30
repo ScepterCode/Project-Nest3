@@ -1,23 +1,29 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { 
-  Activity, 
-  Database, 
-  Zap, 
-  AlertTriangle, 
-  CheckCircle, 
+import {
+  Activity,
+  Database,
+  Zap,
+  AlertTriangle,
+  CheckCircle,
   XCircle,
   RefreshCw,
   TrendingUp,
   Clock,
-  Users
+  Users,
 } from 'lucide-react';
 
 interface DatabaseMetrics {
@@ -84,7 +90,8 @@ interface PerformanceData {
 }
 
 export default function DatabasePerformanceDashboard() {
-  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [performanceData, setPerformanceData] =
+    useState<PerformanceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -92,26 +99,29 @@ export default function DatabasePerformanceDashboard() {
 
   useEffect(() => {
     fetchPerformanceData();
-    
+
     if (autoRefresh) {
       const interval = setInterval(fetchPerformanceData, refreshInterval);
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [autoRefresh, refreshInterval]);
 
   const fetchPerformanceData = async () => {
     try {
       setError(null);
       const response = await fetch('/api/database/performance?details=true');
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
       setPerformanceData(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch performance data');
+      setError(
+        err instanceof Error ? err.message : 'Failed to fetch performance data'
+      );
     } finally {
       setLoading(false);
     }
@@ -122,9 +132,9 @@ export default function DatabasePerformanceDashboard() {
       const response = await fetch('/api/database/performance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'resolve_alert', alertId })
+        body: JSON.stringify({ action: 'resolve_alert', alertId }),
       });
-      
+
       if (response.ok) {
         await fetchPerformanceData(); // Refresh data
       }
@@ -138,9 +148,9 @@ export default function DatabasePerformanceDashboard() {
       const response = await fetch('/api/database/performance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'reset_metrics' })
+        body: JSON.stringify({ action: 'reset_metrics' }),
       });
-      
+
       if (response.ok) {
         await fetchPerformanceData(); // Refresh data
       }
@@ -217,8 +227,10 @@ export default function DatabasePerformanceDashboard() {
     );
   }
 
-  const { metrics, slowQueries, activeAlerts, connectionPool, cacheMetrics } = performanceData;
-  const connectionUtilization = (metrics.connections.active / metrics.connections.maxConnections) * 100;
+  const { metrics, slowQueries, activeAlerts, connectionPool, cacheMetrics } =
+    performanceData;
+  const connectionUtilization =
+    (metrics.connections.active / metrics.connections.maxConnections) * 100;
 
   return (
     <div className="space-y-6">
@@ -230,32 +242,32 @@ export default function DatabasePerformanceDashboard() {
             Real-time monitoring and performance metrics
           </p>
         </div>
-        
+
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
             size="sm"
             onClick={() => setAutoRefresh(!autoRefresh)}
           >
-            <Activity className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-pulse' : ''}`} />
+            <Activity
+              className={`h-4 w-4 mr-2 ${autoRefresh ? 'animate-pulse' : ''}`}
+            />
             Auto Refresh: {autoRefresh ? 'On' : 'Off'}
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
             onClick={fetchPerformanceData}
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`}
+            />
             Refresh
           </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={resetMetrics}
-          >
+
+          <Button variant="outline" size="sm" onClick={resetMetrics}>
             Reset Metrics
           </Button>
         </div>
@@ -269,7 +281,9 @@ export default function DatabasePerformanceDashboard() {
             {getHealthStatusIcon(metrics.health.status)}
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold capitalize">{metrics.health.status}</div>
+            <div className="text-2xl font-bold capitalize">
+              {metrics.health.status}
+            </div>
             <p className="text-xs text-muted-foreground">
               Uptime: {metrics.health.uptime}
             </p>
@@ -294,14 +308,19 @@ export default function DatabasePerformanceDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Cache Hit Ratio</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Cache Hit Ratio
+            </CardTitle>
             <Zap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {metrics.performance.cacheHitRatio.toFixed(1)}%
             </div>
-            <Progress value={metrics.performance.cacheHitRatio} className="mt-2" />
+            <Progress
+              value={metrics.performance.cacheHitRatio}
+              className="mt-2"
+            />
             <p className="text-xs text-muted-foreground mt-1">
               Database cache efficiency
             </p>
@@ -310,7 +329,9 @@ export default function DatabasePerformanceDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg Query Time</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              Avg Query Time
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -335,8 +356,11 @@ export default function DatabasePerformanceDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {activeAlerts.map((alert) => (
-                <div key={alert.id} className="flex items-center justify-between p-3 border rounded-lg">
+              {activeAlerts.map(alert => (
+                <div
+                  key={alert.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
                   <div className="flex items-center space-x-3">
                     <Badge variant={getSeverityBadgeVariant(alert.severity)}>
                       {alert.severity}
@@ -344,7 +368,8 @@ export default function DatabasePerformanceDashboard() {
                     <div>
                       <p className="font-medium">{alert.message}</p>
                       <p className="text-sm text-muted-foreground">
-                        {alert.type} • {new Date(alert.timestamp).toLocaleString()}
+                        {alert.type} •{' '}
+                        {new Date(alert.timestamp).toLocaleString()}
                       </p>
                     </div>
                   </div>
@@ -380,19 +405,27 @@ export default function DatabasePerformanceDashboard() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Total Queries</span>
-                  <span className="font-mono">{metrics.queries.totalQueries.toLocaleString()}</span>
+                  <span className="font-mono">
+                    {metrics.queries.totalQueries.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Slow Queries</span>
-                  <span className="font-mono">{metrics.queries.slowQueries}</span>
+                  <span className="font-mono">
+                    {metrics.queries.slowQueries}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Cache Hit Rate</span>
-                  <span className="font-mono">{metrics.queries.cacheHitRate.toFixed(1)}%</span>
+                  <span className="font-mono">
+                    {metrics.queries.cacheHitRate.toFixed(1)}%
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Queries/Second</span>
-                  <span className="font-mono">{metrics.queries.queriesPerSecond.toFixed(2)}</span>
+                  <span className="font-mono">
+                    {metrics.queries.queriesPerSecond.toFixed(2)}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -404,19 +437,27 @@ export default function DatabasePerformanceDashboard() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Transactions/Second</span>
-                  <span className="font-mono">{metrics.performance.transactionsPerSecond.toFixed(2)}</span>
+                  <span className="font-mono">
+                    {metrics.performance.transactionsPerSecond.toFixed(2)}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Blocks Read</span>
-                  <span className="font-mono">{metrics.performance.blocksRead.toLocaleString()}</span>
+                  <span className="font-mono">
+                    {metrics.performance.blocksRead.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Blocks Hit</span>
-                  <span className="font-mono">{metrics.performance.blocksHit.toLocaleString()}</span>
+                  <span className="font-mono">
+                    {metrics.performance.blocksHit.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Deadlocks</span>
-                  <span className="font-mono">{metrics.performance.deadlocks}</span>
+                  <span className="font-mono">
+                    {metrics.performance.deadlocks}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -433,7 +474,9 @@ export default function DatabasePerformanceDashboard() {
             </CardHeader>
             <CardContent>
               {slowQueries.length === 0 ? (
-                <p className="text-muted-foreground">No slow queries detected</p>
+                <p className="text-muted-foreground">
+                  No slow queries detected
+                </p>
               ) : (
                 <div className="space-y-4">
                   {slowQueries.map((query, index) => (
@@ -443,14 +486,14 @@ export default function DatabasePerformanceDashboard() {
                           {query.meanTime.toFixed(2)}ms avg
                         </Badge>
                         <div className="text-sm text-muted-foreground">
-                          {query.calls} calls • {query.hitPercent.toFixed(1)}% cache hit
+                          {query.calls} calls • {query.hitPercent.toFixed(1)}%
+                          cache hit
                         </div>
                       </div>
                       <code className="text-sm bg-muted p-2 rounded block overflow-x-auto">
-                        {query.query.length > 200 
-                          ? `${query.query.substring(0, 200)}...` 
-                          : query.query
-                        }
+                        {query.query.length > 200
+                          ? `${query.query.substring(0, 200)}...`
+                          : query.query}
                       </code>
                     </div>
                   ))}
@@ -473,7 +516,9 @@ export default function DatabasePerformanceDashboard() {
                 </div>
                 <div className="flex justify-between">
                   <span>Active Connections</span>
-                  <span className="font-mono">{metrics.connections.active}</span>
+                  <span className="font-mono">
+                    {metrics.connections.active}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Idle Connections</span>
@@ -481,11 +526,15 @@ export default function DatabasePerformanceDashboard() {
                 </div>
                 <div className="flex justify-between">
                   <span>Waiting Clients</span>
-                  <span className="font-mono">{metrics.connections.waiting}</span>
+                  <span className="font-mono">
+                    {metrics.connections.waiting}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Max Connections</span>
-                  <span className="font-mono">{metrics.connections.maxConnections}</span>
+                  <span className="font-mono">
+                    {metrics.connections.maxConnections}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -497,23 +546,33 @@ export default function DatabasePerformanceDashboard() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between">
                   <span>Cache Hits</span>
-                  <span className="font-mono">{cacheMetrics.hits.toLocaleString()}</span>
+                  <span className="font-mono">
+                    {cacheMetrics.hits.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Cache Misses</span>
-                  <span className="font-mono">{cacheMetrics.misses.toLocaleString()}</span>
+                  <span className="font-mono">
+                    {cacheMetrics.misses.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Hit Rate</span>
-                  <span className="font-mono">{(cacheMetrics.hitRate * 100).toFixed(2)}%</span>
+                  <span className="font-mono">
+                    {(cacheMetrics.hitRate * 100).toFixed(2)}%
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Total Requests</span>
-                  <span className="font-mono">{cacheMetrics.totalRequests.toLocaleString()}</span>
+                  <span className="font-mono">
+                    {cacheMetrics.totalRequests.toLocaleString()}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span>Avg Response Time</span>
-                  <span className="font-mono">{cacheMetrics.averageResponseTime.toFixed(2)}ms</span>
+                  <span className="font-mono">
+                    {cacheMetrics.averageResponseTime.toFixed(2)}ms
+                  </span>
                 </div>
               </CardContent>
             </Card>

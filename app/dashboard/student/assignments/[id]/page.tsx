@@ -1,13 +1,26 @@
-"use client";
+'use client';
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Calendar, FileText, Clock, CheckCircle, Star } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  FileText,
+  Clock,
+  CheckCircle,
+  Star,
+} from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -31,14 +44,20 @@ interface Submission {
   feedback?: string;
 }
 
-export default function StudentAssignmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function StudentAssignmentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
   const [submission, setSubmission] = useState<Submission | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(null);
+  const [resolvedParams, setResolvedParams] = useState<{ id: string } | null>(
+    null
+  );
 
   useEffect(() => {
     if (!loading && !user) {
@@ -59,19 +78,24 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
   const loadAssignmentDetails = async () => {
     try {
       const supabase = createClient();
-      
+
       // Load assignment details
       const { data: assignmentData, error: assignmentError } = await supabase
         .from('assignments')
-        .select(`
+        .select(
+          `
           id, title, description, due_date, points, created_at, class_id
-        `)
+        `
+        )
         .eq('id', resolvedParams?.id)
         .single();
 
       if (assignmentError) {
         console.error('Student assignment query error:', assignmentError);
-        console.error('Student assignment query error details:', JSON.stringify(assignmentError, null, 2));
+        console.error(
+          'Student assignment query error details:',
+          JSON.stringify(assignmentError, null, 2)
+        );
         setError('Assignment not found or access denied');
         return;
       }
@@ -104,14 +128,16 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
         points_possible: assignmentData.points || 100,
         class_name: classData?.name || 'Unknown Class',
         class_id: assignmentData.class_id,
-        created_at: assignmentData.created_at
+        created_at: assignmentData.created_at,
       });
 
       // Load student's submission if it exists
       const { data: submissionData, error: submissionError } = await supabase
         .from('submissions')
-        .select('id, content, file_url, link_url, submitted_at, status, grade, feedback')
-        .eq('assignment_id', params.id)
+        .select(
+          'id, content, file_url, link_url, submitted_at, status, grade, feedback'
+        )
+        .eq('assignment_id', resolvedParams!.id)
         .eq('student_id', user?.id)
         .single();
 
@@ -120,7 +146,6 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
       } else if (submissionData) {
         setSubmission(submissionData);
       }
-
     } catch (error) {
       console.error('Error loading assignment:', error);
       setError('Failed to load assignment details');
@@ -155,42 +180,56 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
 
   const dueDate = new Date(assignment.due_date);
   const isOverdue = dueDate < new Date();
-  const status = submission ? (submission.status === 'graded' ? 'graded' : 'submitted') : 'pending';
+  const status = submission
+    ? submission.status === 'graded'
+      ? 'graded'
+      : 'submitted'
+    : 'pending';
 
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => router.push('/dashboard/student/assignments')}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Assignments
         </Button>
-        
+
         <div className="flex justify-between items-start mb-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">{assignment.title}</h1>
             <p className="text-gray-600 mb-2">{assignment.class_name}</p>
           </div>
-          
+
           <div className="flex gap-2">
             {status === 'pending' && (
-              <Button onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}/submit`)}>
+              <Button
+                onClick={() =>
+                  router.push(
+                    `/dashboard/student/assignments/${assignment.id}/submit`
+                  )
+                }
+              >
                 Submit Assignment
               </Button>
             )}
             {status === 'submitted' && (
-              <Button 
+              <Button
                 variant="secondary"
-                onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}/submit`)}
+                onClick={() =>
+                  router.push(
+                    `/dashboard/student/assignments/${assignment.id}/submit`
+                  )
+                }
               >
                 Update Submission
               </Button>
             )}
             {status === 'graded' && (
-              <Button 
+              <Button
                 variant="outline"
                 onClick={() => router.push(`/dashboard/student/grades`)}
               >
@@ -219,25 +258,30 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
                     {assignment.description || 'No description provided'}
                   </p>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="font-medium mb-1">Due Date</h3>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span className={isOverdue ? 'text-red-600' : ''}>
-                        {dueDate.toLocaleDateString()} at {dueDate.toLocaleTimeString()}
+                        {dueDate.toLocaleDateString()} at{' '}
+                        {dueDate.toLocaleTimeString()}
                       </span>
-                      {isOverdue && <Badge variant="destructive">Overdue</Badge>}
+                      {isOverdue && (
+                        <Badge variant="destructive">Overdue</Badge>
+                      )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-medium mb-1">Points Possible</h3>
-                    <p className="text-lg font-semibold">{assignment.points_possible}</p>
+                    <p className="text-lg font-semibold">
+                      {assignment.points_possible}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-medium mb-1">Assigned</h3>
                   <p className="text-gray-600">
@@ -254,9 +298,15 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                {status === 'pending' && <Clock className="h-5 w-5 mr-2 text-yellow-500" />}
-                {status === 'submitted' && <CheckCircle className="h-5 w-5 mr-2 text-green-500" />}
-                {status === 'graded' && <Star className="h-5 w-5 mr-2 text-blue-500" />}
+                {status === 'pending' && (
+                  <Clock className="h-5 w-5 mr-2 text-yellow-500" />
+                )}
+                {status === 'submitted' && (
+                  <CheckCircle className="h-5 w-5 mr-2 text-green-500" />
+                )}
+                {status === 'graded' && (
+                  <Star className="h-5 w-5 mr-2 text-blue-500" />
+                )}
                 Submission Status
               </CardTitle>
             </CardHeader>
@@ -279,7 +329,7 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
                     </Badge>
                   )}
                 </div>
-                
+
                 {submission && (
                   <div className="space-y-2">
                     <div className="flex justify-between">
@@ -288,7 +338,7 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
                         {new Date(submission.submitted_at).toLocaleDateString()}
                       </span>
                     </div>
-                    
+
                     {submission.grade !== undefined && (
                       <div className="flex justify-between">
                         <span>Grade:</span>
@@ -297,7 +347,7 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
                         </span>
                       </div>
                     )}
-                    
+
                     {submission.feedback && (
                       <div>
                         <h4 className="font-medium mb-1">Feedback:</h4>
@@ -308,28 +358,36 @@ export default function StudentAssignmentDetailPage({ params }: { params: Promis
                     )}
                   </div>
                 )}
-                
+
                 <div className="pt-4 border-t">
                   {status === 'pending' && (
-                    <Button 
-                      className="w-full" 
-                      onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}/submit`)}
+                    <Button
+                      className="w-full"
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/student/assignments/${assignment.id}/submit`
+                        )
+                      }
                     >
                       Submit Assignment
                     </Button>
                   )}
                   {status === 'submitted' && (
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       variant="secondary"
-                      onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}/submit`)}
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/student/assignments/${assignment.id}/submit`
+                        )
+                      }
                     >
                       Update Submission
                     </Button>
                   )}
                   {status === 'graded' && (
-                    <Button 
-                      className="w-full" 
+                    <Button
+                      className="w-full"
                       variant="outline"
                       onClick={() => router.push(`/dashboard/student/grades`)}
                     >

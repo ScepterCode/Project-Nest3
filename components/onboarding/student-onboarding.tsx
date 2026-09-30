@@ -1,11 +1,23 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen, Users, Target, ArrowRight, ArrowLeft } from 'lucide-react';
@@ -34,7 +46,7 @@ const YEAR_LEVELS = [
   'Junior/3rd Year',
   'Senior/4th Year',
   'Graduate Student',
-  'Other'
+  'Other',
 ];
 
 const LEARNING_STYLES = [
@@ -42,7 +54,7 @@ const LEARNING_STYLES = [
   'Auditory (lectures, discussions)',
   'Reading/Writing (notes, texts)',
   'Kinesthetic (hands-on, practical)',
-  'Mixed approach'
+  'Mixed approach',
 ];
 
 const COMMON_INTERESTS = [
@@ -57,10 +69,13 @@ const COMMON_INTERESTS = [
   'Languages',
   'Sports & Fitness',
   'Music',
-  'Psychology'
+  'Psychology',
 ];
 
-export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnboardingProps) {
+export function StudentOnboarding({
+  onComplete,
+  userName = 'there',
+}: StudentOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<StudentOnboardingData>({
     firstName: '',
@@ -72,7 +87,7 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
     goals: '',
     preferredLearningStyle: '',
     institutionId: '',
-    departmentId: ''
+    departmentId: '',
   });
 
   const totalSteps = 4;
@@ -115,7 +130,7 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
                 Welcome, {userName}!
               </CardTitle>
               <CardDescription>
-                Let's get your profile set up so you can start learning
+                Let&apos;s get your profile set up so you can start learning
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -125,7 +140,9 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
                   <Input
                     id="firstName"
                     value={formData.firstName}
-                    onChange={(e) => updateFormData({ firstName: e.target.value })}
+                    onChange={e =>
+                      updateFormData({ firstName: e.target.value })
+                    }
                     placeholder="Enter your first name"
                   />
                 </div>
@@ -134,7 +151,7 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
                   <Input
                     id="lastName"
                     value={formData.lastName}
-                    onChange={(e) => updateFormData({ lastName: e.target.value })}
+                    onChange={e => updateFormData({ lastName: e.target.value })}
                     placeholder="Enter your last name"
                   />
                 </div>
@@ -144,7 +161,7 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
                 <Input
                   id="studentId"
                   value={formData.studentId}
-                  onChange={(e) => updateFormData({ studentId: e.target.value })}
+                  onChange={e => updateFormData({ studentId: e.target.value })}
                   placeholder="Enter your student ID if you have one"
                 />
               </div>
@@ -167,12 +184,15 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="yearLevel">Year Level</Label>
-                <Select value={formData.yearLevel} onValueChange={(value) => updateFormData({ yearLevel: value })}>
+                <Select
+                  value={formData.yearLevel}
+                  onValueChange={value => updateFormData({ yearLevel: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your year level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {YEAR_LEVELS.map((level) => (
+                    {YEAR_LEVELS.map(level => (
                       <SelectItem key={level} value={level}>
                         {level}
                       </SelectItem>
@@ -185,7 +205,7 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
                 <Input
                   id="major"
                   value={formData.major}
-                  onChange={(e) => updateFormData({ major: e.target.value })}
+                  onChange={e => updateFormData({ major: e.target.value })}
                   placeholder="e.g., Computer Science, Biology, English"
                 />
               </div>
@@ -209,10 +229,14 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
               <div>
                 <Label>Subjects of Interest (Select all that apply)</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  {COMMON_INTERESTS.map((interest) => (
+                  {COMMON_INTERESTS.map(interest => (
                     <Badge
                       key={interest}
-                      variant={formData.interests.includes(interest) ? "default" : "outline"}
+                      variant={
+                        formData.interests.includes(interest)
+                          ? 'default'
+                          : 'outline'
+                      }
                       className="cursor-pointer justify-center p-2"
                       onClick={() => toggleInterest(interest)}
                     >
@@ -223,12 +247,17 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
               </div>
               <div>
                 <Label htmlFor="learningStyle">Preferred Learning Style</Label>
-                <Select value={formData.preferredLearningStyle} onValueChange={(value) => updateFormData({ preferredLearningStyle: value })}>
+                <Select
+                  value={formData.preferredLearningStyle}
+                  onValueChange={value =>
+                    updateFormData({ preferredLearningStyle: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="How do you learn best?" />
                   </SelectTrigger>
                   <SelectContent>
-                    {LEARNING_STYLES.map((style) => (
+                    {LEARNING_STYLES.map(style => (
                       <SelectItem key={style} value={style}>
                         {style}
                       </SelectItem>
@@ -255,13 +284,13 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
                 <Textarea
                   id="goals"
                   value={formData.goals}
-                  onChange={(e) => updateFormData({ goals: e.target.value })}
+                  onChange={e => updateFormData({ goals: e.target.value })}
                   placeholder="e.g., Improve my grades, learn new skills, prepare for exams, collaborate with classmates..."
                   rows={4}
                 />
               </div>
               <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">What's Next?</h4>
+                <h4 className="font-semibold mb-2">What&apos;s Next?</h4>
                 <ul className="text-sm space-y-1">
                   <li>• Browse and join classes</li>
                   <li>• Complete assignments and quizzes</li>
@@ -317,10 +346,7 @@ export function StudentOnboarding({ onComplete, userName = 'there' }: StudentOnb
         {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
           {currentStep > 0 && (
-            <Button
-              variant="outline"
-              onClick={prevStep}
-            >
+            <Button variant="outline" onClick={prevStep}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Previous
             </Button>

@@ -76,6 +76,7 @@ export default function SubmitAssignmentPage() {
   }, [assignmentId, user]);
 
   const loadAssignmentData = async () => {
+    if (!user) return;
     try {
       const supabase = createClient();
 
@@ -159,6 +160,7 @@ export default function SubmitAssignmentPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
     setSubmitting(true);
     setError(null);
 

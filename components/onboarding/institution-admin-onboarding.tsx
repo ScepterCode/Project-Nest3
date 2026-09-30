@@ -1,14 +1,33 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Building, Users, Settings, Shield, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  Building,
+  Users,
+  Settings,
+  Shield,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react';
 
 interface InstitutionAdminOnboardingProps {
   onComplete: (data: InstitutionAdminOnboardingData) => void;
@@ -40,14 +59,14 @@ const INSTITUTION_TYPES = [
   'Elementary School',
   'Training Center',
   'Corporate Training',
-  'Other'
+  'Other',
 ];
 
 const INSTITUTION_SIZES = [
   'Small (1-100 users)',
   'Medium (101-500 users)',
   'Large (501-2000 users)',
-  'Very Large (2000+ users)'
+  'Very Large (2000+ users)',
 ];
 
 const COMMON_DEPARTMENTS = [
@@ -63,7 +82,7 @@ const COMMON_DEPARTMENTS = [
   'Physical Education',
   'Foreign Languages',
   'Psychology',
-  'Medicine/Health Sciences'
+  'Medicine/Health Sciences',
 ];
 
 const ADMIN_RESPONSIBILITIES = [
@@ -76,7 +95,7 @@ const ADMIN_RESPONSIBILITIES = [
   'Data and analytics review',
   'Budget and resource allocation',
   'Compliance and reporting',
-  'Technology integration'
+  'Technology integration',
 ];
 
 const MANAGEMENT_EXPERIENCE = [
@@ -84,7 +103,7 @@ const MANAGEMENT_EXPERIENCE = [
   '1-3 years of experience',
   '4-7 years of experience',
   '8-15 years of experience',
-  '15+ years of experience'
+  '15+ years of experience',
 ];
 
 const ADMIN_PRIORITIES = [
@@ -97,10 +116,13 @@ const ADMIN_PRIORITIES = [
   'Compliance and accreditation',
   'Student engagement',
   'Faculty development',
-  'Institutional growth'
+  'Institutional growth',
 ];
 
-export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: InstitutionAdminOnboardingProps) {
+export function InstitutionAdminOnboarding({
+  onComplete,
+  userName = 'there',
+}: InstitutionAdminOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<InstitutionAdminOnboardingData>({
     firstName: '',
@@ -115,7 +137,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
     priorities: [],
     contactEmail: '',
     contactPhone: '',
-    institutionId: ''
+    institutionId: '',
   });
 
   const totalSteps = 5;
@@ -132,7 +154,9 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
   };
 
   const toggleResponsibility = (responsibility: string) => {
-    const newResponsibilities = formData.responsibilities.includes(responsibility)
+    const newResponsibilities = formData.responsibilities.includes(
+      responsibility
+    )
       ? formData.responsibilities.filter(r => r !== responsibility)
       : [...formData.responsibilities, responsibility];
     updateFormData({ responsibilities: newResponsibilities });
@@ -172,7 +196,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                 Welcome, {userName}!
               </CardTitle>
               <CardDescription>
-                Let's set up your administrative profile
+                Let&apos;s set up your administrative profile
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -182,7 +206,9 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                   <Input
                     id="firstName"
                     value={formData.firstName}
-                    onChange={(e) => updateFormData({ firstName: e.target.value })}
+                    onChange={e =>
+                      updateFormData({ firstName: e.target.value })
+                    }
                     placeholder="Enter your first name"
                   />
                 </div>
@@ -191,7 +217,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                   <Input
                     id="lastName"
                     value={formData.lastName}
-                    onChange={(e) => updateFormData({ lastName: e.target.value })}
+                    onChange={e => updateFormData({ lastName: e.target.value })}
                     placeholder="Enter your last name"
                   />
                 </div>
@@ -201,7 +227,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                 <Input
                   id="jobTitle"
                   value={formData.jobTitle}
-                  onChange={(e) => updateFormData({ jobTitle: e.target.value })}
+                  onChange={e => updateFormData({ jobTitle: e.target.value })}
                   placeholder="e.g., Dean, Principal, Director, Administrator"
                 />
               </div>
@@ -212,7 +238,9 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                     id="contactEmail"
                     type="email"
                     value={formData.contactEmail}
-                    onChange={(e) => updateFormData({ contactEmail: e.target.value })}
+                    onChange={e =>
+                      updateFormData({ contactEmail: e.target.value })
+                    }
                     placeholder="your.email@institution.edu"
                   />
                 </div>
@@ -221,7 +249,9 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                   <Input
                     id="contactPhone"
                     value={formData.contactPhone}
-                    onChange={(e) => updateFormData({ contactPhone: e.target.value })}
+                    onChange={e =>
+                      updateFormData({ contactPhone: e.target.value })
+                    }
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -238,9 +268,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                 <Building className="h-5 w-5" />
                 Institution Information
               </CardTitle>
-              <CardDescription>
-                Tell us about your institution
-              </CardDescription>
+              <CardDescription>Tell us about your institution</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
@@ -248,19 +276,26 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                 <Input
                   id="institutionName"
                   value={formData.institutionName}
-                  onChange={(e) => updateFormData({ institutionName: e.target.value })}
+                  onChange={e =>
+                    updateFormData({ institutionName: e.target.value })
+                  }
                   placeholder="Enter your institution's name"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label>Institution Type</Label>
-                  <Select value={formData.institutionType} onValueChange={(value) => updateFormData({ institutionType: value })}>
+                  <Select
+                    value={formData.institutionType}
+                    onValueChange={value =>
+                      updateFormData({ institutionType: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent>
-                      {INSTITUTION_TYPES.map((type) => (
+                      {INSTITUTION_TYPES.map(type => (
                         <SelectItem key={type} value={type}>
                           {type}
                         </SelectItem>
@@ -270,12 +305,17 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                 </div>
                 <div>
                   <Label>Institution Size</Label>
-                  <Select value={formData.institutionSize} onValueChange={(value) => updateFormData({ institutionSize: value })}>
+                  <Select
+                    value={formData.institutionSize}
+                    onValueChange={value =>
+                      updateFormData({ institutionSize: value })
+                    }
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select size" />
                     </SelectTrigger>
                     <SelectContent>
-                      {INSTITUTION_SIZES.map((size) => (
+                      {INSTITUTION_SIZES.map(size => (
                         <SelectItem key={size} value={size}>
                           {size}
                         </SelectItem>
@@ -304,14 +344,20 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
               <div>
                 <Label>Departments (Select all that apply)</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto">
-                  {COMMON_DEPARTMENTS.map((department) => (
-                    <div key={department} className="flex items-center space-x-2">
+                  {COMMON_DEPARTMENTS.map(department => (
+                    <div
+                      key={department}
+                      className="flex items-center space-x-2"
+                    >
                       <Checkbox
                         id={department}
                         checked={formData.departments.includes(department)}
                         onCheckedChange={() => toggleDepartment(department)}
                       />
-                      <Label htmlFor={department} className="text-sm font-normal">
+                      <Label
+                        htmlFor={department}
+                        className="text-sm font-normal"
+                      >
                         {department}
                       </Label>
                     </div>
@@ -337,12 +383,17 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
             <CardContent className="space-y-4">
               <div>
                 <Label>Management Experience</Label>
-                <Select value={formData.managementExperience} onValueChange={(value) => updateFormData({ managementExperience: value })}>
+                <Select
+                  value={formData.managementExperience}
+                  onValueChange={value =>
+                    updateFormData({ managementExperience: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your experience level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {MANAGEMENT_EXPERIENCE.map((level) => (
+                    {MANAGEMENT_EXPERIENCE.map(level => (
                       <SelectItem key={level} value={level}>
                         {level}
                       </SelectItem>
@@ -353,14 +404,24 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
               <div>
                 <Label>Key Responsibilities (Select all that apply)</Label>
                 <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
-                  {ADMIN_RESPONSIBILITIES.map((responsibility) => (
-                    <div key={responsibility} className="flex items-center space-x-2">
+                  {ADMIN_RESPONSIBILITIES.map(responsibility => (
+                    <div
+                      key={responsibility}
+                      className="flex items-center space-x-2"
+                    >
                       <Checkbox
                         id={responsibility}
-                        checked={formData.responsibilities.includes(responsibility)}
-                        onCheckedChange={() => toggleResponsibility(responsibility)}
+                        checked={formData.responsibilities.includes(
+                          responsibility
+                        )}
+                        onCheckedChange={() =>
+                          toggleResponsibility(responsibility)
+                        }
                       />
-                      <Label htmlFor={responsibility} className="text-sm font-normal">
+                      <Label
+                        htmlFor={responsibility}
+                        className="text-sm font-normal"
+                      >
                         {responsibility}
                       </Label>
                     </div>
@@ -384,7 +445,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
               <div>
                 <Label>Top Priorities (Select your main goals)</Label>
                 <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
-                  {ADMIN_PRIORITIES.map((priority) => (
+                  {ADMIN_PRIORITIES.map(priority => (
                     <div key={priority} className="flex items-center space-x-2">
                       <Checkbox
                         id={priority}
@@ -399,7 +460,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
                 </div>
               </div>
               <div className="bg-purple-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">What's Next?</h4>
+                <h4 className="font-semibold mb-2">What&apos;s Next?</h4>
                 <ul className="text-sm space-y-1">
                   <li>• Set up your institution profile</li>
                   <li>• Create and manage departments</li>
@@ -420,13 +481,24 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return formData.firstName.trim() && formData.lastName.trim() && formData.jobTitle.trim() && formData.contactEmail.trim();
+        return (
+          formData.firstName.trim() &&
+          formData.lastName.trim() &&
+          formData.jobTitle.trim() &&
+          formData.contactEmail.trim()
+        );
       case 1:
-        return formData.institutionName.trim() && formData.institutionType && formData.institutionSize;
+        return (
+          formData.institutionName.trim() &&
+          formData.institutionType &&
+          formData.institutionSize
+        );
       case 2:
         return formData.departments.length > 0;
       case 3:
-        return formData.managementExperience && formData.responsibilities.length > 0;
+        return (
+          formData.managementExperience && formData.responsibilities.length > 0
+        );
       case 4:
         return true; // Priorities are optional
       default:
@@ -458,10 +530,7 @@ export function InstitutionAdminOnboarding({ onComplete, userName = 'there' }: I
         {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
           {currentStep > 0 && (
-            <Button
-              variant="outline"
-              onClick={prevStep}
-            >
+            <Button variant="outline" onClick={prevStep}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Previous
             </Button>

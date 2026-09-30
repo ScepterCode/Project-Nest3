@@ -1,14 +1,28 @@
-"use client";
+'use client';
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { BookOpen, Users, Calendar, Clock, FileText, Award, Plus } from 'lucide-react';
+import {
+  BookOpen,
+  Users,
+  Calendar,
+  Clock,
+  FileText,
+  Award,
+  Plus,
+} from 'lucide-react';
 
 interface StudentClass {
   id: string;
@@ -46,34 +60,41 @@ export default function StudentClassesPage() {
   }, [user]);
 
   const loadClasses = async () => {
+    if (!user) return;
     try {
       const supabase = createClient();
-      
+
       console.log('Loading classes for student:', user.id);
-      
+
       // First, check if enrollments table exists and is accessible
       const { data: testEnrollments, error: testError } = await supabase
         .from('enrollments')
         .select('count')
         .limit(1);
-      
+
       if (testError) {
         console.error('Enrollments table not accessible:', testError);
-        setError('Enrollments system not set up. Please contact your administrator.');
+        setError(
+          'Enrollments system not set up. Please contact your administrator.'
+        );
         return;
       }
-      
-      console.log('Enrollments table accessible, loading student enrollments...');
-      
+
+      console.log(
+        'Enrollments table accessible, loading student enrollments...'
+      );
+
       // Get classes the student is enrolled in with simpler query first
       const { data: enrollments, error } = await supabase
         .from('enrollments')
-        .select(`
+        .select(
+          `
           id,
           enrolled_at,
           status,
           class_id
-        `)
+        `
+        )
         .eq('student_id', user.id);
 
       if (error) {
@@ -81,55 +102,63 @@ export default function StudentClassesPage() {
         console.error('Error details:', {
           message: error.message,
           code: error.code,
-          details: error.details
+          details: error.details,
         });
         setError(`Failed to load enrollments: ${error.message}`);
         return;
       }
-      
+
       console.log('Found enrollments:', enrollments?.length || 0);
-      
+
       if (!enrollments || enrollments.length === 0) {
         setClasses([]);
         return;
       }
-      
+
       // Get class details for each enrollment
       const classIds = enrollments.map(e => e.class_id);
       const { data: classesData, error: classesError } = await supabase
         .from('classes')
-        .select(`
+        .select(
+          `
           id,
           name,
           description,
           teacher_id,
           status,
           created_at
-        `)
+        `
+        )
         .in('id', classIds);
-        
+
       if (classesError) {
         console.error('Error loading class details:', classesError);
         setError(`Failed to load class details: ${classesError.message}`);
         return;
       }
-      
+
       console.log('Found classes:', classesData?.length || 0);
 
       // Combine enrollment and class data
       const classesWithStats = await Promise.all(
-        enrollments.map(async (enrollment) => {
-          const classData = classesData?.find(c => c.id === enrollment.class_id);
-          
+        enrollments.map(async enrollment => {
+          const classData = classesData?.find(
+            c => c.id === enrollment.class_id
+          );
+
           if (!classData) {
-            console.warn('Class not found for enrollment:', enrollment.class_id);
+            console.warn(
+              'Class not found for enrollment:',
+              enrollment.class_id
+            );
             return null;
           }
-          
+
           // Get assignments for this class
           const { data: assignments } = await supabase
             .from('assignments')
-            .select(`
+            .select(
+              `
               id,
               title,
               due_date,
@@ -138,26 +167,42 @@ export default function StudentClassesPage() {
                 grade,
                 submitted_at
               )
-            `)
+            `
+            )
             .eq('class_id', classData.id);
 
           // Calculate statistics
           const totalAssignments = assignments?.length || 0;
-          const submittedAssignments = assignments?.filter(a => 
-            a.submissions.some(s => s.submitted_at)
-          ).length || 0;
-          const gradedAssignments = assignments?.filter(a => 
-            a.submissions.some(s => s.grade !== null)
-          ).length || 0;
-          
+          const submittedAssignments =
+            assignments?.filter(a => a.submissions.some(s => s.submitted_at))
+              .length || 0;
+          const gradedAssignments =
+            assignments?.filter(a => a.submissions.some(s => s.grade !== null))
+              .length || 0;
+
           // Calculate average grade
-          const grades = assignments?.map(a => a.submissions[0]?.grade).filter(g => g !== null && g !== undefined) || [];
-          const averageGrade = grades.length > 0 ? grades.reduce((sum, grade) => sum + grade, 0) / grades.length : 0;
+          const grades =
+            assignments
+              ?.map(a => a.submissions[0]?.grade)
+              .filter(g => g !== null && g !== undefined) || [];
+          const averageGrade =
+            grades.length > 0
+              ? grades.reduce((sum, grade) => sum + grade, 0) / grades.length
+              : 0;
 
           // Find next assignment due
-          const upcomingAssignments = assignments?.filter(a => 
-            new Date(a.due_date) > new Date() && !a.submissions.some(s => s.submitted_at)
-          ).sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()) || [];
+          const upcomingAssignments =
+            assignments
+              ?.filter(
+                a =>
+                  new Date(a.due_date) > new Date() &&
+                  !a.submissions.some(s => s.submitted_at)
+              )
+              .sort(
+                (a, b) =>
+                  new Date(a.due_date).getTime() -
+                  new Date(b.due_date).getTime()
+              ) || [];
 
           // Get teacher information separately
           const { data: teacherData } = await supabase
@@ -165,8 +210,10 @@ export default function StudentClassesPage() {
             .select('first_name, last_name')
             .eq('id', classData.teacher_id)
             .single();
-            
-          const teacherName = teacherData ? `${teacherData.first_name} ${teacherData.last_name}` : 'Unknown Teacher';
+
+          const teacherName = teacherData
+            ? `${teacherData.first_name} ${teacherData.last_name}`
+            : 'Unknown Teacher';
 
           return {
             id: classData.id,
@@ -181,7 +228,7 @@ export default function StudentClassesPage() {
             pending_assignments: totalAssignments - submittedAssignments,
             average_grade: averageGrade,
             next_assignment_due: upcomingAssignments[0]?.due_date,
-            next_assignment_title: upcomingAssignments[0]?.title
+            next_assignment_title: upcomingAssignments[0]?.title,
           };
         })
       );
@@ -226,7 +273,7 @@ export default function StudentClassesPage() {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -236,7 +283,7 @@ export default function StudentClassesPage() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -259,7 +306,9 @@ export default function StudentClassesPage() {
           <div className="flex justify-between items-center py-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">My Classes</h1>
-              <p className="text-gray-600">Manage your enrolled classes, {getUserDisplayName()}</p>
+              <p className="text-gray-600">
+                Manage your enrolled classes, {getUserDisplayName()}
+              </p>
             </div>
             <div className="flex gap-2">
               <Button
@@ -291,11 +340,16 @@ export default function StudentClassesPage() {
           <Card>
             <CardContent className="text-center py-12">
               <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Classes Yet</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Classes Yet
+              </h3>
               <p className="text-gray-600 mb-4">
-                You're not enrolled in any classes yet. Join a class to start learning!
+                You&apos;re not enrolled in any classes yet. Join a class to
+                start learning!
               </p>
-              <Button onClick={() => router.push('/dashboard/student/classes/join')}>
+              <Button
+                onClick={() => router.push('/dashboard/student/classes/join')}
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Join Your First Class
               </Button>
@@ -311,7 +365,9 @@ export default function StudentClassesPage() {
                     <div className="text-2xl font-bold text-blue-600">
                       {classes.length}
                     </div>
-                    <div className="text-sm text-gray-500">Enrolled Classes</div>
+                    <div className="text-sm text-gray-500">
+                      Enrolled Classes
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -319,9 +375,14 @@ export default function StudentClassesPage() {
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
-                      {classes.reduce((sum, c) => sum + c.completed_assignments, 0)}
+                      {classes.reduce(
+                        (sum, c) => sum + c.completed_assignments,
+                        0
+                      )}
                     </div>
-                    <div className="text-sm text-gray-500">Completed Assignments</div>
+                    <div className="text-sm text-gray-500">
+                      Completed Assignments
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -329,24 +390,38 @@ export default function StudentClassesPage() {
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-yellow-600">
-                      {classes.reduce((sum, c) => sum + c.pending_assignments, 0)}
+                      {classes.reduce(
+                        (sum, c) => sum + c.pending_assignments,
+                        0
+                      )}
                     </div>
-                    <div className="text-sm text-gray-500">Pending Assignments</div>
+                    <div className="text-sm text-gray-500">
+                      Pending Assignments
+                    </div>
                   </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="pt-6">
                   <div className="text-center">
-                    <div className={`text-2xl font-bold ${getGradeColor(
-                      classes.length > 0 
-                        ? classes.reduce((sum, c) => sum + c.average_grade, 0) / classes.length 
-                        : 0
-                    )}`}>
-                      {classes.length > 0 
-                        ? getLetterGrade(classes.reduce((sum, c) => sum + c.average_grade, 0) / classes.length)
-                        : 'N/A'
-                      }
+                    <div
+                      className={`text-2xl font-bold ${getGradeColor(
+                        classes.length > 0
+                          ? classes.reduce(
+                              (sum, c) => sum + c.average_grade,
+                              0
+                            ) / classes.length
+                          : 0
+                      )}`}
+                    >
+                      {classes.length > 0
+                        ? getLetterGrade(
+                            classes.reduce(
+                              (sum, c) => sum + c.average_grade,
+                              0
+                            ) / classes.length
+                          )
+                        : 'N/A'}
                     </div>
                     <div className="text-sm text-gray-500">Overall Grade</div>
                   </div>
@@ -356,12 +431,17 @@ export default function StudentClassesPage() {
 
             {/* Classes List */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {classes.map((classItem) => (
-                <Card key={classItem.id} className="hover:shadow-lg transition-shadow">
+              {classes.map(classItem => (
+                <Card
+                  key={classItem.id}
+                  className="hover:shadow-lg transition-shadow"
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <CardTitle className="text-lg">{classItem.name}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {classItem.name}
+                        </CardTitle>
                         <CardDescription className="mt-1">
                           Taught by {classItem.teacher_name}
                         </CardDescription>
@@ -372,28 +452,40 @@ export default function StudentClassesPage() {
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-gray-600 text-sm">{classItem.description}</p>
-                    
+                    <p className="text-gray-600 text-sm">
+                      {classItem.description}
+                    </p>
+
                     {/* Progress */}
                     <div>
                       <div className="flex justify-between text-sm mb-1">
                         <span>Assignment Progress</span>
-                        <span>{classItem.completed_assignments}/{classItem.total_assignments}</span>
+                        <span>
+                          {classItem.completed_assignments}/
+                          {classItem.total_assignments}
+                        </span>
                       </div>
-                      <Progress 
-                        value={classItem.total_assignments > 0 
-                          ? (classItem.completed_assignments / classItem.total_assignments) * 100 
-                          : 0
-                        } 
+                      <Progress
+                        value={
+                          classItem.total_assignments > 0
+                            ? (classItem.completed_assignments /
+                                classItem.total_assignments) *
+                              100
+                            : 0
+                        }
                       />
                     </div>
 
                     {/* Grade */}
                     {classItem.average_grade > 0 && (
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Current Grade:</span>
+                        <span className="text-sm text-gray-600">
+                          Current Grade:
+                        </span>
                         <div className="flex items-center gap-2">
-                          <span className={`font-bold ${getGradeColor(classItem.average_grade)}`}>
+                          <span
+                            className={`font-bold ${getGradeColor(classItem.average_grade)}`}
+                          >
                             {getLetterGrade(classItem.average_grade)}
                           </span>
                           <span className="text-sm text-gray-500">
@@ -408,7 +500,9 @@ export default function StudentClassesPage() {
                       <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <div className="flex items-center gap-2 text-yellow-800">
                           <Clock className="h-4 w-4" />
-                          <span className="font-medium">Next Assignment Due</span>
+                          <span className="font-medium">
+                            Next Assignment Due
+                          </span>
                         </div>
                         <p className="text-sm text-yellow-700 mt-1">
                           {classItem.next_assignment_title}
@@ -422,15 +516,21 @@ export default function StudentClassesPage() {
                     {/* Stats */}
                     <div className="grid grid-cols-3 gap-4 text-center text-sm">
                       <div>
-                        <div className="font-medium text-blue-600">{classItem.total_assignments}</div>
+                        <div className="font-medium text-blue-600">
+                          {classItem.total_assignments}
+                        </div>
                         <div className="text-gray-500">Total</div>
                       </div>
                       <div>
-                        <div className="font-medium text-green-600">{classItem.completed_assignments}</div>
+                        <div className="font-medium text-green-600">
+                          {classItem.completed_assignments}
+                        </div>
                         <div className="text-gray-500">Done</div>
                       </div>
                       <div>
-                        <div className="font-medium text-yellow-600">{classItem.pending_assignments}</div>
+                        <div className="font-medium text-yellow-600">
+                          {classItem.pending_assignments}
+                        </div>
                         <div className="text-gray-500">Pending</div>
                       </div>
                     </div>
@@ -440,7 +540,11 @@ export default function StudentClassesPage() {
                       <Button
                         size="sm"
                         className="flex-1"
-                        onClick={() => router.push(`/dashboard/student/classes/${classItem.id}`)}
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/student/classes/${classItem.id}`
+                          )
+                        }
                       >
                         <BookOpen className="h-4 w-4 mr-2" />
                         Enter Class
@@ -448,7 +552,11 @@ export default function StudentClassesPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/dashboard/student/assignments?class=${classItem.id}`)}
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/student/assignments?class=${classItem.id}`
+                          )
+                        }
                       >
                         <FileText className="h-4 w-4 mr-2" />
                         Assignments

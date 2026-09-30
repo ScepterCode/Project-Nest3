@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { one } from '@/lib/supabase/relations';
 import {
   Card,
   CardContent,
@@ -94,7 +95,7 @@ export default function AssignmentSubmissionsPage({
         title: assignmentData.title,
         description: assignmentData.description,
         due_date: assignmentData.due_date,
-        class_name: assignmentData.classes.name,
+        class_name: one(assignmentData.classes)?.name,
       });
 
       // Load submissions

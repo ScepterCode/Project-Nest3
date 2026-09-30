@@ -109,10 +109,17 @@ export default function TeacherPeerReviewsPage() {
     setLoading(true);
     try {
       // First fetch assignments and classes
-      await Promise.all([fetchPeerReviewAssignments(), fetchClasses()]);
+      const [assignments] = await Promise.all([
+        fetchPeerReviewAssignments(),
+        fetchClasses(),
+      ]);
 
-      // Then fetch activity and stats after assignments are loaded
-      await Promise.all([fetchRecentActivity(), fetchOverallStats()]);
+      // Then fetch activity and stats for those assignments. (Passed in because
+      // the state set above isn't visible until the next render.)
+      await Promise.all([
+        fetchRecentActivity(assignments ?? []),
+        fetchOverallStats(assignments ?? []),
+      ]);
     } catch (error) {
       console.error('Error fetching peer review data:', error);
     } finally {
@@ -211,8 +218,10 @@ export default function TeacherPeerReviewsPage() {
         }) || [];
 
       setPeerReviewAssignments(formattedAssignments);
+      return formattedAssignments;
     } catch (error) {
       console.error('Error fetching peer review assignments:', error);
+      return [];
     }
   };
 
@@ -234,21 +243,13 @@ export default function TeacherPeerReviewsPage() {
     }
   };
 
-  const fetchRecentActivity = async () => {
+  const fetchRecentActivity = async (assignments: PeerReviewAssignment[]) => {
     try {
       // Only fetch if we have assignments to filter by
-      if (peerReviewAssignments.length === 0) {
+      if (assignments.length === 0) {
         setRecentActivity([]);
         return;
       }
-
-      // Temporary: Disable recent activity to prevent console errors
-      // TODO: Fix foreign key relationships in peer_review_activity table
-      console.log(
-        'ℹ️ Recent activity temporarily disabled to prevent console errors'
-      );
-      setRecentActivity([]);
-      return;
 
       // First get the activity data without joins
       const { data: activityData, error } = await supabase
@@ -265,7 +266,7 @@ export default function TeacherPeerReviewsPage() {
         )
         .in(
           'peer_review_assignment_id',
-          peerReviewAssignments.map(a => a.id)
+          assignments.map(a => a.id)
         )
         .order('created_at', { ascending: false })
         .limit(10);
@@ -303,7 +304,7 @@ export default function TeacherPeerReviewsPage() {
       }
 
       // Get assignment titles separately
-      const assignmentTitles = peerReviewAssignments.reduce(
+      const assignmentTitles = assignments.reduce(
         (acc, assignment) => {
           acc[assignment.id] = assignment.title;
           return acc;
@@ -333,26 +334,24 @@ export default function TeacherPeerReviewsPage() {
     }
   };
 
-  const fetchOverallStats = async () => {
+  const fetchOverallStats = async (assignments: PeerReviewAssignment[]) => {
     try {
       // Get basic counts
-      const totalAssignments = peerReviewAssignments.length;
-      const activeAssignments = peerReviewAssignments.filter(
+      const totalAssignments = assignments.length;
+      const activeAssignments = assignments.filter(
         a => a.status === 'active'
       ).length;
-      const totalReviews = peerReviewAssignments.reduce(
+      const totalReviews = assignments.reduce(
         (sum, a) => sum + a.total_reviews,
         0
       );
-      const completedReviews = peerReviewAssignments.reduce(
+      const completedReviews = assignments.reduce(
         (sum, a) => sum + a.reviews_completed,
         0
       );
 
       // Calculate average quality
-      const reviewsWithRatings = peerReviewAssignments.filter(
-        a => a.average_rating > 0
-      );
+      const reviewsWithRatings = assignments.filter(a => a.average_rating > 0);
       const averageQuality =
         reviewsWithRatings.length > 0
           ? reviewsWithRatings.reduce((sum, a) => sum + a.average_rating, 0) /
@@ -365,14 +364,14 @@ export default function TeacherPeerReviewsPage() {
 
       // Get flagged reviews count only if we have assignments
       let flaggedCount = 0;
-      if (peerReviewAssignments.length > 0) {
+      if (assignments.length > 0) {
         const { count } = await supabase
           .from('peer_reviews')
           .select('*', { count: 'exact', head: true })
           .eq('is_flagged', true)
           .in(
             'peer_review_assignment_id',
-            peerReviewAssignments.map(a => a.id)
+            assignments.map(a => a.id)
           );
 
         flaggedCount = count || 0;
