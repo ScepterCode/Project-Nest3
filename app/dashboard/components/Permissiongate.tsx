@@ -4,7 +4,6 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
-  Landmark,
   Layers,
   LineChart,
   User,
@@ -80,39 +79,5 @@ export const InstitutionRolegate = [
     text: 'Reports',
     href: '/dashboard/institution/reports',
     icon: <FileText />,
-  },
-];
-export const DepartmentRolegate = [
-  {
-    permission: 'department_users.manage',
-    text: 'Department Users',
-    href: '/dashboard/department_admin/users',
-    icon: <User />,
-  },
-  {
-    permission: 'department_classes.manage',
-    text: 'Classes',
-    href: '/dashboard/department_admin/classes',
-    icon: <GraduationCap />,
-  },
-  {
-    permission: 'reports.read',
-    text: 'Reports',
-    href: '/dashboard/institution/reports',
-    icon: <FileText />,
-  },
-];
-export const SystemRolegate = [
-  {
-    permission: 'system.manage',
-    text: 'Institutions',
-    href: '/dashboard/admin/institutions',
-    Icon: <Landmark />,
-  },
-  {
-    permission: 'system.manage',
-    text: 'All Users',
-    href: '/dashboard/admin/users',
-    icon: <User />,
   },
 ];

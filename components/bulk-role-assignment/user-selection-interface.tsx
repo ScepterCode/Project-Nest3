@@ -1,12 +1,20 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { Search, Filter, Users, CheckSquare, Square, AlertTriangle, Info } from 'lucide-react';
+import {
+  Search,
+  Filter,
+  Users,
+  CheckSquare,
+  Square,
+  AlertTriangle,
+  Info,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { 
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -37,17 +45,19 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  UserSelectionCriteria, 
-  SelectedUser, 
+import {
+  UserSelectionCriteria,
+  SelectedUser,
   UserRole,
-  UserSelectionResult 
+  UserSelectionResult,
 } from '@/lib/types/bulk-role-assignment';
 
 interface UserSelectionInterfaceProps {
   institutionId: string;
   onSelectionChange: (selectedUsers: SelectedUser[]) => void;
-  onSearchUsers: (criteria: UserSelectionCriteria) => Promise<UserSelectionResult>;
+  onSearchUsers: (
+    criteria: UserSelectionCriteria
+  ) => Promise<UserSelectionResult>;
   initialSelection?: SelectedUser[];
   maxSelections?: number;
   excludeRoles?: UserRole[];
@@ -61,20 +71,24 @@ export function UserSelectionInterface({
   initialSelection = [],
   maxSelections,
   excludeRoles = [],
-  departments = []
+  departments = [],
 }: UserSelectionInterfaceProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDepartments, setSelectedDepartments] = useState<string[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<UserRole[]>([]);
   const [includeInactive, setIncludeInactive] = useState(false);
   const [users, setUsers] = useState<SelectedUser[]>([]);
-  const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>(initialSelection);
+  const [selectedUsers, setSelectedUsers] =
+    useState<SelectedUser[]>(initialSelection);
   const [loading, setLoading] = useState(false);
   const [totalCount, setTotalCount] = useState(0);
   const [showFilters, setShowFilters] = useState(false);
 
-  const availableRoles: UserRole[] = ['student', 'teacher', 'department_admin', 'institution_admin']
-    .filter(role => !excludeRoles.includes(role as UserRole)) as UserRole[];
+  const availableRoles: UserRole[] = [
+    'student',
+    'teacher',
+    'institution_admin',
+  ].filter(role => !excludeRoles.includes(role as UserRole)) as UserRole[];
 
   // Debounced search function
   const debouncedSearch = useCallback(
@@ -100,18 +114,27 @@ export function UserSelectionInterface({
     const criteria: UserSelectionCriteria = {
       institutionId,
       searchQuery: searchQuery.trim() || undefined,
-      departmentIds: selectedDepartments.length > 0 ? selectedDepartments : undefined,
+      departmentIds:
+        selectedDepartments.length > 0 ? selectedDepartments : undefined,
       currentRoles: selectedRoles.length > 0 ? selectedRoles : undefined,
       includeInactive,
-      excludeUserIds: selectedUsers.map(u => u.id)
+      excludeUserIds: selectedUsers.map(u => u.id),
     };
 
     debouncedSearch(criteria);
-  }, [searchQuery, selectedDepartments, selectedRoles, includeInactive, institutionId, selectedUsers, debouncedSearch]);
+  }, [
+    searchQuery,
+    selectedDepartments,
+    selectedRoles,
+    includeInactive,
+    institutionId,
+    selectedUsers,
+    debouncedSearch,
+  ]);
 
   const handleUserToggle = (user: SelectedUser, checked: boolean) => {
     let newSelection: SelectedUser[];
-    
+
     if (checked) {
       if (maxSelections && selectedUsers.length >= maxSelections) {
         return; // Don't add if max reached
@@ -120,27 +143,29 @@ export function UserSelectionInterface({
     } else {
       newSelection = selectedUsers.filter(u => u.id !== user.id);
     }
-    
+
     setSelectedUsers(newSelection);
     onSelectionChange(newSelection);
   };
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      const availableUsers = users.filter(user => 
-        !selectedUsers.some(selected => selected.id === user.id)
+      const availableUsers = users.filter(
+        user => !selectedUsers.some(selected => selected.id === user.id)
       );
-      
-      const usersToAdd = maxSelections 
+
+      const usersToAdd = maxSelections
         ? availableUsers.slice(0, maxSelections - selectedUsers.length)
         : availableUsers;
-      
+
       const newSelection = [...selectedUsers, ...usersToAdd];
       setSelectedUsers(newSelection);
       onSelectionChange(newSelection);
     } else {
       const userIdsToRemove = new Set(users.map(u => u.id));
-      const newSelection = selectedUsers.filter(u => !userIdsToRemove.has(u.id));
+      const newSelection = selectedUsers.filter(
+        u => !userIdsToRemove.has(u.id)
+      );
       setSelectedUsers(newSelection);
       onSelectionChange(newSelection);
     }
@@ -158,8 +183,10 @@ export function UserSelectionInterface({
     setIncludeInactive(false);
   };
 
-  const isUserSelected = (userId: string) => selectedUsers.some(u => u.id === userId);
-  const allCurrentUsersSelected = users.length > 0 && users.every(user => isUserSelected(user.id));
+  const isUserSelected = (userId: string) =>
+    selectedUsers.some(u => u.id === userId);
+  const allCurrentUsersSelected =
+    users.length > 0 && users.every(user => isUserSelected(user.id));
   const someCurrentUsersSelected = users.some(user => isUserSelected(user.id));
 
   const getRoleColor = (role: UserRole) => {
@@ -167,7 +194,7 @@ export function UserSelectionInterface({
       student: 'bg-blue-100 text-blue-800',
       teacher: 'bg-green-100 text-green-800',
       department_admin: 'bg-yellow-100 text-yellow-800',
-      institution_admin: 'bg-purple-100 text-purple-800'
+      institution_admin: 'bg-purple-100 text-purple-800',
     };
     return colors[role] || 'bg-gray-100 text-gray-800';
   };
@@ -176,7 +203,7 @@ export function UserSelectionInterface({
     const colors = {
       low: 'text-green-600',
       medium: 'text-yellow-600',
-      high: 'text-red-600'
+      high: 'text-red-600',
     };
     return colors[risk];
   };
@@ -245,7 +272,7 @@ export function UserSelectionInterface({
                 <Input
                   placeholder="Search by name or email..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={e => setSearchQuery(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -256,9 +283,13 @@ export function UserSelectionInterface({
               >
                 <Filter className="h-4 w-4" />
                 Filters
-                {(selectedDepartments.length > 0 || selectedRoles.length > 0 || includeInactive) && (
+                {(selectedDepartments.length > 0 ||
+                  selectedRoles.length > 0 ||
+                  includeInactive) && (
                   <Badge variant="secondary" className="ml-1">
-                    {selectedDepartments.length + selectedRoles.length + (includeInactive ? 1 : 0)}
+                    {selectedDepartments.length +
+                      selectedRoles.length +
+                      (includeInactive ? 1 : 0)}
                   </Badge>
                 )}
               </Button>
@@ -269,10 +300,12 @@ export function UserSelectionInterface({
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Department</label>
+                      <label className="text-sm font-medium mb-2 block">
+                        Department
+                      </label>
                       <Select
                         value={selectedDepartments[0] || ''}
-                        onValueChange={(value) => 
+                        onValueChange={value =>
                           setSelectedDepartments(value ? [value] : [])
                         }
                       >
@@ -291,10 +324,12 @@ export function UserSelectionInterface({
                     </div>
 
                     <div>
-                      <label className="text-sm font-medium mb-2 block">Current Role</label>
+                      <label className="text-sm font-medium mb-2 block">
+                        Current Role
+                      </label>
                       <Select
                         value={selectedRoles[0] || ''}
-                        onValueChange={(value) => 
+                        onValueChange={value =>
                           setSelectedRoles(value ? [value as UserRole] : [])
                         }
                       >
@@ -305,7 +340,9 @@ export function UserSelectionInterface({
                           <SelectItem value="">All roles</SelectItem>
                           {availableRoles.map(role => (
                             <SelectItem key={role} value={role}>
-                              {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                              {role
+                                .replace('_', ' ')
+                                .replace(/\b\w/g, l => l.toUpperCase())}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -316,7 +353,9 @@ export function UserSelectionInterface({
                       <Checkbox
                         id="include-inactive"
                         checked={includeInactive}
-                        onCheckedChange={(checked) => setIncludeInactive(checked as boolean)}
+                        onCheckedChange={checked =>
+                          setIncludeInactive(checked as boolean)
+                        }
                       />
                       <label htmlFor="include-inactive" className="text-sm">
                         Include inactive users
@@ -352,9 +391,15 @@ export function UserSelectionInterface({
                 <Checkbox
                   checked={allCurrentUsersSelected}
                   onCheckedChange={handleSelectAll}
-                  className={someCurrentUsersSelected && !allCurrentUsersSelected ? 'data-[state=checked]:bg-blue-600' : ''}
+                  className={
+                    someCurrentUsersSelected && !allCurrentUsersSelected
+                      ? 'data-[state=checked]:bg-blue-600'
+                      : ''
+                  }
                 />
-                <span className="text-sm text-gray-600">Select all visible</span>
+                <span className="text-sm text-gray-600">
+                  Select all visible
+                </span>
               </div>
             )}
           </div>
@@ -384,19 +429,26 @@ export function UserSelectionInterface({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {users.map((user) => {
+                  {users.map(user => {
                     const selected = isUserSelected(user.id);
-                    const disabled = maxSelections && selectedUsers.length >= maxSelections && !selected;
-                    
+                    const disabled =
+                      maxSelections &&
+                      selectedUsers.length >= maxSelections &&
+                      !selected;
+
                     return (
-                      <TableRow 
-                        key={user.id} 
-                        className={selected ? 'bg-blue-50' : disabled ? 'opacity-50' : ''}
+                      <TableRow
+                        key={user.id}
+                        className={
+                          selected ? 'bg-blue-50' : disabled ? 'opacity-50' : ''
+                        }
                       >
                         <TableCell>
                           <Checkbox
                             checked={selected}
-                            onCheckedChange={(checked) => handleUserToggle(user, checked as boolean)}
+                            onCheckedChange={checked =>
+                              handleUserToggle(user, checked as boolean)
+                            }
                             disabled={disabled}
                           />
                         </TableCell>
@@ -406,45 +458,70 @@ export function UserSelectionInterface({
                         <TableCell>{user.email}</TableCell>
                         <TableCell>
                           <Badge className={getRoleColor(user.currentRole)}>
-                            {user.currentRole.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                            {user.currentRole
+                              .replace('_', ' ')
+                              .replace(/\b\w/g, l => l.toUpperCase())}
                           </Badge>
                         </TableCell>
                         <TableCell>{user.departmentName || 'N/A'}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            <div
+                              className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-gray-400'}`}
+                            />
                             {user.isActive ? 'Active' : 'Inactive'}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className={`flex items-center gap-1 ${getConflictRiskColor(user.conflictRisk)}`}>
-                            {user.conflictRisk === 'high' && <AlertTriangle className="h-4 w-4" />}
-                            {user.conflictRisk === 'medium' && <Info className="h-4 w-4" />}
-                            <span className="capitalize">{user.conflictRisk}</span>
-                            {user.conflictReasons && user.conflictReasons.length > 0 && (
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                                    <Info className="h-3 w-3" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent>
-                                  <DialogHeader>
-                                    <DialogTitle>Conflict Details</DialogTitle>
-                                    <DialogDescription>
-                                      Potential issues with assigning roles to {user.firstName} {user.lastName}
-                                    </DialogDescription>
-                                  </DialogHeader>
-                                  <div className="space-y-2">
-                                    {user.conflictReasons.map((reason, index) => (
-                                      <div key={index} className="p-2 bg-yellow-50 rounded text-sm">
-                                        {reason}
-                                      </div>
-                                    ))}
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
+                          <div
+                            className={`flex items-center gap-1 ${getConflictRiskColor(user.conflictRisk)}`}
+                          >
+                            {user.conflictRisk === 'high' && (
+                              <AlertTriangle className="h-4 w-4" />
                             )}
+                            {user.conflictRisk === 'medium' && (
+                              <Info className="h-4 w-4" />
+                            )}
+                            <span className="capitalize">
+                              {user.conflictRisk}
+                            </span>
+                            {user.conflictReasons &&
+                              user.conflictReasons.length > 0 && (
+                                <Dialog>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Info className="h-3 w-3" />
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent>
+                                    <DialogHeader>
+                                      <DialogTitle>
+                                        Conflict Details
+                                      </DialogTitle>
+                                      <DialogDescription>
+                                        Potential issues with assigning roles to{' '}
+                                        {user.firstName} {user.lastName}
+                                      </DialogDescription>
+                                    </DialogHeader>
+                                    <div className="space-y-2">
+                                      {user.conflictReasons.map(
+                                        (reason, index) => (
+                                          <div
+                                            key={index}
+                                            className="p-2 bg-yellow-50 rounded text-sm"
+                                          >
+                                            {reason}
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
                           </div>
                         </TableCell>
                       </TableRow>

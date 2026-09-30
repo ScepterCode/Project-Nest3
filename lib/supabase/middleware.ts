@@ -91,8 +91,9 @@ export async function updateSession(request: NextRequest) {
           student: '/dashboard/student',
           teacher: '/dashboard/teacher',
           institution_admin: '/dashboard/institution',
-          department_admin: '/dashboard/department_admin',
-          system_admin: '/dashboard/admin',
+          // No dashboards for these roles yet.
+          department_admin: '/dashboard/profile',
+          system_admin: '/dashboard/profile',
         };
 
         const correctDashboard =

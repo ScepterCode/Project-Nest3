@@ -1,7 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, AlertTriangle, CheckCircle, Settings } from 'lucide-react';
+import {
+  Users,
+  Shield,
+  AlertTriangle,
+  CheckCircle,
+  Settings,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -18,16 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { UserSelectionInterface } from './user-selection-interface';
 import { AssignmentProcessor } from './assignment-processor';
 import { ConflictResolver } from './conflict-resolver';
-import { 
+import {
   SelectedUser,
   UserRole,
   UserSelectionCriteria,
@@ -36,7 +37,7 @@ import {
   ValidationResult,
   BulkAssignmentResult,
   BulkAssignmentStatus,
-  RoleAssignmentConflict
+  RoleAssignmentConflict,
 } from '@/lib/types/bulk-role-assignment';
 import { useAuth } from '@/contexts/auth-context';
 
@@ -47,21 +48,24 @@ interface Department {
 
 export function BulkRoleAssignmentInterface() {
   const { user } = useAuth();
-  const [currentStep, setCurrentStep] = useState<'select' | 'configure' | 'conflicts'>('select');
+  const [currentStep, setCurrentStep] = useState<
+    'select' | 'configure' | 'conflicts'
+  >('select');
   const [selectedUsers, setSelectedUsers] = useState<SelectedUser[]>([]);
   const [targetRole, setTargetRole] = useState<UserRole>('student');
   const [departments, setDepartments] = useState<Department[]>([]);
   const [conflicts, setConflicts] = useState<RoleAssignmentConflict[]>([]);
-  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [validationResult, setValidationResult] =
+    useState<ValidationResult | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Available roles based on user permissions
   const getAvailableRoles = (): UserRole[] => {
     if (!user) return [];
-    
+
     switch (user.role) {
       case 'institution_admin':
-        return ['student', 'teacher', 'department_admin'];
+        return ['student', 'teacher'];
       case 'department_admin':
         return ['student', 'teacher'];
       default:
@@ -86,7 +90,9 @@ export function BulkRoleAssignmentInterface() {
     }
   };
 
-  const handleSearchUsers = async (criteria: UserSelectionCriteria): Promise<UserSelectionResult> => {
+  const handleSearchUsers = async (
+    criteria: UserSelectionCriteria
+  ): Promise<UserSelectionResult> => {
     try {
       const response = await fetch('/api/bulk-role-assignment/users/search', {
         method: 'POST',
@@ -107,7 +113,9 @@ export function BulkRoleAssignmentInterface() {
     }
   };
 
-  const handleValidateAssignment = async (assignment: BulkRoleAssignment): Promise<ValidationResult> => {
+  const handleValidateAssignment = async (
+    assignment: BulkRoleAssignment
+  ): Promise<ValidationResult> => {
     try {
       setLoading(true);
       const response = await fetch('/api/bulk-role-assignment/validate', {
@@ -133,7 +141,9 @@ export function BulkRoleAssignmentInterface() {
     }
   };
 
-  const handleProcessAssignment = async (assignment: BulkRoleAssignment): Promise<BulkAssignmentResult> => {
+  const handleProcessAssignment = async (
+    assignment: BulkRoleAssignment
+  ): Promise<BulkAssignmentResult> => {
     try {
       setLoading(true);
       const response = await fetch('/api/bulk-role-assignment', {
@@ -149,7 +159,7 @@ export function BulkRoleAssignmentInterface() {
       }
 
       const result = await response.json();
-      
+
       // If there are conflicts, show the conflicts tab
       if (result.conflicts && result.conflicts.length > 0) {
         setConflicts(result.conflicts);
@@ -165,10 +175,14 @@ export function BulkRoleAssignmentInterface() {
     }
   };
 
-  const handleGetAssignmentStatus = async (assignmentId: string): Promise<BulkAssignmentStatus> => {
+  const handleGetAssignmentStatus = async (
+    assignmentId: string
+  ): Promise<BulkAssignmentStatus> => {
     try {
-      const response = await fetch(`/api/bulk-role-assignment/status/${assignmentId}`);
-      
+      const response = await fetch(
+        `/api/bulk-role-assignment/status/${assignmentId}`
+      );
+
       if (!response.ok) {
         throw new Error('Failed to get assignment status');
       }
@@ -180,7 +194,10 @@ export function BulkRoleAssignmentInterface() {
     }
   };
 
-  const handleRollbackAssignment = async (assignmentId: string, reason: string) => {
+  const handleRollbackAssignment = async (
+    assignmentId: string,
+    reason: string
+  ) => {
     try {
       const response = await fetch('/api/bulk-role-assignment/rollback', {
         method: 'POST',
@@ -206,7 +223,10 @@ export function BulkRoleAssignmentInterface() {
     console.log('Resolving conflict:', conflictId, resolution);
   };
 
-  const handleBulkResolveConflicts = async (conflictIds: string[], resolution: any) => {
+  const handleBulkResolveConflicts = async (
+    conflictIds: string[],
+    resolution: any
+  ) => {
     // Implementation for bulk conflict resolution
     console.log('Bulk resolving conflicts:', conflictIds, resolution);
   };
@@ -217,18 +237,25 @@ export function BulkRoleAssignmentInterface() {
   };
 
   const canProceedToConfiguration = selectedUsers.length > 0 && targetRole;
-  const canProceedToConflicts = validationResult?.isValid && conflicts.length > 0;
+  const canProceedToConflicts =
+    validationResult?.isValid && conflicts.length > 0;
 
   const getStepStatus = (step: string) => {
     switch (step) {
       case 'select':
         return selectedUsers.length > 0 ? 'completed' : 'current';
       case 'configure':
-        return currentStep === 'configure' ? 'current' : 
-               selectedUsers.length > 0 ? 'available' : 'disabled';
+        return currentStep === 'configure'
+          ? 'current'
+          : selectedUsers.length > 0
+            ? 'available'
+            : 'disabled';
       case 'conflicts':
-        return currentStep === 'conflicts' ? 'current' :
-               conflicts.length > 0 ? 'available' : 'disabled';
+        return currentStep === 'conflicts'
+          ? 'current'
+          : conflicts.length > 0
+            ? 'available'
+            : 'disabled';
       default:
         return 'disabled';
     }
@@ -238,7 +265,7 @@ export function BulkRoleAssignmentInterface() {
     if (status === 'completed') {
       return <CheckCircle className="h-5 w-5 text-green-600" />;
     }
-    
+
     switch (step) {
       case 'select':
         return <Users className="h-5 w-5" />;
@@ -268,29 +295,53 @@ export function BulkRoleAssignmentInterface() {
         <CardContent>
           <div className="flex items-center justify-between">
             {[
-              { key: 'select', label: 'Select Users', description: `${selectedUsers.length} selected` },
-              { key: 'configure', label: 'Configure Assignment', description: targetRole ? `Target: ${targetRole}` : 'Not configured' },
-              { key: 'conflicts', label: 'Resolve Conflicts', description: `${conflicts.length} conflicts` }
+              {
+                key: 'select',
+                label: 'Select Users',
+                description: `${selectedUsers.length} selected`,
+              },
+              {
+                key: 'configure',
+                label: 'Configure Assignment',
+                description: targetRole
+                  ? `Target: ${targetRole}`
+                  : 'Not configured',
+              },
+              {
+                key: 'conflicts',
+                label: 'Resolve Conflicts',
+                description: `${conflicts.length} conflicts`,
+              },
             ].map((step, index) => {
               const status = getStepStatus(step.key);
               const isActive = currentStep === step.key;
               const isCompleted = status === 'completed';
               const isDisabled = status === 'disabled';
-              
+
               return (
                 <div key={step.key} className="flex items-center">
                   <div className="flex flex-col items-center">
                     <Button
-                      variant={isActive ? 'default' : isCompleted ? 'secondary' : 'outline'}
+                      variant={
+                        isActive
+                          ? 'default'
+                          : isCompleted
+                            ? 'secondary'
+                            : 'outline'
+                      }
                       size="lg"
                       className={`w-12 h-12 rounded-full p-0 ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-                      onClick={() => !isDisabled && setCurrentStep(step.key as any)}
+                      onClick={() =>
+                        !isDisabled && setCurrentStep(step.key as any)
+                      }
                       disabled={isDisabled}
                     >
                       {getStepIcon(step.key, status)}
                     </Button>
                     <div className="mt-2 text-center">
-                      <div className={`text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-900'}`}>
+                      <div
+                        className={`text-sm font-medium ${isActive ? 'text-blue-600' : 'text-gray-900'}`}
+                      >
                         {step.label}
                       </div>
                       <div className="text-xs text-gray-500">
@@ -299,7 +350,9 @@ export function BulkRoleAssignmentInterface() {
                     </div>
                   </div>
                   {index < 2 && (
-                    <div className={`flex-1 h-px mx-4 ${isCompleted ? 'bg-green-300' : 'bg-gray-300'}`} />
+                    <div
+                      className={`flex-1 h-px mx-4 ${isCompleted ? 'bg-green-300' : 'bg-gray-300'}`}
+                    />
                   )}
                 </div>
               );
@@ -322,22 +375,31 @@ export function BulkRoleAssignmentInterface() {
         <CardContent>
           <div className="flex items-center gap-4">
             <div className="flex-1">
-              <label className="text-sm font-medium mb-2 block">Target Role</label>
-              <Select value={targetRole} onValueChange={(value) => setTargetRole(value as UserRole)}>
+              <label className="text-sm font-medium mb-2 block">
+                Target Role
+              </label>
+              <Select
+                value={targetRole}
+                onValueChange={value => setTargetRole(value as UserRole)}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Select target role" />
                 </SelectTrigger>
                 <SelectContent>
                   {getAvailableRoles().map(role => (
                     <SelectItem key={role} value={role}>
-                      {role.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      {role
+                        .replace('_', ' ')
+                        .replace(/\b\w/g, l => l.toUpperCase())}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{selectedUsers.length}</div>
+              <div className="text-2xl font-bold text-blue-600">
+                {selectedUsers.length}
+              </div>
               <div className="text-sm text-gray-500">Users Selected</div>
             </div>
           </div>
@@ -345,9 +407,15 @@ export function BulkRoleAssignmentInterface() {
       </Card>
 
       {/* Main Content Tabs */}
-      <Tabs value={currentStep} onValueChange={(value) => setCurrentStep(value as any)}>
+      <Tabs
+        value={currentStep}
+        onValueChange={value => setCurrentStep(value as any)}
+      >
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="select" disabled={getStepStatus('select') === 'disabled'}>
+          <TabsTrigger
+            value="select"
+            disabled={getStepStatus('select') === 'disabled'}
+          >
             <Users className="h-4 w-4 mr-2" />
             Select Users
             {selectedUsers.length > 0 && (
@@ -378,7 +446,9 @@ export function BulkRoleAssignmentInterface() {
             onSearchUsers={handleSearchUsers}
             initialSelection={selectedUsers}
             departments={departments}
-            excludeRoles={user.role === 'department_admin' ? ['institution_admin'] : []}
+            excludeRoles={
+              user.role === 'department_admin' ? ['institution_admin'] : []
+            }
           />
         </TabsContent>
 
@@ -392,7 +462,7 @@ export function BulkRoleAssignmentInterface() {
             onProcess={handleProcessAssignment}
             onGetStatus={handleGetAssignmentStatus}
             onRollback={handleRollbackAssignment}
-            onComplete={(result) => {
+            onComplete={result => {
               if (result.conflicts.length > 0) {
                 setConflicts(result.conflicts);
                 setCurrentStep('conflicts');
@@ -425,7 +495,7 @@ export function BulkRoleAssignmentInterface() {
         >
           Previous Step
         </Button>
-        
+
         <Button
           onClick={() => {
             if (currentStep === 'select' && canProceedToConfiguration) {
@@ -440,9 +510,11 @@ export function BulkRoleAssignmentInterface() {
             currentStep === 'conflicts'
           }
         >
-          {currentStep === 'select' ? 'Configure Assignment' : 
-           currentStep === 'configure' ? 'Review Conflicts' : 
-           'Complete'}
+          {currentStep === 'select'
+            ? 'Configure Assignment'
+            : currentStep === 'configure'
+              ? 'Review Conflicts'
+              : 'Complete'}
         </Button>
       </div>
     </div>
