@@ -1,15 +1,32 @@
-"use client";
+'use client';
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BookOpen, Users, Calendar, Clock, FileText, Award, ArrowLeft, User, Mail, GraduationCap } from 'lucide-react';
+import {
+  BookOpen,
+  Users,
+  Calendar,
+  Clock,
+  FileText,
+  Award,
+  ArrowLeft,
+  User,
+  Mail,
+  GraduationCap,
+} from 'lucide-react';
 
 interface ClassDetail {
   id: string;
@@ -45,12 +62,16 @@ interface Classmate {
   enrollment_date: string;
 }
 
-export default function StudentClassDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function StudentClassDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { user, loading } = useAuth();
   const router = useRouter();
   const resolvedParams = use(params);
   const classId = resolvedParams.id;
-  
+
   const [classDetail, setClassDetail] = useState<ClassDetail | null>(null);
   const [loadingClass, setLoadingClass] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -68,9 +89,10 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
   }, [user, classId]);
 
   const loadClassDetail = async () => {
+    if (!user) return;
     try {
       const supabase = createClient();
-      
+
       // First, verify the student is enrolled in this class
       const { data: enrollment, error: enrollmentError } = await supabase
         .from('enrollments')
@@ -87,14 +109,16 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
       // Get class details
       const { data: classData, error: classError } = await supabase
         .from('classes')
-        .select(`
+        .select(
+          `
           id,
           name,
           description,
           teacher_id,
           status,
           created_at
-        `)
+        `
+        )
         .eq('id', classId)
         .single();
 
@@ -110,14 +134,15 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
         .eq('id', classData.teacher_id)
         .single();
 
-      const teacherName = teacherData 
+      const teacherName = teacherData
         ? `${teacherData.first_name} ${teacherData.last_name}`
         : 'Unknown Teacher';
 
       // Get assignments for this class
       const { data: assignmentsData } = await supabase
         .from('assignments')
-        .select(`
+        .select(
+          `
           id,
           title,
           description,
@@ -126,47 +151,57 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
           status,
           submissions(
             id,
+            student_id,
             grade,
             submitted_at,
             status
           )
-        `)
+        `
+        )
         .eq('class_id', classId)
         .order('due_date', { ascending: true });
 
       // Process assignments
-      const assignments: Assignment[] = (assignmentsData || []).map(assignment => {
-        const submission = assignment.submissions.find(s => s.student_id === user.id);
-        let status: Assignment['status'] = 'upcoming';
-        
-        if (assignment.due_date && new Date(assignment.due_date) < new Date()) {
-          if (submission?.submitted_at) {
+      const assignments: Assignment[] = (assignmentsData || []).map(
+        assignment => {
+          const submission = assignment.submissions.find(
+            s => s.student_id === user.id
+          );
+          let status: Assignment['status'] = 'upcoming';
+
+          if (
+            assignment.due_date &&
+            new Date(assignment.due_date) < new Date()
+          ) {
+            if (submission?.submitted_at) {
+              status = submission.grade !== null ? 'graded' : 'submitted';
+            } else {
+              status = 'overdue';
+            }
+          } else if (submission?.submitted_at) {
             status = submission.grade !== null ? 'graded' : 'submitted';
           } else {
-            status = 'overdue';
+            status = 'active';
           }
-        } else if (submission?.submitted_at) {
-          status = submission.grade !== null ? 'graded' : 'submitted';
-        } else {
-          status = 'active';
-        }
 
-        return {
-          id: assignment.id,
-          title: assignment.title,
-          description: assignment.description,
-          due_date: assignment.due_date,
-          points_possible: assignment.points_possible,
-          status,
-          grade: submission?.grade,
-          submitted_at: submission?.submitted_at
-        };
-      });
+          return {
+            id: assignment.id,
+            title: assignment.title,
+            description: assignment.description,
+            due_date: assignment.due_date,
+            points_possible: assignment.points_possible,
+            status,
+            grade: submission?.grade,
+            submitted_at: submission?.submitted_at,
+          };
+        }
+      );
 
       // Get classmates
       const { data: classmatesData } = await supabase
         .from('enrollments')
-        .select(`
+        .select(
+          `
           student_id,
           enrolled_at,
           users(
@@ -174,27 +209,51 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
             last_name,
             email
           )
-        `)
+        `
+        )
         .eq('class_id', classId)
         .eq('status', 'active')
         .neq('student_id', user.id);
 
-      const classmates: Classmate[] = (classmatesData || []).map(enrollment => ({
-        id: enrollment.student_id,
-        name: enrollment.users 
-          ? `${enrollment.users.first_name} ${enrollment.users.last_name}`
-          : 'Unknown Student',
-        email: enrollment.users?.email || 'unknown@email.com',
-        enrollment_date: enrollment.enrolled_at
-      }));
+      // NOTE: RLS only lets a student read their own enrollment, so this list
+      // is currently always empty (see step-5 notes).
+      const classmates: Classmate[] = (classmatesData || []).map(enrollment => {
+        const profile = (
+          Array.isArray(enrollment.users)
+            ? enrollment.users[0]
+            : enrollment.users
+        ) as
+          | {
+              first_name: string | null;
+              last_name: string | null;
+              email: string | null;
+            }
+          | null
+          | undefined;
+        return {
+          id: enrollment.student_id,
+          name: profile
+            ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim() ||
+              'Unknown Student'
+            : 'Unknown Student',
+          email: profile?.email || '',
+          enrollment_date: enrollment.enrolled_at,
+        };
+      });
 
       // Calculate statistics
       const totalAssignments = assignments.length;
-      const completedAssignments = assignments.filter(a => a.status === 'graded' || a.status === 'submitted').length;
-      const gradedAssignments = assignments.filter(a => a.status === 'graded' && a.grade !== null);
-      const averageGrade = gradedAssignments.length > 0 
-        ? gradedAssignments.reduce((sum, a) => sum + (a.grade || 0), 0) / gradedAssignments.length
-        : 0;
+      const completedAssignments = assignments.filter(
+        a => a.status === 'graded' || a.status === 'submitted'
+      ).length;
+      const gradedAssignments = assignments.filter(
+        a => a.status === 'graded' && a.grade !== null
+      );
+      const averageGrade =
+        gradedAssignments.length > 0
+          ? gradedAssignments.reduce((sum, a) => sum + (a.grade || 0), 0) /
+            gradedAssignments.length
+          : 0;
 
       setClassDetail({
         id: classData.id,
@@ -209,9 +268,8 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
         pending_assignments: totalAssignments - completedAssignments,
         average_grade: averageGrade,
         assignments,
-        classmates
+        classmates,
       });
-
     } catch (error) {
       console.error('Error loading class detail:', error);
       setError('Failed to load class details');
@@ -226,9 +284,9 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
       active: { variant: 'default' as const, text: 'Active' },
       submitted: { variant: 'outline' as const, text: 'Submitted' },
       graded: { variant: 'default' as const, text: 'Graded' },
-      overdue: { variant: 'destructive' as const, text: 'Overdue' }
+      overdue: { variant: 'destructive' as const, text: 'Overdue' },
     };
-    
+
     const config = variants[status];
     return <Badge variant={config.variant}>{config.text}</Badge>;
   };
@@ -237,7 +295,7 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
+      day: 'numeric',
     });
   };
 
@@ -247,7 +305,7 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -271,7 +329,9 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
             <div className="text-red-600 mb-4">
               <FileText className="h-12 w-12 mx-auto" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Access Denied</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Access Denied
+            </h3>
             <p className="text-gray-600 mb-4">{error}</p>
             <Button onClick={() => router.push('/dashboard/student/classes')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -308,8 +368,12 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
                 Back to Classes
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">{classDetail.name}</h1>
-                <p className="text-gray-600">Taught by {classDetail.teacher_name}</p>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  {classDetail.name}
+                </h1>
+                <p className="text-gray-600">
+                  Taught by {classDetail.teacher_name}
+                </p>
               </div>
             </div>
             <Badge variant="secondary">Enrolled</Badge>
@@ -354,7 +418,9 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {classDetail.average_grade > 0 ? `${classDetail.average_grade.toFixed(1)}%` : 'N/A'}
+                  {classDetail.average_grade > 0
+                    ? `${classDetail.average_grade.toFixed(1)}%`
+                    : 'N/A'}
                 </div>
                 <div className="text-sm text-gray-500">Average Grade</div>
               </div>
@@ -385,12 +451,17 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {classDetail.assignments.map((assignment) => (
-                      <div key={assignment.id} className="border rounded-lg p-4">
+                    {classDetail.assignments.map(assignment => (
+                      <div
+                        key={assignment.id}
+                        className="border rounded-lg p-4"
+                      >
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex-1">
                             <h4 className="font-medium">{assignment.title}</h4>
-                            <p className="text-sm text-gray-600 mt-1">{assignment.description}</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {assignment.description}
+                            </p>
                           </div>
                           <div className="flex items-center space-x-2">
                             {getStatusBadge(assignment.status)}
@@ -401,35 +472,48 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="flex justify-between items-center text-sm text-gray-500">
                           <div className="flex items-center space-x-4">
                             {assignment.due_date && (
                               <div className="flex items-center space-x-1">
                                 <Clock className="h-4 w-4" />
-                                <span>Due: {formatDateTime(assignment.due_date)}</span>
+                                <span>
+                                  Due: {formatDateTime(assignment.due_date)}
+                                </span>
                               </div>
                             )}
                             {assignment.submitted_at && (
                               <div className="flex items-center space-x-1">
                                 <FileText className="h-4 w-4" />
-                                <span>Submitted: {formatDateTime(assignment.submitted_at)}</span>
+                                <span>
+                                  Submitted:{' '}
+                                  {formatDateTime(assignment.submitted_at)}
+                                </span>
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="flex space-x-2">
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}`)}
+                              onClick={() =>
+                                router.push(
+                                  `/dashboard/student/assignments/${assignment.id}`
+                                )
+                              }
                             >
                               View Details
                             </Button>
                             {assignment.status === 'active' && (
                               <Button
                                 size="sm"
-                                onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}/submit`)}
+                                onClick={() =>
+                                  router.push(
+                                    `/dashboard/student/assignments/${assignment.id}/submit`
+                                  )
+                                }
                               >
                                 Submit Work
                               </Button>
@@ -447,7 +531,9 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
           <TabsContent value="classmates" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Classmates ({classDetail.classmates.length})</CardTitle>
+                <CardTitle>
+                  Classmates ({classDetail.classmates.length})
+                </CardTitle>
                 <CardDescription>
                   Other students enrolled in this class
                 </CardDescription>
@@ -456,11 +542,13 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
                 {classDetail.classmates.length === 0 ? (
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">No other students enrolled yet</p>
+                    <p className="text-gray-600">
+                      No other students enrolled yet
+                    </p>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {classDetail.classmates.map((classmate) => (
+                    {classDetail.classmates.map(classmate => (
                       <div key={classmate.id} className="border rounded-lg p-4">
                         <div className="flex items-center space-x-3">
                           <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -493,9 +581,11 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
               <CardContent className="space-y-4">
                 <div>
                   <h4 className="font-medium mb-2">Description</h4>
-                  <p className="text-gray-600">{classDetail.description || 'No description provided'}</p>
+                  <p className="text-gray-600">
+                    {classDetail.description || 'No description provided'}
+                  </p>
                 </div>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-medium mb-2">Teacher</h4>
@@ -504,7 +594,7 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
                       <span>{classDetail.teacher_name}</span>
                     </div>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-medium mb-2">Enrollment Date</h4>
                     <div className="flex items-center space-x-2">
@@ -519,13 +609,19 @@ export default function StudentClassDetailPage({ params }: { params: Promise<{ i
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
                       <span>Assignments Completed</span>
-                      <span>{classDetail.completed_assignments}/{classDetail.total_assignments}</span>
+                      <span>
+                        {classDetail.completed_assignments}/
+                        {classDetail.total_assignments}
+                      </span>
                     </div>
-                    <Progress 
-                      value={classDetail.total_assignments > 0 
-                        ? (classDetail.completed_assignments / classDetail.total_assignments) * 100 
-                        : 0
-                      } 
+                    <Progress
+                      value={
+                        classDetail.total_assignments > 0
+                          ? (classDetail.completed_assignments /
+                              classDetail.total_assignments) *
+                            100
+                          : 0
+                      }
                     />
                   </div>
                 </div>

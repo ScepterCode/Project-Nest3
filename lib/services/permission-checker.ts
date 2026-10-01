@@ -1,6 +1,6 @@
 /**
  * Permission Checker Service
- * 
+ *
  * Handles permission validation and access control checks.
  * Provides caching and bulk checking capabilities for performance.
  */
@@ -12,7 +12,7 @@ import {
   PermissionCondition,
   PermissionScope,
   UserRoleAssignment,
-  RolePermission
+  RolePermission,
 } from '../types/role-management';
 
 export interface PermissionCheckerConfig {
@@ -36,7 +36,7 @@ export enum Action {
   UPDATE = 'update',
   DELETE = 'delete',
   MANAGE = 'manage',
-  APPROVE = 'approve'
+  APPROVE = 'approve',
 }
 
 export class PermissionChecker {
@@ -57,7 +57,7 @@ export class PermissionChecker {
     context?: ResourceContext
   ): Promise<boolean> {
     const cacheKey = this.generateCacheKey(userId, permissionName, context);
-    
+
     // Check cache first
     if (this.config.cacheEnabled) {
       const cached = this.permissionCache.get(cacheKey);
@@ -69,7 +69,7 @@ export class PermissionChecker {
     // Get user's roles and permissions
     const userRoles = await this.getUserRoles(userId);
     const permission = await this.getPermission(permissionName);
-    
+
     if (!permission) {
       return false;
     }
@@ -87,7 +87,7 @@ export class PermissionChecker {
     if (this.config.cacheEnabled) {
       this.permissionCache.set(cacheKey, {
         result: hasPermission,
-        expires: Date.now() + (this.config.cacheTtl * 1000)
+        expires: Date.now() + this.config.cacheTtl * 1000,
       });
     }
 
@@ -103,18 +103,21 @@ export class PermissionChecker {
     action: Action,
     context?: Partial<ResourceContext>
   ): Promise<boolean> {
-    const fullContext: ResourceContext = {
+    const fullContext = {
       resourceId,
       resourceType: context?.resourceType || 'unknown',
       ownerId: context?.ownerId,
       departmentId: context?.departmentId,
       institutionId: context?.institutionId,
-      metadata: context?.metadata
-    };
+      metadata: context?.metadata,
+    } as ResourceContext;
 
     // Map action to permission names
-    const permissionNames = this.mapActionToPermissions(action, fullContext.resourceType);
-    
+    const permissionNames = this.mapActionToPermissions(
+      action,
+      fullContext.resourceType
+    );
+
     // Check if user has any of the required permissions
     for (const permissionName of permissionNames) {
       if (await this.hasPermission(userId, permissionName, fullContext)) {
@@ -133,7 +136,9 @@ export class PermissionChecker {
     const permissions = new Set<Permission>();
 
     for (const roleAssignment of userRoles) {
-      const rolePermissions = await this.getRolePermissions(roleAssignment.role);
+      const rolePermissions = await this.getRolePermissions(
+        roleAssignment.role
+      );
       rolePermissions.forEach(permission => permissions.add(permission));
     }
 
@@ -151,27 +156,33 @@ export class PermissionChecker {
     }>
   ): Promise<PermissionResult[]> {
     if (permissionChecks.length > this.config.bulkCheckLimit) {
-      throw new Error(`Bulk check limit exceeded: ${this.config.bulkCheckLimit}`);
+      throw new Error(
+        `Bulk check limit exceeded: ${this.config.bulkCheckLimit}`
+      );
     }
 
     const results: PermissionResult[] = [];
-    
+
     // Get user roles once for all checks
     const userRoles = await this.getUserRoles(userId);
-    
+
     for (const check of permissionChecks) {
       try {
-        const granted = await this.hasPermission(userId, check.permission, check.context);
+        const granted = await this.hasPermission(
+          userId,
+          check.permission,
+          check.context
+        );
         results.push({
           permission: check.permission,
           granted,
-          reason: granted ? 'Permission granted' : 'Permission denied'
+          reason: granted ? 'Permission granted' : 'Permission denied',
         });
       } catch (error) {
         results.push({
           permission: check.permission,
           granted: false,
-          reason: error instanceof Error ? error.message : 'Unknown error'
+          reason: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }
@@ -188,9 +199,11 @@ export class PermissionChecker {
     scopeId?: string
   ): Promise<boolean> {
     const userRoles = await this.getUserRoles(userId);
-    
+
     for (const roleAssignment of userRoles) {
-      if (this.isAdminRole(roleAssignment.role, scope, roleAssignment, scopeId)) {
+      if (
+        this.isAdminRole(roleAssignment.role, scope, roleAssignment, scopeId)
+      ) {
         return true;
       }
     }
@@ -229,9 +242,13 @@ export class PermissionChecker {
     context?: ResourceContext
   ): Promise<boolean> {
     // Get role permission mappings
-    const rolePermissionMappings = await this.getRolePermissionMappings(roleAssignment.role);
-    const rolePermission = rolePermissionMappings.find(rp => rp.permissionId === permission.id);
-    
+    const rolePermissionMappings = await this.getRolePermissionMappings(
+      roleAssignment.role
+    );
+    const rolePermission = rolePermissionMappings.find(
+      rp => rp.permissionId === permission.id
+    );
+
     if (!rolePermission) {
       return false;
     }
@@ -261,20 +278,24 @@ export class PermissionChecker {
     switch (permission.scope) {
       case PermissionScope.SELF:
         return !context || context.ownerId === roleAssignment.userId;
-      
+
       case PermissionScope.DEPARTMENT:
-        return !context || 
-               !context.departmentId || 
-               context.departmentId === roleAssignment.departmentId;
-      
+        return (
+          !context ||
+          !context.departmentId ||
+          context.departmentId === roleAssignment.departmentId
+        );
+
       case PermissionScope.INSTITUTION:
-        return !context || 
-               !context.institutionId || 
-               context.institutionId === roleAssignment.institutionId;
-      
+        return (
+          !context ||
+          !context.institutionId ||
+          context.institutionId === roleAssignment.institutionId
+        );
+
       case PermissionScope.SYSTEM:
         return roleAssignment.role === UserRole.SYSTEM_ADMIN;
-      
+
       default:
         return false;
     }
@@ -286,7 +307,9 @@ export class PermissionChecker {
     context?: ResourceContext
   ): Promise<boolean> {
     for (const condition of conditions) {
-      if (!await this.checkSingleCondition(condition, roleAssignment, context)) {
+      if (
+        !(await this.checkSingleCondition(condition, roleAssignment, context))
+      ) {
         return false;
       }
     }
@@ -301,16 +324,19 @@ export class PermissionChecker {
     switch (condition.type) {
       case 'department_match':
         return context?.departmentId === roleAssignment.departmentId;
-      
+
       case 'institution_match':
         return context?.institutionId === roleAssignment.institutionId;
-      
+
       case 'resource_owner':
         return context?.ownerId === roleAssignment.userId;
-      
+
       case 'time_based':
-        return this.checkTimeBasedCondition(condition.parameters, roleAssignment);
-      
+        return this.checkTimeBasedCondition(
+          condition.parameters,
+          roleAssignment
+        );
+
       default:
         return false;
     }
@@ -321,21 +347,21 @@ export class PermissionChecker {
     roleAssignment: UserRoleAssignment
   ): boolean {
     const now = new Date();
-    
+
     if (parameters.startTime) {
       const startTime = new Date(parameters.startTime);
       if (now < startTime) return false;
     }
-    
+
     if (parameters.endTime) {
       const endTime = new Date(parameters.endTime);
       if (now > endTime) return false;
     }
-    
+
     if (roleAssignment.expiresAt && now > roleAssignment.expiresAt) {
       return false;
     }
-    
+
     return true;
   }
 
@@ -348,30 +374,38 @@ export class PermissionChecker {
     switch (scope) {
       case 'system':
         return role === UserRole.SYSTEM_ADMIN;
-      
+
       case 'institution':
-        return (role === UserRole.INSTITUTION_ADMIN || role === UserRole.SYSTEM_ADMIN) &&
-               (!scopeId || roleAssignment.institutionId === scopeId);
-      
+        return (
+          (role === UserRole.INSTITUTION_ADMIN ||
+            role === UserRole.SYSTEM_ADMIN) &&
+          (!scopeId || roleAssignment.institutionId === scopeId)
+        );
+
       case 'department':
-        return (role === UserRole.DEPARTMENT_ADMIN || 
-                role === UserRole.INSTITUTION_ADMIN || 
-                role === UserRole.SYSTEM_ADMIN) &&
-               (!scopeId || roleAssignment.departmentId === scopeId);
-      
+        return (
+          (role === UserRole.DEPARTMENT_ADMIN ||
+            role === UserRole.INSTITUTION_ADMIN ||
+            role === UserRole.SYSTEM_ADMIN) &&
+          (!scopeId || roleAssignment.departmentId === scopeId)
+        );
+
       default:
         return false;
     }
   }
 
-  private mapActionToPermissions(action: Action, resourceType: string): string[] {
+  private mapActionToPermissions(
+    action: Action,
+    resourceType: string
+  ): string[] {
     const basePermissions = [`${resourceType}.${action}`];
-    
+
     // Add manage permission as it typically includes all actions
     if (action !== Action.MANAGE) {
       basePermissions.push(`${resourceType}.${Action.MANAGE}`);
     }
-    
+
     return basePermissions;
   }
 
@@ -380,9 +414,9 @@ export class PermissionChecker {
     permission: string,
     context?: ResourceContext
   ): string {
-    const contextKey = context ? 
-      `${context.resourceId}:${context.resourceType}:${context.departmentId}:${context.institutionId}` : 
-      'global';
+    const contextKey = context
+      ? `${context.resourceId}:${context.resourceType}:${context.departmentId}:${context.institutionId}`
+      : 'global';
     return `${userId}:${permission}:${contextKey}`;
   }
 
@@ -392,7 +426,7 @@ export class PermissionChecker {
     // For now, we'll use a mock implementation
     const { createClient } = await import('../supabase/client');
     const supabase = createClient();
-    
+
     const { data, error } = await supabase
       .from('user_role_assignments')
       .select('*')
@@ -406,39 +440,48 @@ export class PermissionChecker {
       return [];
     }
 
-    return (data || []).map(row => ({
-      id: row.id,
-      userId: row.user_id,
-      role: row.role as UserRole,
-      status: row.status,
-      assignedBy: row.assigned_by,
-      assignedAt: new Date(row.assigned_at),
-      expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-      departmentId: row.department_id,
-      institutionId: row.institution_id,
-      isTemporary: row.is_temporary,
-      metadata: row.metadata || {},
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at)
-    }));
+    return (data || []).map(
+      row =>
+        ({
+          id: row.id,
+          userId: row.user_id,
+          role: row.role as UserRole,
+          status: row.status,
+          assignedBy: row.assigned_by,
+          assignedAt: new Date(row.assigned_at),
+          expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
+          departmentId: row.department_id,
+          institutionId: row.institution_id,
+          isTemporary: row.is_temporary,
+          metadata: row.metadata || {},
+          createdAt: new Date(row.created_at),
+          updatedAt: new Date(row.updated_at),
+        }) as UserRoleAssignment
+    );
   }
 
-  private async getPermission(permissionName: string): Promise<Permission | null> {
+  private async getPermission(
+    permissionName: string
+  ): Promise<Permission | null> {
     // Import permission definitions
     const { getPermission } = await import('./permission-definitions');
     return getPermission(permissionName) || null;
   }
 
   private async getRolePermissions(role: UserRole): Promise<Permission[]> {
-    const { getRolePermissions, PERMISSIONS } = await import('./permission-definitions');
+    const { getRolePermissions, PERMISSIONS } = await import(
+      './permission-definitions'
+    );
     const rolePermissions = getRolePermissions(role);
-    
-    return PERMISSIONS.filter(permission => 
+
+    return PERMISSIONS.filter(permission =>
       rolePermissions.some(rp => rp.permissionId === permission.id)
     );
   }
 
-  private async getRolePermissionMappings(role: UserRole): Promise<RolePermission[]> {
+  private async getRolePermissionMappings(
+    role: UserRole
+  ): Promise<RolePermission[]> {
     const { getRolePermissions } = await import('./permission-definitions');
     return getRolePermissions(role);
   }

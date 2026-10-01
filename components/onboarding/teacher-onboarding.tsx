@@ -1,15 +1,34 @@
-"use client";
+'use client';
 
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { GraduationCap, BookOpen, Users, Settings, ArrowRight, ArrowLeft } from 'lucide-react';
+import {
+  GraduationCap,
+  BookOpen,
+  Users,
+  Settings,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react';
 
 interface TeacherOnboardingProps {
   onComplete: (data: TeacherOnboardingData) => void;
@@ -38,7 +57,7 @@ const TEACHER_TITLES = [
   'Instructor',
   'Teaching Assistant',
   'Adjunct Professor',
-  'Other'
+  'Other',
 ];
 
 const EXPERIENCE_LEVELS = [
@@ -46,7 +65,7 @@ const EXPERIENCE_LEVELS = [
   'Early career (2-5 years)',
   'Experienced (6-10 years)',
   'Veteran (11-20 years)',
-  'Expert (20+ years)'
+  'Expert (20+ years)',
 ];
 
 const TEACHING_SUBJECTS = [
@@ -63,7 +82,7 @@ const TEACHING_SUBJECTS = [
   'Psychology',
   'Engineering',
   'Medicine/Health Sciences',
-  'Other'
+  'Other',
 ];
 
 const CLASS_MANAGEMENT_STYLES = [
@@ -72,7 +91,7 @@ const CLASS_MANAGEMENT_STYLES = [
   'Lecture-based - Traditional lecture format',
   'Project-based - Focus on hands-on projects',
   'Flipped classroom - Students learn at home, practice in class',
-  'Mixed approach - Combination of methods'
+  'Mixed approach - Combination of methods',
 ];
 
 const TEACHING_TOOLS = [
@@ -85,10 +104,13 @@ const TEACHING_TOOLS = [
   'Assignment rubrics',
   'Class announcements',
   'Student progress monitoring',
-  'Collaborative documents'
+  'Collaborative documents',
 ];
 
-export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnboardingProps) {
+export function TeacherOnboarding({
+  onComplete,
+  userName = 'there',
+}: TeacherOnboardingProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState<TeacherOnboardingData>({
     firstName: '',
@@ -101,7 +123,7 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
     classManagementStyle: '',
     preferredTools: [],
     institutionId: '',
-    departmentId: ''
+    departmentId: '',
   });
 
   const totalSteps = 5;
@@ -151,7 +173,7 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
                 Welcome, {userName}!
               </CardTitle>
               <CardDescription>
-                Let's set up your teaching profile
+                Let&apos;s set up your teaching profile
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -161,7 +183,9 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
                   <Input
                     id="firstName"
                     value={formData.firstName}
-                    onChange={(e) => updateFormData({ firstName: e.target.value })}
+                    onChange={e =>
+                      updateFormData({ firstName: e.target.value })
+                    }
                     placeholder="Enter your first name"
                   />
                 </div>
@@ -170,19 +194,22 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
                   <Input
                     id="lastName"
                     value={formData.lastName}
-                    onChange={(e) => updateFormData({ lastName: e.target.value })}
+                    onChange={e => updateFormData({ lastName: e.target.value })}
                     placeholder="Enter your last name"
                   />
                 </div>
               </div>
               <div>
                 <Label htmlFor="title">Academic Title</Label>
-                <Select value={formData.title} onValueChange={(value) => updateFormData({ title: value })}>
+                <Select
+                  value={formData.title}
+                  onValueChange={value => updateFormData({ title: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your title" />
                   </SelectTrigger>
                   <SelectContent>
-                    {TEACHER_TITLES.map((title) => (
+                    {TEACHER_TITLES.map(title => (
                       <SelectItem key={title} value={title}>
                         {title}
                       </SelectItem>
@@ -195,7 +222,7 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
                 <Input
                   id="department"
                   value={formData.department}
-                  onChange={(e) => updateFormData({ department: e.target.value })}
+                  onChange={e => updateFormData({ department: e.target.value })}
                   placeholder="e.g., Computer Science, Mathematics, English"
                 />
               </div>
@@ -218,12 +245,15 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
             <CardContent className="space-y-4">
               <div>
                 <Label>Experience Level</Label>
-                <Select value={formData.experience} onValueChange={(value) => updateFormData({ experience: value })}>
+                <Select
+                  value={formData.experience}
+                  onValueChange={value => updateFormData({ experience: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your experience level" />
                   </SelectTrigger>
                   <SelectContent>
-                    {EXPERIENCE_LEVELS.map((level) => (
+                    {EXPERIENCE_LEVELS.map(level => (
                       <SelectItem key={level} value={level}>
                         {level}
                       </SelectItem>
@@ -234,10 +264,14 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
               <div>
                 <Label>Subjects You Teach (Select all that apply)</Label>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  {TEACHING_SUBJECTS.map((subject) => (
+                  {TEACHING_SUBJECTS.map(subject => (
                     <Badge
                       key={subject}
-                      variant={formData.subjects.includes(subject) ? "default" : "outline"}
+                      variant={
+                        formData.subjects.includes(subject)
+                          ? 'default'
+                          : 'outline'
+                      }
                       className="cursor-pointer justify-center p-2"
                       onClick={() => toggleSubject(subject)}
                     >
@@ -268,19 +302,26 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
                 <Textarea
                   id="teachingPhilosophy"
                   value={formData.teachingPhilosophy}
-                  onChange={(e) => updateFormData({ teachingPhilosophy: e.target.value })}
+                  onChange={e =>
+                    updateFormData({ teachingPhilosophy: e.target.value })
+                  }
                   placeholder="Describe your teaching philosophy and approach to education..."
                   rows={3}
                 />
               </div>
               <div>
                 <Label>Classroom Management Style</Label>
-                <Select value={formData.classManagementStyle} onValueChange={(value) => updateFormData({ classManagementStyle: value })}>
+                <Select
+                  value={formData.classManagementStyle}
+                  onValueChange={value =>
+                    updateFormData({ classManagementStyle: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select your preferred teaching style" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CLASS_MANAGEMENT_STYLES.map((style) => (
+                    {CLASS_MANAGEMENT_STYLES.map(style => (
                       <SelectItem key={style} value={style}>
                         {style}
                       </SelectItem>
@@ -306,9 +347,9 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label>Teaching Tools You'd Like to Use</Label>
+                <Label>Teaching Tools You&apos;d Like to Use</Label>
                 <div className="space-y-2 mt-2">
-                  {TEACHING_TOOLS.map((tool) => (
+                  {TEACHING_TOOLS.map(tool => (
                     <div key={tool} className="flex items-center space-x-2">
                       <Checkbox
                         id={tool}
@@ -331,13 +372,11 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
           <Card>
             <CardHeader>
               <CardTitle>Ready to Start Teaching!</CardTitle>
-              <CardDescription>
-                Your profile is almost complete
-              </CardDescription>
+              <CardDescription>Your profile is almost complete</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">What's Next?</h4>
+                <h4 className="font-semibold mb-2">What&apos;s Next?</h4>
                 <ul className="text-sm space-y-1">
                   <li>• Create your first class</li>
                   <li>• Set up assignments and rubrics</li>
@@ -367,7 +406,12 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
   const canProceed = () => {
     switch (currentStep) {
       case 0:
-        return formData.firstName.trim() && formData.lastName.trim() && formData.title && formData.department.trim();
+        return (
+          formData.firstName.trim() &&
+          formData.lastName.trim() &&
+          formData.title &&
+          formData.department.trim()
+        );
       case 1:
         return formData.experience && formData.subjects.length > 0;
       case 2:
@@ -405,10 +449,7 @@ export function TeacherOnboarding({ onComplete, userName = 'there' }: TeacherOnb
         {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
           {currentStep > 0 && (
-            <Button
-              variant="outline"
-              onClick={prevStep}
-            >
+            <Button variant="outline" onClick={prevStep}>
               <ArrowLeft className="h-4 w-4 mr-2" />
               Previous
             </Button>

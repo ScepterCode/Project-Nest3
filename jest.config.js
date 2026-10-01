@@ -21,6 +21,10 @@ const jsdomProject = {
   ...shared,
   displayName: 'jsdom',
   testEnvironment: 'jsdom',
+  // jsdom resolves packages with the "browser" export condition, which picks
+  // ESM-only builds (e.g. isows, used by @supabase/realtime-js) that next/jest
+  // won't transform. Resolve like Node instead.
+  testEnvironmentOptions: { customExportConditions: [''] },
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testMatch: [
     '<rootDir>/__tests__/components/**/*.test.{js,jsx,ts,tsx}',

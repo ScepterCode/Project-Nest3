@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/auth-context';
@@ -20,7 +20,7 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Add a timeout to prevent infinite loading
     const timeout = setTimeout(() => {
       if (loading) {
@@ -41,7 +41,7 @@ export default function OnboardingPage() {
 
       try {
         const supabase = createClient();
-        
+
         // First try to get role from database
         const { data: userData, error } = await supabase
           .from('users')
@@ -56,7 +56,10 @@ export default function OnboardingPage() {
           const roleFromMetadata = user.user_metadata?.role;
           if (roleFromMetadata) {
             // Map 'institution' to 'institution_admin' for consistency
-            const mappedRole = roleFromMetadata === 'institution' ? 'institution_admin' : roleFromMetadata;
+            const mappedRole =
+              roleFromMetadata === 'institution'
+                ? 'institution_admin'
+                : roleFromMetadata;
             setUserRole(mappedRole);
           }
         }
@@ -65,7 +68,10 @@ export default function OnboardingPage() {
         // Fallback to user metadata
         const roleFromMetadata = user.user_metadata?.role;
         if (roleFromMetadata) {
-          const mappedRole = roleFromMetadata === 'institution' ? 'institution_admin' : roleFromMetadata;
+          const mappedRole =
+            roleFromMetadata === 'institution'
+              ? 'institution_admin'
+              : roleFromMetadata;
           setUserRole(mappedRole);
         }
       } finally {
@@ -86,7 +92,7 @@ export default function OnboardingPage() {
       userEmail: user?.email,
       userId: user?.id,
       loading,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
     console.log('Onboarding Debug:', debugData);
     setDebugInfo(JSON.stringify(debugData, null, 2));
@@ -97,18 +103,25 @@ export default function OnboardingPage() {
       alert('No user found. Please refresh and try again.');
       return;
     }
-    
+
     if (!userRole) {
       alert('Unable to determine your role. Please contact support.');
       return;
     }
 
     setSaving(true);
-    console.log('Completing onboarding for user:', user.id, 'role:', userRole, 'data:', onboardingData);
-    
+    console.log(
+      'Completing onboarding for user:',
+      user.id,
+      'role:',
+      userRole,
+      'data:',
+      onboardingData
+    );
+
     try {
       const supabase = createClient();
-      
+
       // Check if user already has onboarding completed
       const { data: existingUser } = await supabase
         .from('users')
@@ -117,30 +130,39 @@ export default function OnboardingPage() {
         .single();
 
       if (existingUser && existingUser.onboarding_completed) {
-        alert('Your onboarding has already been completed. Redirecting to dashboard.');
-        const dashboardPath = userRole === 'student' ? '/dashboard/student' : 
-                             userRole === 'teacher' ? '/dashboard/teacher' : 
-                             userRole === 'institution_admin' ? '/dashboard/institution' :
-                             '/dashboard';
+        alert(
+          'Your onboarding has already been completed. Redirecting to dashboard.'
+        );
+        const dashboardPath =
+          userRole === 'student'
+            ? '/dashboard/student'
+            : userRole === 'teacher'
+              ? '/dashboard/teacher'
+              : userRole === 'institution_admin'
+                ? '/dashboard/institution'
+                : '/dashboard';
         router.push(dashboardPath);
         return;
       }
 
       // Complete onboarding with user data (role should already be set from registration)
-      const { error: updateError } = await supabase
-        .from('users')
-        .upsert({ 
+      const { error: updateError } = await supabase.from('users').upsert(
+        {
           id: user.id,
           email: user.email || '',
           role: userRole, // Use the role from registration
           onboarding_completed: true,
-          first_name: onboardingData.firstName || user.user_metadata?.first_name || '',
-          last_name: onboardingData.lastName || user.user_metadata?.last_name || '',
+          first_name:
+            onboardingData.firstName || user.user_metadata?.first_name || '',
+          last_name:
+            onboardingData.lastName || user.user_metadata?.last_name || '',
           // Store additional onboarding data in metadata
-          onboarding_data: onboardingData
-        }, {
-          onConflict: 'id'
-        });
+          onboarding_data: onboardingData,
+        },
+        {
+          onConflict: 'id',
+        }
+      );
 
       if (updateError) {
         console.error('Error completing onboarding:', {
@@ -148,12 +170,12 @@ export default function OnboardingPage() {
           details: updateError.details,
           hint: updateError.hint,
           code: updateError.code,
-          fullError: updateError
+          fullError: updateError,
         });
         alert(`Failed to complete onboarding: ${updateError.message}`);
         return;
       }
-      
+
       console.log('Onboarding completed for role:', userRole);
 
       // Set flag to show completion message briefly
@@ -162,26 +184,30 @@ export default function OnboardingPage() {
       }
 
       // Redirect to appropriate dashboard
-      const dashboardPath = userRole === 'student' ? '/dashboard/student' : 
-                           userRole === 'teacher' ? '/dashboard/teacher' : 
-                           userRole === 'institution_admin' ? '/dashboard/institution' :
-                           '/dashboard';
-      
+      const dashboardPath =
+        userRole === 'student'
+          ? '/dashboard/student'
+          : userRole === 'teacher'
+            ? '/dashboard/teacher'
+            : userRole === 'institution_admin'
+              ? '/dashboard/institution'
+              : '/dashboard';
+
       console.log('Redirecting to:', dashboardPath);
       router.push(dashboardPath);
     } catch (error) {
       console.error('Error completing onboarding:', {
         message: error instanceof Error ? error.message : 'Unknown error',
         stack: error instanceof Error ? error.stack : undefined,
-        fullError: error
+        fullError: error,
       });
-      alert(`Something went wrong: ${error instanceof Error ? error.message : error}`);
+      alert(
+        `Something went wrong: ${error instanceof Error ? error.message : error}`
+      );
     } finally {
       setSaving(false);
     }
   };
-
-
 
   // Debug: Show what's happening
   if (!mounted) {
@@ -199,9 +225,10 @@ export default function OnboardingPage() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <div>Loading user authentication...</div>
           <div className="text-sm text-gray-500 mt-2">
-            Debug: mounted={mounted.toString()}, loading={loading.toString()}, user={user ? 'exists' : 'null'}
+            Debug: mounted={mounted.toString()}, loading={loading.toString()},
+            user={user ? 'exists' : 'null'}
           </div>
-          <button 
+          <button
             onClick={() => setDebugInfo('timeout-forced')}
             className="mt-4 px-4 py-2 bg-gray-600 text-white rounded text-sm"
           >
@@ -221,19 +248,24 @@ export default function OnboardingPage() {
         <div className="text-center max-w-md">
           <h2 className="text-xl font-semibold mb-4">Please Log In</h2>
           <p className="mb-4">You need to be logged in to access onboarding.</p>
-          <button 
+          <button
             onClick={() => router.push('/auth/login')}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
           >
             Go to Login
           </button>
-          <button 
+          <button
             onClick={async () => {
               // Test Supabase connection
               try {
                 const supabase = createClient();
-                const { data, error } = await supabase.from('users').select('count').limit(1);
-                alert(`Supabase test: ${error ? 'Error: ' + error.message : 'Success: ' + JSON.stringify(data)}`);
+                const { data, error } = await supabase
+                  .from('users')
+                  .select('count')
+                  .limit(1);
+                alert(
+                  `Supabase test: ${error ? 'Error: ' + error.message : 'Success: ' + JSON.stringify(data)}`
+                );
               } catch (err) {
                 alert('Supabase connection failed: ' + err);
               }
@@ -252,8 +284,11 @@ export default function OnboardingPage() {
 
   // Show role-specific onboarding based on user's registered role
   if (userRole && !loadingUserData) {
-    const userName = user?.user_metadata?.first_name || user?.user_metadata?.last_name || 'there';
-    
+    const userName =
+      user?.user_metadata?.first_name ||
+      user?.user_metadata?.last_name ||
+      'there';
+
     switch (userRole) {
       case 'student':
         return (
@@ -283,9 +318,11 @@ export default function OnboardingPage() {
               <div className="bg-white rounded-lg shadow p-8 text-center">
                 <h1 className="text-2xl font-bold mb-4">Unknown Role</h1>
                 <p className="text-gray-600 mb-4">
-                  We couldn't determine your role. Please contact support.
+                  We couldn&apos;t determine your role. Please contact support.
                 </p>
-                <p className="text-sm text-gray-500">Role detected: {userRole}</p>
+                <p className="text-sm text-gray-500">
+                  Role detected: {userRole}
+                </p>
               </div>
             </div>
           </div>
@@ -301,21 +338,31 @@ export default function OnboardingPage() {
           {loadingUserData ? (
             <>
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-              <h1 className="text-2xl font-bold mb-2">Setting up your onboarding...</h1>
-              <p className="text-gray-600">Please wait while we prepare your personalized setup.</p>
+              <h1 className="text-2xl font-bold mb-2">
+                Setting up your onboarding...
+              </h1>
+              <p className="text-gray-600">
+                Please wait while we prepare your personalized setup.
+              </p>
             </>
           ) : (
             <>
-              <h1 className="text-2xl font-bold mb-4">Unable to Load Onboarding</h1>
+              <h1 className="text-2xl font-bold mb-4">
+                Unable to Load Onboarding
+              </h1>
               <p className="text-gray-600 mb-4">
-                We couldn't determine your role from your registration. Please contact support.
+                We couldn&apos;t determine your role from your registration.
+                Please contact support.
               </p>
-              <Button onClick={() => router.push('/dashboard')} className="mt-4">
+              <Button
+                onClick={() => router.push('/dashboard')}
+                className="mt-4"
+              >
                 Go to Dashboard
               </Button>
             </>
           )}
-          
+
           {saving && (
             <div className="mt-6">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>

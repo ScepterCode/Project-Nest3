@@ -28,11 +28,11 @@ export class NotificationService {
     title: string,
     message: string,
     options: {
-      priority?: NotificationPriority;
-      actionUrl?: string;
-      actionLabel?: string;
-      metadata?: Record<string, any>;
-      expiresAt?: Date;
+      priority?: NotificationPriority | undefined;
+      actionUrl?: string | undefined;
+      actionLabel?: string | undefined;
+      metadata?: Record<string, any> | undefined;
+      expiresAt?: Date | undefined;
     } = {}
   ): Promise<string | null> {
     try {

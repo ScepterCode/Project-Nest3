@@ -81,7 +81,7 @@ export enum UserRole {
   TEACHER = 'teacher',
   DEPARTMENT_ADMIN = 'department_admin',
   INSTITUTION_ADMIN = 'institution_admin',
-  SYSTEM_ADMIN = 'system_admin'
+  SYSTEM_ADMIN = 'system_admin',
 }
 
 export enum InstitutionType {
@@ -89,20 +89,20 @@ export enum InstitutionType {
   COLLEGE = 'college',
   SCHOOL = 'school',
   TRAINING_CENTER = 'training_center',
-  OTHER = 'other'
+  OTHER = 'other',
 }
 
 export enum InstitutionStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
   SUSPENDED = 'suspended',
-  PENDING = 'pending'
+  PENDING = 'pending',
 }
 
 export enum DepartmentStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
-  ARCHIVED = 'archived'
+  ARCHIVED = 'archived',
 }
 
 export interface Address {
@@ -183,9 +183,6 @@ export interface InstitutionSearchResult {
   id: string;
   name: string;
   domain?: string;
-  type: InstitutionType;
-  departmentCount: number;
-  userCount: number;
 }
 
 export interface DepartmentSearchResult {
@@ -234,5 +231,5 @@ export enum OnboardingErrorCode {
   DEPARTMENT_NOT_FOUND = 'DEPARTMENT_NOT_FOUND',
   UNAUTHORIZED = 'UNAUTHORIZED',
   SESSION_EXPIRED = 'SESSION_EXPIRED',
-  VALIDATION_FAILED = 'VALIDATION_FAILED'
+  VALIDATION_FAILED = 'VALIDATION_FAILED',
 }

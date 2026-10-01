@@ -19,19 +19,20 @@ export function NotificationBell() {
     total_count: 0,
     unread_count: 0,
     high_priority_count: 0,
-    recent_notifications: []
+    recent_notifications: [],
   });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
       loadNotificationSummary();
-      
+
       // Set up polling for real-time updates
       const interval = setInterval(loadNotificationSummary, 30000); // Poll every 30 seconds
-      
+
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [user]);
 
   const loadNotificationSummary = async () => {
@@ -46,7 +47,7 @@ export function NotificationBell() {
           total_count: 0,
           unread_count: 0,
           high_priority_count: 0,
-          recent_notifications: []
+          recent_notifications: [],
         });
       }
     } catch (error) {
@@ -55,7 +56,7 @@ export function NotificationBell() {
         total_count: 0,
         unread_count: 0,
         high_priority_count: 0,
-        recent_notifications: []
+        recent_notifications: [],
       });
     } finally {
       setLoading(false);
@@ -85,11 +86,13 @@ export function NotificationBell() {
           {hasHighPriority ? (
             <BellRing className="h-5 w-5 text-red-500" />
           ) : (
-            <Bell className={`h-5 w-5 ${hasUnread ? 'text-blue-600' : 'text-gray-600'}`} />
+            <Bell
+              className={`h-5 w-5 ${hasUnread ? 'text-blue-600' : 'text-gray-600'}`}
+            />
           )}
           {hasUnread && (
-            <Badge 
-              variant="destructive" 
+            <Badge
+              variant="destructive"
               className="absolute -top-1 -right-1 h-5 w-5 p-0 flex items-center justify-center text-xs"
             >
               {summary.unread_count > 99 ? '99+' : summary.unread_count}
@@ -98,7 +101,7 @@ export function NotificationBell() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-80 p-0">
-        <NotificationDropdown 
+        <NotificationDropdown
           summary={summary}
           onNotificationRead={handleNotificationRead}
         />

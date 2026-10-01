@@ -22,33 +22,30 @@ export function PermissionGate({
   context,
   fallback = null,
   loading = null,
-  children
+  children,
 }: PermissionGateProps) {
-  // For now, allow all permissions to avoid blocking the UI
-  // TODO: Implement proper permission checking once the permission system is fully set up
-  try {
-    const { hasAccess, loading: isLoading, error } = usePermissionCheck(userId, permission, context);
+  // UI-only: decides what to show. Access is enforced server-side (RLS).
+  const {
+    hasAccess,
+    loading: isLoading,
+    error,
+  } = usePermissionCheck(userId, permission, context);
 
-    if (isLoading) {
-      return <>{loading}</>;
-    }
+  if (isLoading) {
+    return <>{loading}</>;
+  }
 
-    if (error) {
-      console.error('Permission gate error:', error);
-      // Allow access on error for now
-      return <>{children}</>;
-    }
-
-    if (!hasAccess) {
-      return <>{fallback}</>;
-    }
-
-    return <>{children}</>;
-  } catch (error) {
+  if (error) {
     console.error('Permission gate error:', error);
-    // Allow access on error for now
+    // Show the content if the check itself fails; the server still enforces access.
     return <>{children}</>;
   }
+
+  if (!hasAccess) {
+    return <>{fallback}</>;
+  }
+
+  return <>{children}</>;
 }
 
 /**
@@ -70,7 +67,7 @@ export function AdminGate({
   scopeId,
   fallback = null,
   loading = null,
-  children
+  children,
 }: AdminGateProps) {
   const [isAdmin, setIsAdmin] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -89,15 +86,17 @@ export function AdminGate({
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Import permission checker dynamically to avoid circular dependencies
-        const { PermissionChecker } = await import('@/lib/services/permission-checker');
+        const { PermissionChecker } = await import(
+          '@/lib/services/permission-checker'
+        );
         const permissionChecker = new PermissionChecker({
           cacheEnabled: true,
           cacheTtl: 300,
-          bulkCheckLimit: 50
+          bulkCheckLimit: 50,
         });
-        
+
         const result = await permissionChecker.isAdmin(userId, scope, scopeId);
         if (isMounted) {
           setIsAdmin(result);
@@ -154,7 +153,7 @@ export function RoleGate({
   allowedRoles,
   fallback = null,
   loading = null,
-  children
+  children,
 }: RoleGateProps) {
   const [hasRole, setHasRole] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -173,11 +172,11 @@ export function RoleGate({
       try {
         setIsLoading(true);
         setError(null);
-        
+
         // Import supabase client dynamically
         const { createClient } = await import('@/lib/supabase/client');
         const supabase = createClient();
-        
+
         // Get user role from users table
         const { data: userData, error: userError } = await supabase
           .from('users')
@@ -191,18 +190,19 @@ export function RoleGate({
 
         const userRole = userData?.role;
         const hasAllowedRole = userRole && allowedRoles.includes(userRole);
-        
+
         if (isMounted) {
           setHasRole(hasAllowedRole);
         }
       } catch (err) {
         if (isMounted) {
-          const errorMessage = err instanceof Error ? err.message : 'Role check failed';
+          const errorMessage =
+            err instanceof Error ? err.message : 'Role check failed';
           console.error('RoleGate error details:', {
             userId,
             allowedRoles,
             error: err,
-            errorMessage
+            errorMessage,
           });
           setError(errorMessage);
           setHasRole(false);

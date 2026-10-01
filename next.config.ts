@@ -1,16 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  // Disable ESLint during build to allow completion
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  
-  // Disable TypeScript checking during build to allow completion
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  
+  // Type errors and lint errors fail the build (warnings don't).
+
   // Enable experimental features for better performance
   experimental: {
     serverActions: {
@@ -18,13 +10,13 @@ const nextConfig: NextConfig = {
         'localhost:3000',
         '*.vercel.app',
         // Add your custom domain here when you have one
-      ]
-    }
+      ],
+    },
   },
-  
+
   // Optimize for production (disabled for local development)
   // output: 'standalone',
-  
+
   // Image optimization
   images: {
     remotePatterns: [
@@ -39,11 +31,11 @@ const nextConfig: NextConfig = {
       {
         protocol: 'http',
         hostname: 'localhost',
-      }
+      },
     ],
-    formats: ['image/webp', 'image/avif']
+    formats: ['image/webp', 'image/avif'],
   },
-  
+
   // Security headers
   async headers() {
     return [
@@ -52,36 +44,36 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: 'X-Frame-Options',
-            value: 'DENY'
+            value: 'DENY',
           },
           {
             key: 'X-Content-Type-Options',
-            value: 'nosniff'
+            value: 'nosniff',
           },
           {
             key: 'Referrer-Policy',
-            value: 'origin-when-cross-origin'
-          }
-        ]
-      }
+            value: 'origin-when-cross-origin',
+          },
+        ],
+      },
     ];
   },
-  
+
   // Helpful redirects
   async redirects() {
     return [
       {
         source: '/login',
         destination: '/auth/login',
-        permanent: true
+        permanent: true,
       },
       {
         source: '/register',
         destination: '/auth/register',
-        permanent: true
-      }
+        permanent: true,
+      },
     ];
-  }
+  },
 };
 
 export default nextConfig;

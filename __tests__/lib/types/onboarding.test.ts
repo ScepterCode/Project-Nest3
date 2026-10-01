@@ -1,24 +1,14 @@
 // Unit tests for onboarding types and validation
 
 // Jest globals are available by default
-import { 
-  OnboardingError, 
-  OnboardingErrorCode, 
+import {
+  OnboardingError,
+  OnboardingErrorCode,
   UserRole,
   InstitutionType,
   InstitutionStatus,
-  DepartmentStatus
+  DepartmentStatus,
 } from '@/lib/types/onboarding';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
-import { it } from 'node:test';
-import { it } from 'node:test';
-import { describe } from 'node:test';
 
 describe('OnboardingError', () => {
   it('should create error with all properties', () => {
@@ -84,10 +74,16 @@ describe('Enums', () => {
 describe('OnboardingErrorCode', () => {
   it('should have all required error codes', () => {
     expect(OnboardingErrorCode.INVALID_STEP).toBe('INVALID_STEP');
-    expect(OnboardingErrorCode.MISSING_REQUIRED_DATA).toBe('MISSING_REQUIRED_DATA');
+    expect(OnboardingErrorCode.MISSING_REQUIRED_DATA).toBe(
+      'MISSING_REQUIRED_DATA'
+    );
     expect(OnboardingErrorCode.INVALID_ROLE).toBe('INVALID_ROLE');
-    expect(OnboardingErrorCode.INSTITUTION_NOT_FOUND).toBe('INSTITUTION_NOT_FOUND');
-    expect(OnboardingErrorCode.DEPARTMENT_NOT_FOUND).toBe('DEPARTMENT_NOT_FOUND');
+    expect(OnboardingErrorCode.INSTITUTION_NOT_FOUND).toBe(
+      'INSTITUTION_NOT_FOUND'
+    );
+    expect(OnboardingErrorCode.DEPARTMENT_NOT_FOUND).toBe(
+      'DEPARTMENT_NOT_FOUND'
+    );
     expect(OnboardingErrorCode.UNAUTHORIZED).toBe('UNAUTHORIZED');
     expect(OnboardingErrorCode.SESSION_EXPIRED).toBe('SESSION_EXPIRED');
     expect(OnboardingErrorCode.VALIDATION_FAILED).toBe('VALIDATION_FAILED');

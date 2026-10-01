@@ -2,19 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { NotificationService } from '@/lib/services/notification-service';
 
-const notificationService = new NotificationService();
-
 export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+    const notificationService = await NotificationService.init();
+
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -25,28 +24,30 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
 
     // Get notifications
-    const notifications = await notificationService.getUserNotifications(user.id, {
-      limit,
-      offset,
-      unreadOnly,
-      types: types as any
-    });
+    const notifications = await notificationService.getUserNotifications(
+      user.id,
+      {
+        limit,
+        offset,
+        unreadOnly,
+        types: types as any,
+      }
+    );
 
     return NextResponse.json({
       notifications,
       pagination: {
         page,
         limit,
-        hasMore: notifications.length === limit
-      }
+        hasMore: notifications.length === limit,
+      },
     });
-
   } catch (error) {
     console.error('Get notifications error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -56,18 +57,27 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+    const notificationService = await NotificationService.init();
+
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { type, title, message, priority = 'medium', action_url, action_label, metadata } = body;
+    const {
+      type,
+      title,
+      message,
+      priority = 'medium',
+      action_url,
+      action_label,
+      metadata,
+    } = body;
 
     // Validate required fields
     if (!type || !title || !message) {
@@ -87,7 +97,7 @@ export async function POST(request: NextRequest) {
         priority,
         actionUrl: action_url,
         actionLabel: action_label,
-        metadata: metadata || {}
+        metadata: metadata || {},
       }
     );
 
@@ -98,17 +108,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ 
-      success: true, 
-      notificationId 
+    return NextResponse.json({
+      success: true,
+      notificationId,
     });
-
   } catch (error) {
     console.error('Create notification error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );
@@ -118,14 +127,15 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await createClient();
-    
+    const notificationService = await NotificationService.init();
+
     // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
@@ -139,7 +149,10 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Delete notification
-    const success = await notificationService.deleteNotification(user.id, notificationId);
+    const success = await notificationService.deleteNotification(
+      user.id,
+      notificationId
+    );
 
     if (!success) {
       return NextResponse.json(
@@ -149,13 +162,12 @@ export async function DELETE(request: NextRequest) {
     }
 
     return NextResponse.json({ success: true });
-
   } catch (error) {
     console.error('Delete notification error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
-        details: error instanceof Error ? error.message : 'Unknown error'
+        details: error instanceof Error ? error.message : 'Unknown error',
       },
       { status: 500 }
     );

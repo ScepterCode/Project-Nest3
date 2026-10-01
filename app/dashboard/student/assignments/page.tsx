@@ -1,13 +1,25 @@
-"use client";
+'use client';
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, Clock, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+} from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -44,42 +56,48 @@ export default function StudentAssignmentsPage() {
   const loadAssignments = async () => {
     try {
       const supabase = createClient();
-      
+
       if (!user?.id) {
         console.error('loadAssignments called without user ID');
         setError('User not found');
         return;
       }
-      
+
       console.log('Loading assignments for student:', user.id);
-      
+
       // Check if required tables exist
-      const { data: testEnrollments, error: enrollmentTestError } = await supabase
-        .from('enrollments')
-        .select('count')
-        .limit(1);
-      
+      const { data: testEnrollments, error: enrollmentTestError } =
+        await supabase.from('enrollments').select('count').limit(1);
+
       if (enrollmentTestError) {
         console.error('Enrollments table not accessible:', enrollmentTestError);
-        console.error('Enrollments error details:', JSON.stringify(enrollmentTestError, null, 2));
-        setError('Enrollments system not available. You may not be enrolled in any classes yet.');
+        console.error(
+          'Enrollments error details:',
+          JSON.stringify(enrollmentTestError, null, 2)
+        );
+        setError(
+          'Enrollments system not available. You may not be enrolled in any classes yet.'
+        );
         setAssignments([]);
         return;
       }
-      
-      const { data: testAssignments, error: assignmentTestError } = await supabase
-        .from('assignments')
-        .select('count')
-        .limit(1);
-      
+
+      const { data: testAssignments, error: assignmentTestError } =
+        await supabase.from('assignments').select('count').limit(1);
+
       if (assignmentTestError) {
         console.error('Assignments table not accessible:', assignmentTestError);
-        console.error('Assignments error details:', JSON.stringify(assignmentTestError, null, 2));
-        setError('Assignments system not available. No assignments have been created yet.');
+        console.error(
+          'Assignments error details:',
+          JSON.stringify(assignmentTestError, null, 2)
+        );
+        setError(
+          'Assignments system not available. No assignments have been created yet.'
+        );
         setAssignments([]);
         return;
       }
-      
+
       // Get the classes the student is enrolled in
       const { data: enrollments, error: enrollmentError } = await supabase
         .from('enrollments')
@@ -94,7 +112,7 @@ export default function StudentAssignmentsPage() {
 
       const classIds = enrollments?.map(e => e.class_id) || [];
       console.log('Student enrolled in classes:', classIds.length);
-      
+
       if (classIds.length === 0) {
         setAssignments([]);
         return;
@@ -112,27 +130,25 @@ export default function StudentAssignmentsPage() {
         setError(`Failed to load assignments: ${assignmentsError.message}`);
         return;
       }
-      
+
       console.log('Found assignments:', assignmentsData?.length || 0);
-      
+
       if (!assignmentsData || assignmentsData.length === 0) {
         setAssignments([]);
         return;
       }
-      
+
       // Get class names
       const { data: classesData } = await supabase
         .from('classes')
         .select('id, name')
         .in('id', classIds);
-      
+
       // Get submissions (if submissions table exists)
       let submissionsData: any[] = [];
-      const { data: testSubmissions, error: submissionTestError } = await supabase
-        .from('submissions')
-        .select('count')
-        .limit(1);
-      
+      const { data: testSubmissions, error: submissionTestError } =
+        await supabase.from('submissions').select('count').limit(1);
+
       if (!submissionTestError) {
         const assignmentIds = assignmentsData.map(a => a.id);
         const { data: submissions } = await supabase
@@ -140,38 +156,44 @@ export default function StudentAssignmentsPage() {
           .select('assignment_id, submitted_at, grade, status')
           .in('assignment_id', assignmentIds)
           .eq('student_id', user.id);
-        
+
         submissionsData = submissions || [];
       }
-      
-      // Transform the data to include submission status
-      const transformedAssignments: Assignment[] = assignmentsData.map(assignment => {
-        const classData = classesData?.find(c => c.id === assignment.class_id);
-        const submission = submissionsData.find(s => s.assignment_id === assignment.id);
-        
-        let status: 'pending' | 'submitted' | 'graded' = 'pending';
-        
-        if (submission) {
-          if (submission.grade !== null) {
-            status = 'graded';
-          } else if (submission.submitted_at) {
-            status = 'submitted';
-          }
-        }
 
-        return {
-          id: assignment.id,
-          title: assignment.title,
-          description: assignment.description,
-          due_date: assignment.due_date,
-          status,
-          class_name: classData?.name || 'Unknown Class',
-          class_id: assignment.class_id,
-          points_possible: assignment.points || 0,
-          points_earned: submission?.grade || undefined,
-          submission_date: submission?.submitted_at || undefined
-        };
-      });
+      // Transform the data to include submission status
+      const transformedAssignments: Assignment[] = assignmentsData.map(
+        assignment => {
+          const classData = classesData?.find(
+            c => c.id === assignment.class_id
+          );
+          const submission = submissionsData.find(
+            s => s.assignment_id === assignment.id
+          );
+
+          let status: 'pending' | 'submitted' | 'graded' = 'pending';
+
+          if (submission) {
+            if (submission.grade !== null) {
+              status = 'graded';
+            } else if (submission.submitted_at) {
+              status = 'submitted';
+            }
+          }
+
+          return {
+            id: assignment.id,
+            title: assignment.title,
+            description: assignment.description,
+            due_date: assignment.due_date,
+            status,
+            class_name: classData?.name || 'Unknown Class',
+            class_id: assignment.class_id,
+            points_possible: assignment.points || 0,
+            points_earned: submission?.grade || undefined,
+            submission_date: submission?.submitted_at || undefined,
+          };
+        }
+      );
 
       setAssignments(transformedAssignments);
     } catch (error) {
@@ -184,30 +206,41 @@ export default function StudentAssignmentsPage() {
 
   const getStatusBadge = (status: string, dueDate: string) => {
     const isOverdue = new Date(dueDate) < new Date() && status === 'pending';
-    
+
     if (isOverdue) {
-      return <Badge variant="destructive" className="flex items-center gap-1">
-        <AlertCircle className="h-3 w-3" />
-        Overdue
-      </Badge>;
+      return (
+        <Badge variant="destructive" className="flex items-center gap-1">
+          <AlertCircle className="h-3 w-3" />
+          Overdue
+        </Badge>
+      );
     }
-    
+
     switch (status) {
       case 'graded':
-        return <Badge variant="default" className="flex items-center gap-1 bg-green-600">
-          <CheckCircle className="h-3 w-3" />
-          Graded
-        </Badge>;
+        return (
+          <Badge
+            variant="default"
+            className="flex items-center gap-1 bg-green-600"
+          >
+            <CheckCircle className="h-3 w-3" />
+            Graded
+          </Badge>
+        );
       case 'submitted':
-        return <Badge variant="secondary" className="flex items-center gap-1">
-          <Clock className="h-3 w-3" />
-          Submitted
-        </Badge>;
+        return (
+          <Badge variant="secondary" className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            Submitted
+          </Badge>
+        );
       default:
-        return <Badge variant="outline" className="flex items-center gap-1">
-          <FileText className="h-3 w-3" />
-          Pending
-        </Badge>;
+        return (
+          <Badge variant="outline" className="flex items-center gap-1">
+            <FileText className="h-3 w-3" />
+            Pending
+          </Badge>
+        );
     }
   };
 
@@ -217,7 +250,7 @@ export default function StudentAssignmentsPage() {
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -239,8 +272,12 @@ export default function StudentAssignmentsPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center py-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Assignments</h1>
-              <p className="text-gray-600">Welcome back, {getUserDisplayName()}!</p>
+              <h1 className="text-2xl font-bold text-gray-900">
+                My Assignments
+              </h1>
+              <p className="text-gray-600">
+                Welcome back, {getUserDisplayName()}!
+              </p>
             </div>
             <Button
               variant="outline"
@@ -263,11 +300,16 @@ export default function StudentAssignmentsPage() {
           <Card>
             <CardContent className="text-center py-12">
               <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Assignments Yet</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Assignments Yet
+              </h3>
               <p className="text-gray-600 mb-4">
-                You don't have any assignments at the moment. Check back later or join a class to see assignments.
+                You don&apos;t have any assignments at the moment. Check back
+                later or join a class to see assignments.
               </p>
-              <Button onClick={() => router.push('/dashboard/student/classes/join')}>
+              <Button
+                onClick={() => router.push('/dashboard/student/classes/join')}
+              >
                 Join a Class
               </Button>
             </CardContent>
@@ -282,7 +324,9 @@ export default function StudentAssignmentsPage() {
                     <div className="text-2xl font-bold text-blue-600">
                       {assignments.length}
                     </div>
-                    <div className="text-sm text-gray-500">Total Assignments</div>
+                    <div className="text-sm text-gray-500">
+                      Total Assignments
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -320,12 +364,17 @@ export default function StudentAssignmentsPage() {
 
             {/* Assignments List */}
             <div className="space-y-4">
-              {assignments.map((assignment) => (
-                <Card key={assignment.id} className="hover:shadow-md transition-shadow">
+              {assignments.map(assignment => (
+                <Card
+                  key={assignment.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
-                        <CardTitle className="text-lg">{assignment.title}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {assignment.title}
+                        </CardTitle>
                         <CardDescription className="mt-1">
                           {assignment.class_name}
                         </CardDescription>
@@ -334,8 +383,10 @@ export default function StudentAssignmentsPage() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-gray-600 mb-4">{assignment.description}</p>
-                    
+                    <p className="text-gray-600 mb-4">
+                      {assignment.description}
+                    </p>
+
                     <div className="flex flex-wrap gap-4 text-sm text-gray-500 mb-4">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
@@ -348,14 +399,19 @@ export default function StudentAssignmentsPage() {
                       {assignment.points_earned !== undefined && (
                         <div className="flex items-center gap-1">
                           <CheckCircle className="h-4 w-4" />
-                          Earned: {assignment.points_earned}/{assignment.points_possible}
+                          Earned: {assignment.points_earned}/
+                          {assignment.points_possible}
                         </div>
                       )}
                     </div>
 
                     <div className="flex gap-2">
                       <Button
-                        onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}`)}
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/student/assignments/${assignment.id}`
+                          )
+                        }
                         size="sm"
                         variant="outline"
                       >
@@ -363,7 +419,11 @@ export default function StudentAssignmentsPage() {
                       </Button>
                       {assignment.status === 'pending' && (
                         <Button
-                          onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}/submit`)}
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/student/assignments/${assignment.id}/submit`
+                            )
+                          }
                           size="sm"
                         >
                           Submit Assignment
@@ -371,7 +431,11 @@ export default function StudentAssignmentsPage() {
                       )}
                       {assignment.status === 'submitted' && (
                         <Button
-                          onClick={() => router.push(`/dashboard/student/assignments/${assignment.id}/submit`)}
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/student/assignments/${assignment.id}/submit`
+                            )
+                          }
                           size="sm"
                           variant="secondary"
                         >
@@ -381,7 +445,11 @@ export default function StudentAssignmentsPage() {
                       {assignment.status === 'graded' && (
                         <Button
                           variant="outline"
-                          onClick={() => router.push(`/dashboard/student/grades/${assignment.id}`)}
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/student/grades/${assignment.id}`
+                            )
+                          }
                           size="sm"
                         >
                           View Grade

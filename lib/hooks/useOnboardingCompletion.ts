@@ -30,7 +30,7 @@ export function useOnboardingCompletion(
   const {
     redirectOnIncomplete = false,
     showReminders = true,
-    reminderDelay = 5000 // 5 seconds
+    reminderDelay = 5000, // 5 seconds
   } = options;
 
   const { user, onboardingStatus, refreshOnboardingStatus } = useAuth();
@@ -40,7 +40,9 @@ export function useOnboardingCompletion(
 
   // Calculate completion percentage
   const completionPercentage = onboardingStatus
-    ? Math.round((onboardingStatus.currentStep / onboardingStatus.totalSteps) * 100)
+    ? Math.round(
+        (onboardingStatus.currentStep / onboardingStatus.totalSteps) * 100
+      )
     : 0;
 
   // Handle redirect on incomplete onboarding
@@ -66,12 +68,13 @@ export function useOnboardingCompletion(
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [showReminders, user, onboardingStatus, reminderDismissed, reminderDelay]);
 
   const dismissReminder = () => {
     setShowReminder(false);
     setReminderDismissed(true);
-    
+
     // Store dismissal in sessionStorage to persist during session
     if (typeof window !== 'undefined') {
       sessionStorage.setItem('onboarding-reminder-dismissed', 'true');
@@ -108,14 +111,14 @@ export function useOnboardingCompletion(
     completionPercentage,
     dismissReminder,
     goToOnboarding,
-    refreshStatus
+    refreshStatus,
   };
 }
 
 // Hook for getting onboarding completion status without side effects
 export function useOnboardingStatus() {
   const { onboardingStatus } = useAuth();
-  
+
   return {
     isComplete: !onboardingStatus?.needsOnboarding,
     needsOnboarding: onboardingStatus?.needsOnboarding || false,
@@ -123,16 +126,19 @@ export function useOnboardingStatus() {
     totalSteps: onboardingStatus?.totalSteps || 5,
     redirectPath: onboardingStatus?.redirectPath,
     completionPercentage: onboardingStatus
-      ? Math.round((onboardingStatus.currentStep / onboardingStatus.totalSteps) * 100)
-      : 0
+      ? Math.round(
+          (onboardingStatus.currentStep / onboardingStatus.totalSteps) * 100
+        )
+      : 0,
   };
 }
 
 // Hook for onboarding step validation
 export function useOnboardingStepValidation(requestedStep: number) {
   const { onboardingStatus } = useAuth();
-  
-  const canAccess = onboardingStatus
+
+  // Steps are only accessible while onboarding is still in progress.
+  const canAccess = onboardingStatus?.needsOnboarding
     ? OnboardingGuard.canAccessStep(
         requestedStep,
         onboardingStatus.currentStep,
@@ -140,7 +146,8 @@ export function useOnboardingStepValidation(requestedStep: number) {
       )
     : false;
 
-  const shouldRedirect = !canAccess && onboardingStatus?.needsOnboarding;
+  const shouldRedirect =
+    !canAccess && onboardingStatus?.needsOnboarding === true;
   const redirectPath = shouldRedirect
     ? `/onboarding?step=${onboardingStatus?.currentStep || 0}`
     : null;
@@ -150,6 +157,6 @@ export function useOnboardingStepValidation(requestedStep: number) {
     shouldRedirect,
     redirectPath,
     currentStep: onboardingStatus?.currentStep || 0,
-    isComplete: !onboardingStatus?.needsOnboarding
+    isComplete: !onboardingStatus?.needsOnboarding,
   };
 }
