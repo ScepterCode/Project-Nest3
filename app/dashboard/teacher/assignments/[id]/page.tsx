@@ -1,10 +1,16 @@
-"use client";
+'use client';
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, FileText, Users, Calendar, Edit } from 'lucide-react';
@@ -26,12 +32,17 @@ interface SubmissionStats {
   graded_count: number;
 }
 
-export default function TeacherAssignmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function TeacherAssignmentDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { user, loading } = useAuth();
   const resolvedParams = use(params);
   const router = useRouter();
   const [assignment, setAssignment] = useState<Assignment | null>(null);
-  const [submissionStats, setSubmissionStats] = useState<SubmissionStats | null>(null);
+  const [submissionStats, setSubmissionStats] =
+    useState<SubmissionStats | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,24 +61,35 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
   const loadAssignmentDetails = async () => {
     try {
       const supabase = createClient();
-      
+
       // Load assignment details
       const { data: assignmentData, error: assignmentError } = await supabase
         .from('assignments')
-        .select(`
+        .select(
+          `
           id, title, description, due_date, points, created_at, class_id, teacher_id
-        `)
+        `
+        )
         .eq('id', resolvedParams.id)
         .eq('teacher_id', user?.id)
         .single();
 
       if (assignmentError) {
         console.error('Assignment query error:', assignmentError);
-        console.error('Assignment query error details:', JSON.stringify(assignmentError, null, 2));
+        console.error(
+          'Assignment query error details:',
+          JSON.stringify(assignmentError, null, 2)
+        );
         if (assignmentError.code === 'PGRST116') {
           setError('Assignment not found');
-        } else if (assignmentError.message?.includes('relation "assignments" does not exist')) {
-          setError('Assignments table not found. Please run the database setup script.');
+        } else if (
+          assignmentError.message?.includes(
+            'relation "assignments" does not exist'
+          )
+        ) {
+          setError(
+            'Assignments table not found. Please run the database setup script.'
+          );
         } else {
           setError('Assignment not found or access denied');
         }
@@ -89,12 +111,11 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
         points_possible: assignmentData.points || 100,
         class_name: classData?.name || 'Unknown Class',
         class_id: assignmentData.class_id,
-        created_at: assignmentData.created_at
+        created_at: assignmentData.created_at,
       });
 
       // Load submission statistics
       await loadSubmissionStats(assignmentData.class_id);
-
     } catch (error) {
       console.error('Error loading assignment:', error);
       setError('Failed to load assignment details');
@@ -106,38 +127,18 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
   const loadSubmissionStats = async (classId: string) => {
     try {
       const supabase = createClient();
-      
-      // Get total students in class - try both table names
-      let enrollments = null;
-      let enrollmentError = null;
-      
-      // First try 'enrollments' table
-      const { data: enrollmentsData, error: enrollmentsError } = await supabase
+
+      // Count students currently in the class (without downloading the rows)
+      const { count: totalStudents, error: enrollmentError } = await supabase
         .from('enrollments')
-        .select('student_id')
-        .eq('class_id', classId);
-      
-      if (enrollmentsError && enrollmentsError.message?.includes('relation "enrollments" does not exist')) {
-        // Try 'class_enrollments' table instead
-        const { data: classEnrollmentsData, error: classEnrollmentsError } = await supabase
-          .from('class_enrollments')
-          .select('user_id')
-          .eq('class_id', classId)
-          .eq('status', 'active');
-        
-        enrollments = classEnrollmentsData;
-        enrollmentError = classEnrollmentsError;
-      } else {
-        enrollments = enrollmentsData;
-        enrollmentError = enrollmentsError;
-      }
+        .select('id', { count: 'exact', head: true })
+        .eq('class_id', classId)
+        .in('status', ['enrolled', 'active']);
 
       if (enrollmentError) {
         console.error('Error loading enrollments:', enrollmentError);
         return;
       }
-
-      const totalStudents = enrollments?.length || 0;
 
       // Get submission counts
       const { data: submissions, error: submissionError } = await supabase
@@ -148,22 +149,22 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
       if (submissionError) {
         console.error('Error loading submissions:', submissionError);
         setSubmissionStats({
-          total_students: totalStudents,
+          total_students: totalStudents ?? 0,
           submitted_count: 0,
-          graded_count: 0
+          graded_count: 0,
         });
         return;
       }
 
       const submittedCount = submissions?.length || 0;
-      const gradedCount = submissions?.filter(s => s.status === 'graded').length || 0;
+      const gradedCount =
+        submissions?.filter(s => s.status === 'graded').length || 0;
 
       setSubmissionStats({
-        total_students: totalStudents,
+        total_students: totalStudents ?? 0,
         submitted_count: submittedCount,
-        graded_count: gradedCount
+        graded_count: gradedCount,
       });
-
     } catch (error) {
       console.error('Error loading submission stats:', error);
     }
@@ -199,27 +200,40 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           onClick={() => router.push('/dashboard/teacher/assignments')}
           className="mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Assignments
         </Button>
-        
+
         <div className="flex justify-between items-start mb-4">
           <div>
             <h1 className="text-3xl font-bold mb-2">{assignment.title}</h1>
             <p className="text-gray-600 mb-2">{assignment.class_name}</p>
           </div>
-          
+
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push(`/dashboard/teacher/assignments/${assignment.id}/edit`)}>
+            <Button
+              variant="outline"
+              onClick={() =>
+                router.push(
+                  `/dashboard/teacher/assignments/${assignment.id}/edit`
+                )
+              }
+            >
               <Edit className="h-4 w-4 mr-2" />
               Edit Assignment
             </Button>
-            <Button onClick={() => router.push(`/dashboard/teacher/assignments/${assignment.id}/grade-submissions`)}>
+            <Button
+              onClick={() =>
+                router.push(
+                  `/dashboard/teacher/assignments/${assignment.id}/grade-submissions`
+                )
+              }
+            >
               <Users className="h-4 w-4 mr-2" />
               Grade Submissions
             </Button>
@@ -245,25 +259,30 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
                     {assignment.description || 'No description provided'}
                   </p>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <h3 className="font-medium mb-1">Due Date</h3>
                     <div className="flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       <span className={isOverdue ? 'text-red-600' : ''}>
-                        {dueDate.toLocaleDateString()} at {dueDate.toLocaleTimeString()}
+                        {dueDate.toLocaleDateString()} at{' '}
+                        {dueDate.toLocaleTimeString()}
                       </span>
-                      {isOverdue && <Badge variant="destructive">Overdue</Badge>}
+                      {isOverdue && (
+                        <Badge variant="destructive">Overdue</Badge>
+                      )}
                     </div>
                   </div>
-                  
+
                   <div>
                     <h3 className="font-medium mb-1">Points Possible</h3>
-                    <p className="text-lg font-semibold">{assignment.points_possible}</p>
+                    <p className="text-lg font-semibold">
+                      {assignment.points_possible}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="font-medium mb-1">Created</h3>
                   <p className="text-gray-600">
@@ -289,37 +308,49 @@ export default function TeacherAssignmentDetailPage({ params }: { params: Promis
                 <div className="space-y-4">
                   <div className="text-center">
                     <div className="text-3xl font-bold text-blue-600">
-                      {submissionStats.submitted_count}/{submissionStats.total_students}
+                      {submissionStats.submitted_count}/
+                      {submissionStats.total_students}
                     </div>
                     <p className="text-sm text-gray-600">Students Submitted</p>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <div className="flex justify-between">
                       <span>Total Students:</span>
-                      <span className="font-medium">{submissionStats.total_students}</span>
+                      <span className="font-medium">
+                        {submissionStats.total_students}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Submitted:</span>
-                      <span className="font-medium text-green-600">{submissionStats.submitted_count}</span>
+                      <span className="font-medium text-green-600">
+                        {submissionStats.submitted_count}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Graded:</span>
-                      <span className="font-medium text-blue-600">{submissionStats.graded_count}</span>
+                      <span className="font-medium text-blue-600">
+                        {submissionStats.graded_count}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span>Pending:</span>
                       <span className="font-medium text-orange-600">
-                        {submissionStats.total_students - submissionStats.submitted_count}
+                        {submissionStats.total_students -
+                          submissionStats.submitted_count}
                       </span>
                     </div>
                   </div>
-                  
+
                   {submissionStats.submitted_count > 0 && (
                     <div className="pt-4 border-t">
-                      <Button 
-                        className="w-full" 
-                        onClick={() => router.push(`/dashboard/teacher/assignments/${assignment.id}/submissions`)}
+                      <Button
+                        className="w-full"
+                        onClick={() =>
+                          router.push(
+                            `/dashboard/teacher/assignments/${assignment.id}/submissions`
+                          )
+                        }
                       >
                         View All Submissions
                       </Button>

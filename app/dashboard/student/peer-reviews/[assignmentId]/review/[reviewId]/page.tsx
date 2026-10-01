@@ -45,17 +45,18 @@ interface PeerReview {
     instructions: string;
     review_type: string;
     settings: any;
+    end_date: string | null;
   };
   submission: {
     id: string;
-    title: string;
-    content: string;
-    file_url?: string;
+    assignment_title: string;
+    content: string | null;
+    file_url?: string | null;
+    link_url?: string | null;
   };
-  reviewee: {
-    first_name: string;
-    last_name: string;
-  };
+  // null when the review is blind (author hidden from the reviewer)
+  author_name: string | null;
+  submitted_at: string | null;
 }
 
 interface ReviewFeedback {
@@ -84,7 +85,7 @@ export default function StudentPeerReviewPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [startTime] = useState(Date.now());
+  const [lastSavedAt, setLastSavedAt] = useState(Date.now());
 
   useEffect(() => {
     if (user && params.reviewId) {
@@ -94,45 +95,15 @@ export default function StudentPeerReviewPage() {
 
   const fetchPeerReview = async () => {
     try {
-      const { data, error } = await supabase
-        .from('peer_reviews')
-        .select(
-          `
-          id,
-          status,
-          overall_rating,
-          feedback,
-          time_spent,
-          peer_review_assignments!inner(
-            id,
-            title,
-            instructions,
-            review_type,
-            settings
-          ),
-          submissions!inner(
-            id,
-            title,
-            content,
-            file_url
-          ),
-          reviewee:users!reviewee_id(first_name, last_name)
-        `
-        )
-        .eq('id', params.reviewId)
-        .eq('reviewer_id', user?.id)
-        .single();
+      // Only the assigned reviewer gets this, and the author is hidden for
+      // blind reviews (students can't read peer_reviews directly).
+      const { data, error } = await supabase.rpc('get_peer_review', {
+        p_review_id: params.reviewId,
+      });
 
       if (error) throw error;
 
-      const reviewData = {
-        ...data,
-        peer_review_assignment: data.peer_review_assignments as any,
-        submission: data.submissions as any,
-        reviewee: data.reviewee as any,
-      };
-
-      setPeerReview(reviewData);
+      setPeerReview(data as PeerReview);
 
       // Load existing feedback if any
       if (data.feedback) {
@@ -189,8 +160,21 @@ export default function StudentPeerReviewPage() {
     }));
   };
 
-  const calculateTimeSpent = () => {
-    return Math.floor((Date.now() - startTime) / 1000 / 60); // in minutes
+  // Saves through save_peer_review(), which enforces the deadline, the rating
+  // range and (on submit) required fields. Time is sent as minutes since the
+  // last save, so repeated saves don't double-count.
+  const saveReview = async (submit: boolean) => {
+    if (!peerReview) return;
+    const now = Date.now();
+    const { error } = await supabase.rpc('save_peer_review', {
+      p_review_id: peerReview.id,
+      p_overall_rating: rating || null,
+      p_feedback: feedback,
+      p_minutes: Math.floor((now - lastSavedAt) / 1000 / 60),
+      p_submit: submit,
+    });
+    if (error) throw error;
+    setLastSavedAt(now);
   };
 
   const saveDraft = async () => {
@@ -198,20 +182,7 @@ export default function StudentPeerReviewPage() {
 
     setSaving(true);
     try {
-      const timeSpent = calculateTimeSpent();
-
-      const { error } = await supabase
-        .from('peer_reviews')
-        .update({
-          status: 'in_progress',
-          overall_rating: rating || null,
-          feedback: feedback,
-          time_spent: timeSpent,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', peerReview.id);
-
-      if (error) throw error;
+      await saveReview(false);
 
       alert('Draft saved successfully!');
     } catch (error: any) {
@@ -238,33 +209,8 @@ export default function StudentPeerReviewPage() {
 
     setSubmitting(true);
     try {
-      const timeSpent = calculateTimeSpent();
-
-      const { error } = await supabase
-        .from('peer_reviews')
-        .update({
-          status: 'completed',
-          overall_rating: rating || null,
-          feedback: feedback,
-          time_spent: timeSpent,
-          submitted_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', peerReview.id);
-
-      if (error) throw error;
-
-      // Log activity
-      await supabase.from('peer_review_activity').insert({
-        peer_review_assignment_id: peerReview.peer_review_assignment.id,
-        peer_review_id: peerReview.id,
-        user_id: user.id,
-        activity_type: 'review_submitted',
-        details: {
-          assignment_title: peerReview.peer_review_assignment.title,
-          rating: rating,
-        },
-      });
+      // Also logs the 'review_submitted' activity on the server
+      await saveReview(true);
 
       router.push('/dashboard/student/peer-reviews');
     } catch (error: any) {
@@ -307,10 +253,7 @@ export default function StudentPeerReviewPage() {
   }
 
   const isCompleted = peerReview.status === 'completed';
-  const authorName =
-    peerReview.peer_review_assignment.review_type === 'blind'
-      ? 'Anonymous Author'
-      : `${peerReview.reviewee.first_name} ${peerReview.reviewee.last_name}`;
+  const authorName = peerReview.author_name || 'Anonymous Author';
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
@@ -329,7 +272,7 @@ export default function StudentPeerReviewPage() {
                 {peerReview.peer_review_assignment.title}
               </h1>
               <p className="text-gray-600">
-                Reviewing: {peerReview.submission.title}
+                Reviewing: {peerReview.submission.assignment_title}
               </p>
             </div>
           </div>
@@ -370,15 +313,37 @@ export default function StudentPeerReviewPage() {
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-medium mb-2">
-                      {peerReview.submission.title}
+                      {peerReview.submission.assignment_title}
                     </h3>
                     <div className="prose prose-sm max-w-none">
                       <div className="whitespace-pre-wrap text-sm text-gray-700 dark:text-gray-300">
                         {peerReview.submission.content ||
-                          'No content available'}
+                          (peerReview.submission.link_url ||
+                          peerReview.submission.file_url
+                            ? ''
+                            : 'No content available')}
                       </div>
                     </div>
                   </div>
+
+                  {peerReview.submission.link_url &&
+                    /^https?:\/\//i.test(peerReview.submission.link_url) && (
+                      <div>
+                        <Label className="text-sm font-medium">
+                          Submitted Link
+                        </Label>
+                        <p className="mt-1 text-sm">
+                          <a
+                            href={peerReview.submission.link_url}
+                            target="_blank"
+                            rel="noopener noreferrer nofollow"
+                            className="text-blue-600 underline break-all"
+                          >
+                            {peerReview.submission.link_url}
+                          </a>
+                        </p>
+                      </div>
+                    )}
 
                   {peerReview.submission.file_url && (
                     <div>

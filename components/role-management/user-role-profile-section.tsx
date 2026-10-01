@@ -1,89 +1,109 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
-import { 
-  Shield, 
-  User, 
-  Clock, 
-  AlertCircle, 
+import { useState, useEffect } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Separator } from '@/components/ui/separator';
+import {
+  Shield,
+  User,
+  Clock,
+  AlertCircle,
   Info,
   ChevronDown,
-  ChevronUp
-} from "lucide-react"
-import { UserRole, UserRoleAssignment, Permission } from "@/lib/types/role-management"
-import { PermissionChecker } from "@/lib/services/permission-checker"
-import { useSupabase } from "@/components/session-provider"
+  ChevronUp,
+} from 'lucide-react';
+import {
+  UserRole,
+  UserRoleAssignment,
+  Permission,
+} from '@/lib/types/role-management';
+import { PermissionChecker } from '@/lib/services/permission-checker';
+import { useSupabase } from '@/components/session-provider';
 
 interface UserRoleProfileSectionProps {
-  userId: string
-  className?: string
+  userId: string;
+  className?: string;
 }
 
-export function UserRoleProfileSection({ userId, className }: UserRoleProfileSectionProps) {
-  const supabase = useSupabase()
-  const [roles, setRoles] = useState<UserRoleAssignment[]>([])
-  const [permissions, setPermissions] = useState<Permission[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showAllPermissions, setShowAllPermissions] = useState(false)
+export function UserRoleProfileSection({
+  userId,
+  className,
+}: UserRoleProfileSectionProps) {
+  const supabase = useSupabase();
+  const [roles, setRoles] = useState<UserRoleAssignment[]>([]);
+  const [permissions, setPermissions] = useState<Permission[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showAllPermissions, setShowAllPermissions] = useState(false);
 
   useEffect(() => {
-    fetchUserRolesAndPermissions()
-  }, [userId])
+    fetchUserRolesAndPermissions();
+  }, [userId]);
 
   const fetchUserRolesAndPermissions = async () => {
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
-      // Fetch user roles
-      const { data: rolesData, error: rolesError } = await supabase
-        .from('user_role_assignments')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('status', 'active')
+      // The role the app enforces lives on the users row (user_role_assignments
+      // is never written to).
+      const { data: row, error: rolesError } = await supabase
+        .from('users')
+        .select(
+          'id, role, institution_id, department_id, created_at, updated_at'
+        )
+        .eq('id', userId)
+        .single();
 
-      if (rolesError) throw rolesError
+      if (rolesError) throw rolesError;
 
-      const userRoles: UserRoleAssignment[] = (rolesData || []).map(row => ({
-        id: row.id,
-        userId: row.user_id,
-        role: row.role as UserRole,
-        status: row.status,
-        assignedBy: row.assigned_by,
-        assignedAt: new Date(row.assigned_at),
-        expiresAt: row.expires_at ? new Date(row.expires_at) : undefined,
-        departmentId: row.department_id,
-        institutionId: row.institution_id,
-        isTemporary: row.is_temporary,
-        metadata: row.metadata || {},
-        createdAt: new Date(row.created_at),
-        updatedAt: new Date(row.updated_at)
-      }))
+      const userRoles: UserRoleAssignment[] = row
+        ? [
+            {
+              id: row.id,
+              userId: row.id,
+              role: row.role as UserRole,
+              status: 'active',
+              assignedAt: new Date(row.created_at),
+              departmentId: row.department_id,
+              institutionId: row.institution_id,
+              isTemporary: false,
+              metadata: {},
+              createdAt: new Date(row.created_at),
+              updatedAt: new Date(row.updated_at ?? row.created_at),
+            } as UserRoleAssignment,
+          ]
+        : [];
 
-      setRoles(userRoles)
+      setRoles(userRoles);
 
       // Fetch user permissions using PermissionChecker
       const permissionChecker = new PermissionChecker({
         cacheEnabled: true,
         cacheTtl: 300,
-        bulkCheckLimit: 100
-      })
+        bulkCheckLimit: 100,
+      });
 
-      const userPermissions = await permissionChecker.getUserPermissions(userId)
-      setPermissions(userPermissions)
-
+      const userPermissions =
+        await permissionChecker.getUserPermissions(userId);
+      setPermissions(userPermissions);
     } catch (err) {
-      console.error('Error fetching user roles and permissions:', err)
-      setError(err instanceof Error ? err.message : 'Failed to load role information')
+      console.error('Error fetching user roles and permissions:', err);
+      setError(
+        err instanceof Error ? err.message : 'Failed to load role information'
+      );
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const getRoleDisplayName = (role: UserRole): string => {
     const roleNames = {
@@ -91,68 +111,73 @@ export function UserRoleProfileSection({ userId, className }: UserRoleProfileSec
       [UserRole.TEACHER]: 'Teacher',
       [UserRole.DEPARTMENT_ADMIN]: 'Department Admin',
       [UserRole.INSTITUTION_ADMIN]: 'Institution Admin',
-      [UserRole.SYSTEM_ADMIN]: 'System Admin'
-    }
-    return roleNames[role] || role
-  }
+      [UserRole.SYSTEM_ADMIN]: 'System Admin',
+    };
+    return roleNames[role] || role;
+  };
 
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
       case UserRole.SYSTEM_ADMIN:
-        return "destructive"
+        return 'destructive';
       case UserRole.INSTITUTION_ADMIN:
-        return "default"
+        return 'default';
       case UserRole.DEPARTMENT_ADMIN:
-        return "secondary"
+        return 'secondary';
       case UserRole.TEACHER:
-        return "outline"
+        return 'outline';
       case UserRole.STUDENT:
-        return "secondary"
+        return 'secondary';
       default:
-        return "outline"
+        return 'outline';
     }
-  }
+  };
 
   const isRoleExpiringSoon = (role: UserRoleAssignment): boolean => {
-    if (!role.expiresAt) return false
-    const now = new Date()
-    const daysUntilExpiry = Math.ceil((role.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    return daysUntilExpiry <= 7 && daysUntilExpiry > 0
-  }
+    if (!role.expiresAt) return false;
+    const now = new Date();
+    const daysUntilExpiry = Math.ceil(
+      (role.expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    return daysUntilExpiry <= 7 && daysUntilExpiry > 0;
+  };
 
   const isRoleExpired = (role: UserRoleAssignment): boolean => {
-    if (!role.expiresAt) return false
-    return role.expiresAt < new Date()
-  }
+    if (!role.expiresAt) return false;
+    return role.expiresAt < new Date();
+  };
 
   const formatExpirationDate = (date: Date): string => {
     return date.toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
-    })
-  }
+      day: 'numeric',
+    });
+  };
 
   const groupPermissionsByCategory = (permissions: Permission[]) => {
-    return permissions.reduce((groups, permission) => {
-      const category = permission.category
-      if (!groups[category]) {
-        groups[category] = []
-      }
-      groups[category].push(permission)
-      return groups
-    }, {} as Record<string, Permission[]>)
-  }
+    return permissions.reduce(
+      (groups, permission) => {
+        const category = permission.category;
+        if (!groups[category]) {
+          groups[category] = [];
+        }
+        groups[category].push(permission);
+        return groups;
+      },
+      {} as Record<string, Permission[]>
+    );
+  };
 
   const getCategoryDisplayName = (category: string): string => {
     const categoryNames = {
-      'content': 'Content Management',
-      'user_management': 'User Management',
-      'analytics': 'Analytics',
-      'system': 'System Administration'
-    }
-    return categoryNames[category as keyof typeof categoryNames] || category
-  }
+      content: 'Content Management',
+      user_management: 'User Management',
+      analytics: 'Analytics',
+      system: 'System Administration',
+    };
+    return categoryNames[category as keyof typeof categoryNames] || category;
+  };
 
   if (isLoading) {
     return (
@@ -164,7 +189,7 @@ export function UserRoleProfileSection({ userId, className }: UserRoleProfileSec
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   if (error) {
@@ -175,9 +200,9 @@ export function UserRoleProfileSection({ userId, className }: UserRoleProfileSec
             <AlertCircle className="h-5 w-5 mr-2" />
             <span>Error: {error}</span>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             className="mt-2"
             onClick={fetchUserRolesAndPermissions}
           >
@@ -185,11 +210,13 @@ export function UserRoleProfileSection({ userId, className }: UserRoleProfileSec
           </Button>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  const permissionGroups = groupPermissionsByCategory(permissions)
-  const displayedPermissions = showAllPermissions ? permissions : permissions.slice(0, 6)
+  const permissionGroups = groupPermissionsByCategory(permissions);
+  const displayedPermissions = showAllPermissions
+    ? permissions
+    : permissions.slice(0, 6);
 
   return (
     <div className={className}>
@@ -212,8 +239,11 @@ export function UserRoleProfileSection({ userId, className }: UserRoleProfileSec
             </div>
           ) : (
             <div className="space-y-3">
-              {roles.map((role) => (
-                <div key={role.id} className="flex items-center justify-between p-3 border rounded-lg">
+              {roles.map(role => (
+                <div
+                  key={role.id}
+                  className="flex items-center justify-between p-3 border rounded-lg"
+                >
                   <div className="flex items-center space-x-3">
                     <Badge variant={getRoleBadgeVariant(role.role)}>
                       {getRoleDisplayName(role.role)}
@@ -267,26 +297,35 @@ export function UserRoleProfileSection({ userId, className }: UserRoleProfileSec
             </div>
           ) : (
             <div className="space-y-4">
-              {Object.entries(permissionGroups).map(([category, categoryPermissions]) => (
-                <div key={category}>
-                  <h4 className="font-medium text-sm text-muted-foreground mb-2">
-                    {getCategoryDisplayName(category)}
-                  </h4>
-                  <div className="flex flex-wrap gap-2 mb-3">
-                    {categoryPermissions.slice(0, showAllPermissions ? undefined : 3).map((permission) => (
-                      <Badge key={permission.id} variant="outline" className="text-xs">
-                        {permission.description}
-                      </Badge>
-                    ))}
-                    {!showAllPermissions && categoryPermissions.length > 3 && (
-                      <Badge variant="secondary" className="text-xs">
-                        +{categoryPermissions.length - 3} more
-                      </Badge>
-                    )}
+              {Object.entries(permissionGroups).map(
+                ([category, categoryPermissions]) => (
+                  <div key={category}>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">
+                      {getCategoryDisplayName(category)}
+                    </h4>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {categoryPermissions
+                        .slice(0, showAllPermissions ? undefined : 3)
+                        .map(permission => (
+                          <Badge
+                            key={permission.id}
+                            variant="outline"
+                            className="text-xs"
+                          >
+                            {permission.description}
+                          </Badge>
+                        ))}
+                      {!showAllPermissions &&
+                        categoryPermissions.length > 3 && (
+                          <Badge variant="secondary" className="text-xs">
+                            +{categoryPermissions.length - 3} more
+                          </Badge>
+                        )}
+                    </div>
                   </div>
-                </div>
-              ))}
-              
+                )
+              )}
+
               {permissions.length > 6 && (
                 <>
                   <Separator />
@@ -315,5 +354,5 @@ export function UserRoleProfileSection({ userId, className }: UserRoleProfileSec
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

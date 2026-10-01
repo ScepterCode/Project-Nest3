@@ -1,92 +1,103 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useSupabase } from "@/components/session-provider"
-import { UserRoleProfileSection } from "@/components/role-management/user-role-profile-section"
-import { RoleRequestForm } from "@/components/role-management/role-request-form"
-import { RoleChangeHistory } from "@/components/role-management/role-change-history"
-import { User, Shield, History, UserPlus } from "lucide-react"
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useSupabase } from '@/components/session-provider';
+import { UserRoleProfileSection } from '@/components/role-management/user-role-profile-section';
+import { RoleRequestForm } from '@/components/role-management/role-request-form';
+import { RoleChangeHistory } from '@/components/role-management/role-change-history';
+import { User, Shield, History, UserPlus } from 'lucide-react';
 
 export default function UserProfilePage() {
-  const supabase = useSupabase()
-  const [firstName, setFirstName] = useState("")
-  const [lastName, setLastName] = useState("")
-  const [email, setEmail] = useState("")
-  const [userId, setUserId] = useState<string | null>(null)
-  const [institutionId, setInstitutionId] = useState<string | null>(null)
-  const [departmentId, setDepartmentId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [showRoleRequestForm, setShowRoleRequestForm] = useState(false)
+  const supabase = useSupabase();
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
+  const [institutionId, setInstitutionId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const { data: { user }, error: userError } = await supabase.auth.getUser()
-        if (userError) throw userError
+        const {
+          data: { user },
+          error: userError,
+        } = await supabase.auth.getUser();
+        if (userError) throw userError;
 
         if (user) {
-          setUserId(user.id)
-          
+          setUserId(user.id);
+
           const { data: userProfileData, error: profileError } = await supabase
             .from('users')
-            .select('first_name, last_name, email, institution_id, department_id')
+            .select(
+              'first_name, last_name, email, institution_id, department_id'
+            )
             .eq('id', user.id)
-            .single()
+            .single();
 
-          if (profileError) throw profileError
+          if (profileError) throw profileError;
 
-          setFirstName(userProfileData.first_name)
-          setLastName(userProfileData.last_name)
-          setEmail(userProfileData.email)
-          setInstitutionId(userProfileData.institution_id)
-          setDepartmentId(userProfileData.department_id)
+          setFirstName(userProfileData.first_name);
+          setLastName(userProfileData.last_name);
+          setEmail(userProfileData.email);
+          setInstitutionId(userProfileData.institution_id);
         }
       } catch (error: any) {
-        setError(error.message)
+        setError(error.message);
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchUserProfile()
-  }, [supabase])
+    fetchUserProfile();
+  }, [supabase]);
 
   const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsUpdating(true)
+    e.preventDefault();
+    setIsUpdating(true);
 
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser()
-      if (userError) throw userError
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+      if (userError) throw userError;
 
       if (user) {
         const { error: updateError } = await supabase
           .from('users')
           .update({ first_name: firstName, last_name: lastName })
-          .eq('id', user.id)
+          .eq('id', user.id);
 
-        if (updateError) throw updateError
+        if (updateError) throw updateError;
 
         // Optionally update email in auth.users table if needed
         // const { error: authUpdateError } = await supabase.auth.updateUser({ email: email })
         // if (authUpdateError) throw authUpdateError
 
-        alert("Profile updated successfully!")
+        alert('Profile updated successfully!');
       }
     } catch (error: any) {
-      console.error("Error updating profile:", error)
-      alert(error.message || "Failed to update profile")
+      console.error('Error updating profile:', error);
+      alert(error.message || 'Failed to update profile');
     } finally {
-      setIsUpdating(false)
+      setIsUpdating(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -96,11 +107,11 @@ export default function UserProfilePage() {
           <span className="ml-2">Loading profile...</span>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
-    return <div className="p-6 text-red-500">Error: {error}</div>
+    return <div className="p-6 text-red-500">Error: {error}</div>;
   }
 
   return (
@@ -145,13 +156,16 @@ export default function UserProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md">
+              <form
+                onSubmit={handleUpdateProfile}
+                className="space-y-4 max-w-md"
+              >
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
                   <Input
                     id="firstName"
                     value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
+                    onChange={e => setFirstName(e.target.value)}
                     required
                   />
                 </div>
@@ -160,7 +174,7 @@ export default function UserProfilePage() {
                   <Input
                     id="lastName"
                     value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
+                    onChange={e => setLastName(e.target.value)}
                     required
                   />
                 </div>
@@ -172,7 +186,7 @@ export default function UserProfilePage() {
                   </p>
                 </div>
                 <Button type="submit" disabled={isUpdating}>
-                  {isUpdating ? "Updating..." : "Update Profile"}
+                  {isUpdating ? 'Updating...' : 'Update Profile'}
                 </Button>
               </form>
             </CardContent>
@@ -181,33 +195,26 @@ export default function UserProfilePage() {
 
         {/* Roles & Permissions Tab */}
         <TabsContent value="roles">
-          {userId && (
-            <UserRoleProfileSection userId={userId} />
-          )}
+          {userId && <UserRoleProfileSection userId={userId} />}
         </TabsContent>
 
         {/* Request Role Tab */}
         <TabsContent value="request">
-          {userId && institutionId && (
-            <RoleRequestForm
-              userId={userId}
-              institutionId={institutionId}
-              departmentId={departmentId || undefined}
-              onSuccess={() => {
-                // Optionally switch to history tab or show success message
-                setShowRoleRequestForm(false)
-              }}
-            />
+          {userId && institutionId && <RoleRequestForm userId={userId} />}
+          {userId && !isLoading && !institutionId && (
+            <p className="text-sm text-muted-foreground">
+              Role requests are reviewed by your institution&apos;s
+              administrators. Your account isn&apos;t linked to an institution
+              yet, so there&apos;s nobody to send a request to.
+            </p>
           )}
         </TabsContent>
 
         {/* Role History Tab */}
         <TabsContent value="history">
-          {userId && (
-            <RoleChangeHistory userId={userId} />
-          )}
+          {userId && <RoleChangeHistory userId={userId} />}
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

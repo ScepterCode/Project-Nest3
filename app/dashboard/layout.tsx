@@ -13,10 +13,8 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import Navbar from '@/components/Header/Navbar';
 import NavLinks from '@/components/Header/Navlinks';
 import {
-  DepartmentRolegate,
   InstitutionRolegate,
   studentsRolegate,
-  SystemRolegate,
   teachersRolegate,
 } from './components/Permissiongate';
 import { LogOut } from 'lucide-react';
@@ -132,42 +130,6 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                     <div className="flex items-center space-x-2">
                       {institution.icon}
                       <span>{institution.text}</span>
-                    </div>
-                  </NavLinks>
-                </PermissionGate>
-              ))}
-            </RoleGate>
-            {/* Department Admin Navigation */}
-            <RoleGate userId={user.id} allowedRoles={['department_admin']}>
-              {DepartmentRolegate.map((department, index) => (
-                <PermissionGate
-                  userId={user.id}
-                  key={index}
-                  permission={department.permission}
-                >
-                  <NavLinks href={department.href}>
-                    {' '}
-                    <div className="flex items-center space-x-2">
-                      {department.icon}
-                      <span>{department.text}</span>
-                    </div>
-                  </NavLinks>
-                </PermissionGate>
-              ))}
-            </RoleGate>
-            {/* System Admin Navigation */}
-            <RoleGate userId={user.id} allowedRoles={['system_admin']}>
-              {SystemRolegate.map((system, index) => (
-                <PermissionGate
-                  key={index}
-                  userId={user.id}
-                  permission={system.permission}
-                >
-                  <NavLinks href={system.href}>
-                    {' '}
-                    <div className="flex items-center space-x-2">
-                      {system.icon}
-                      <span>{system.text}</span>
                     </div>
                   </NavLinks>
                 </PermissionGate>

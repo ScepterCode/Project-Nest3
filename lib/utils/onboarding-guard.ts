@@ -34,7 +34,7 @@ export class OnboardingGuard {
           currentStep: 0,
           totalSteps: 5,
           needsOnboarding: true,
-          redirectPath: '/onboarding'
+          redirectPath: '/onboarding',
         };
       }
 
@@ -45,7 +45,7 @@ export class OnboardingGuard {
           currentStep: 0,
           totalSteps: 5,
           needsOnboarding: true,
-          redirectPath: '/onboarding'
+          redirectPath: '/onboarding',
         };
       }
 
@@ -55,7 +55,7 @@ export class OnboardingGuard {
           isComplete: true,
           currentStep: 5,
           totalSteps: 5,
-          needsOnboarding: false
+          needsOnboarding: false,
         };
       }
 
@@ -69,7 +69,7 @@ export class OnboardingGuard {
           currentStep,
           totalSteps: 5,
           needsOnboarding: true,
-          redirectPath: `/onboarding?step=${currentStep}`
+          redirectPath: `/onboarding?step=${currentStep}`,
         };
       } catch {
         // If session check fails, use basic onboarding redirect
@@ -78,7 +78,7 @@ export class OnboardingGuard {
           currentStep: 0,
           totalSteps: 5,
           needsOnboarding: true,
-          redirectPath: '/onboarding'
+          redirectPath: '/onboarding',
         };
       }
     } catch (error) {
@@ -89,7 +89,7 @@ export class OnboardingGuard {
         currentStep: 0,
         totalSteps: 5,
         needsOnboarding: true,
-        redirectPath: '/onboarding'
+        redirectPath: '/onboarding',
       };
     }
   }
@@ -104,13 +104,10 @@ export class OnboardingGuard {
       '/assignments',
       '/grades',
       '/profile',
-      '/settings'
+      '/settings',
     ];
 
-    const onboardingRoutes = [
-      '/onboarding',
-      '/auth'
-    ];
+    const onboardingRoutes = ['/onboarding', '/auth'];
 
     // Don't protect onboarding or auth routes
     if (onboardingRoutes.some(route => pathname.startsWith(route))) {
@@ -130,12 +127,12 @@ export class OnboardingGuard {
         return '/dashboard/student';
       case 'teacher':
         return '/dashboard/teacher';
-      case 'department_admin':
-        return '/dashboard/department_admin';
       case 'institution_admin':
-        return '/dashboard/institution_admin';
+        return '/dashboard/institution';
+      case 'department_admin':
       case 'system_admin':
-        return '/dashboard/system_admin';
+        // No dashboards for these roles yet.
+        return '/dashboard/profile';
       default:
         return '/dashboard';
     }
@@ -144,9 +141,16 @@ export class OnboardingGuard {
   /**
    * Determine where to redirect user after onboarding completion
    */
-  static getPostOnboardingRedirect(userRole?: string, intendedPath?: string): string {
+  static getPostOnboardingRedirect(
+    userRole?: string,
+    intendedPath?: string
+  ): string {
     // If user was trying to access a specific path, redirect there
-    if (intendedPath && intendedPath !== '/onboarding' && intendedPath !== '/') {
+    if (
+      intendedPath &&
+      intendedPath !== '/onboarding' &&
+      intendedPath !== '/'
+    ) {
       return intendedPath;
     }
 
@@ -164,12 +168,18 @@ export class OnboardingGuard {
   /**
    * Validate onboarding step access
    */
-  static canAccessStep(requestedStep: number, currentStep: number, totalSteps: number): boolean {
+  static canAccessStep(
+    requestedStep: number,
+    currentStep: number,
+    totalSteps: number
+  ): boolean {
     // Can access current step or any previous step
     // Cannot access future steps
-    return requestedStep >= 0 &&
+    return (
+      requestedStep >= 0 &&
       requestedStep <= Math.min(currentStep + 1, totalSteps) &&
-      requestedStep <= totalSteps;
+      requestedStep <= totalSteps
+    );
   }
 }
 
@@ -180,7 +190,8 @@ export function useOnboardingRedirect() {
      * Client-side redirect to onboarding if needed
      */
     redirectToOnboarding: (step?: number) => {
-      const path = step !== undefined ? `/onboarding?step=${step}` : '/onboarding';
+      const path =
+        step !== undefined ? `/onboarding?step=${step}` : '/onboarding';
       window.location.href = path;
     },
 
@@ -188,7 +199,10 @@ export function useOnboardingRedirect() {
      * Client-side redirect to dashboard after onboarding
      */
     redirectToDashboard: (userRole?: string, intendedPath?: string) => {
-      const path = OnboardingGuard.getPostOnboardingRedirect(userRole, intendedPath);
+      const path = OnboardingGuard.getPostOnboardingRedirect(
+        userRole,
+        intendedPath
+      );
       window.location.href = path;
     },
 
@@ -197,6 +211,6 @@ export function useOnboardingRedirect() {
      */
     pathRequiresOnboarding: (pathname: string) => {
       return OnboardingGuard.requiresOnboarding(pathname);
-    }
+    },
   };
 }

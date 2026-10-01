@@ -4,10 +4,11 @@ import {
   ClipboardList,
   FileText,
   GraduationCap,
-  Landmark,
   Layers,
   LineChart,
+  Upload,
   User,
+  UserCog,
 } from 'lucide-react';
 
 export const studentsRolegate = [
@@ -70,6 +71,24 @@ export const InstitutionRolegate = [
     icon: <User />,
   },
   {
+    permission: 'users.manage',
+    text: 'Role Requests',
+    href: '/dashboard/institution/role-requests',
+    icon: <ClipboardCheck />,
+  },
+  {
+    permission: 'users.manage',
+    text: 'Bulk Import',
+    href: '/dashboard/institution/bulk-import',
+    icon: <Upload />,
+  },
+  {
+    permission: 'users.manage',
+    text: 'Bulk Roles',
+    href: '/dashboard/institution/bulk-role-assignment',
+    icon: <UserCog />,
+  },
+  {
     permission: 'departments.manage',
     text: 'Departments',
     href: '/dashboard/institution/departments',
@@ -80,39 +99,5 @@ export const InstitutionRolegate = [
     text: 'Reports',
     href: '/dashboard/institution/reports',
     icon: <FileText />,
-  },
-];
-export const DepartmentRolegate = [
-  {
-    permission: 'department_users.manage',
-    text: 'Department Users',
-    href: '/dashboard/department_admin/users',
-    icon: <User />,
-  },
-  {
-    permission: 'department_classes.manage',
-    text: 'Classes',
-    href: '/dashboard/department_admin/classes',
-    icon: <GraduationCap />,
-  },
-  {
-    permission: 'reports.read',
-    text: 'Reports',
-    href: '/dashboard/institution/reports',
-    icon: <FileText />,
-  },
-];
-export const SystemRolegate = [
-  {
-    permission: 'system.manage',
-    text: 'Institutions',
-    href: '/dashboard/admin/institutions',
-    Icon: <Landmark />,
-  },
-  {
-    permission: 'system.manage',
-    text: 'All Users',
-    href: '/dashboard/admin/users',
-    icon: <User />,
   },
 ];

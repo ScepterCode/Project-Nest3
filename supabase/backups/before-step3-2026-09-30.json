@@ -1,0 +1,197 @@
+{
+  "peer_review_assignments": [
+    {
+      "id": "49de0abb-b00d-42f9-8295-f4205745f4cc",
+      "title": "Peer Review: Simple Page Design",
+      "description": "",
+      "assignment_id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "teacher_id": "11795caa-fb02-480c-b67e-f0087b356dc7",
+      "class_id": "ace603ab-c537-47b3-88ba-1813cb9d2e72",
+      "review_type": "anonymous",
+      "status": "active",
+      "reviews_per_student": 2,
+      "start_date": "2025-08-13T00:00:00.000Z",
+      "end_date": "2025-08-21T00:00:00.000Z",
+      "instructions": "Please provide constructive feedback on your peer's work. Focus on strengths and areas for improvement.",
+      "rubric": {},
+      "settings": {
+        "auto_assign": true,
+        "rating_scale": 5,
+        "require_rating": true,
+        "allow_self_review": false
+      },
+      "created_at": "2025-08-13T09:46:44.369Z",
+      "updated_at": "2025-08-13T09:46:44.369Z"
+    },
+    {
+      "id": "adf70748-570e-4fb2-af64-23ae288b2d5b",
+      "title": "Peer Review: Simple Page Design",
+      "description": "",
+      "assignment_id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "teacher_id": "11795caa-fb02-480c-b67e-f0087b356dc7",
+      "class_id": "ace603ab-c537-47b3-88ba-1813cb9d2e72",
+      "review_type": "anonymous",
+      "status": "active",
+      "reviews_per_student": 2,
+      "start_date": "2025-08-13T00:00:00.000Z",
+      "end_date": "2025-08-21T00:00:00.000Z",
+      "instructions": "Please provide constructive feedback on your peer's work. Focus on strengths and areas for improvement.",
+      "rubric": {},
+      "settings": {
+        "auto_assign": true,
+        "rating_scale": 5,
+        "require_rating": true,
+        "allow_self_review": false
+      },
+      "created_at": "2025-08-13T09:48:10.599Z",
+      "updated_at": "2025-08-13T09:48:10.599Z"
+    },
+    {
+      "id": "5d0e3197-e7e2-45d3-822f-e417d15f6ef7",
+      "title": "Peer Review: Simple Page Design",
+      "description": "",
+      "assignment_id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "teacher_id": "11795caa-fb02-480c-b67e-f0087b356dc7",
+      "class_id": "ace603ab-c537-47b3-88ba-1813cb9d2e72",
+      "review_type": "anonymous",
+      "status": "active",
+      "reviews_per_student": 2,
+      "start_date": "2025-08-17T00:00:00.000Z",
+      "end_date": "2025-08-21T00:00:00.000Z",
+      "instructions": "Please provide constructive feedback on your peer's work. Focus on strengths and areas for improvement.",
+      "rubric": {},
+      "settings": {
+        "auto_assign": true,
+        "rating_scale": 5,
+        "require_rating": true,
+        "allow_self_review": false
+      },
+      "created_at": "2025-08-17T13:31:32.338Z",
+      "updated_at": "2025-08-17T13:31:32.338Z"
+    },
+    {
+      "id": "b3944662-b734-471c-a096-a15828990571",
+      "title": "Peer Review: Simple Page Design",
+      "description": "",
+      "assignment_id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "teacher_id": "11795caa-fb02-480c-b67e-f0087b356dc7",
+      "class_id": "ace603ab-c537-47b3-88ba-1813cb9d2e72",
+      "review_type": "anonymous",
+      "status": "active",
+      "reviews_per_student": 2,
+      "start_date": "2025-09-26T00:00:00.000Z",
+      "end_date": "2025-08-21T00:00:00.000Z",
+      "instructions": "Please provide constructive feedback on your peer's work. Focus on strengths and areas for improvement.",
+      "rubric": {},
+      "settings": {
+        "auto_assign": true,
+        "rating_scale": 5,
+        "require_rating": true,
+        "allow_self_review": false
+      },
+      "created_at": "2025-09-26T13:02:08.813Z",
+      "updated_at": "2025-09-26T13:02:08.813Z"
+    },
+    {
+      "id": "279c749d-b18c-428b-84fb-529e42ba5870",
+      "title": "Peer Review: Simple Page Design",
+      "description": "",
+      "assignment_id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "teacher_id": "11795caa-fb02-480c-b67e-f0087b356dc7",
+      "class_id": "ace603ab-c537-47b3-88ba-1813cb9d2e72",
+      "review_type": "anonymous",
+      "status": "active",
+      "reviews_per_student": 2,
+      "start_date": "2025-09-26T00:00:00.000Z",
+      "end_date": "2025-08-21T00:00:00.000Z",
+      "instructions": "Please provide constructive feedback on your peer's work. Focus on strengths and areas for improvement.",
+      "rubric": {},
+      "settings": {
+        "auto_assign": true,
+        "rating_scale": 5,
+        "require_rating": true,
+        "allow_self_review": false
+      },
+      "created_at": "2025-09-26T13:02:15.000Z",
+      "updated_at": "2025-09-26T13:02:15.000Z"
+    }
+  ],
+  "policies": [
+    {
+      "tablename": "peer_review_activity",
+      "policyname": "Users can create activity records",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "(auth.uid() = user_id)"
+    },
+    {
+      "tablename": "peer_review_activity",
+      "policyname": "Users can view activity for their peer reviews",
+      "cmd": "SELECT",
+      "qual": "((auth.uid() = user_id) OR (EXISTS ( SELECT 1\n   FROM peer_review_assignments\n  WHERE ((peer_review_assignments.id = peer_review_activity.peer_review_assignment_id) AND (peer_review_assignments.teacher_id = auth.uid())))))",
+      "with_check": null
+    },
+    {
+      "tablename": "peer_review_assignments",
+      "policyname": "Teachers can manage their peer review assignments",
+      "cmd": "ALL",
+      "qual": "(auth.uid() = teacher_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "peer_reviews",
+      "policyname": "Teachers can view peer reviews for their assignments",
+      "cmd": "SELECT",
+      "qual": "(EXISTS ( SELECT 1\n   FROM peer_review_assignments\n  WHERE ((peer_review_assignments.id = peer_reviews.peer_review_assignment_id) AND (peer_review_assignments.teacher_id = auth.uid()))))",
+      "with_check": null
+    },
+    {
+      "tablename": "peer_reviews",
+      "policyname": "Users can manage their own peer reviews",
+      "cmd": "ALL",
+      "qual": "((auth.uid() = reviewer_id) OR (auth.uid() = reviewee_id))",
+      "with_check": null
+    },
+    {
+      "tablename": "submissions",
+      "policyname": "submissions_delete_by_teacher",
+      "cmd": "DELETE",
+      "qual": "app_private.teaches_assignment(assignment_id)",
+      "with_check": null
+    },
+    {
+      "tablename": "submissions",
+      "policyname": "submissions_insert_own",
+      "cmd": "INSERT",
+      "qual": null,
+      "with_check": "((student_id = ( SELECT auth.uid() AS uid)) AND app_private.is_enrolled_for_assignment(assignment_id))"
+    },
+    {
+      "tablename": "submissions",
+      "policyname": "submissions_select",
+      "cmd": "SELECT",
+      "qual": "((student_id = ( SELECT auth.uid() AS uid)) OR app_private.teaches_assignment(assignment_id) OR app_private.reviews_submission(id))",
+      "with_check": null
+    },
+    {
+      "tablename": "submissions",
+      "policyname": "submissions_update_by_teacher",
+      "cmd": "UPDATE",
+      "qual": "app_private.teaches_assignment(assignment_id)",
+      "with_check": "app_private.teaches_assignment(assignment_id)"
+    },
+    {
+      "tablename": "submissions",
+      "policyname": "submissions_update_own",
+      "cmd": "UPDATE",
+      "qual": "(student_id = ( SELECT auth.uid() AS uid))",
+      "with_check": "((student_id = ( SELECT auth.uid() AS uid)) AND app_private.is_enrolled_for_assignment(assignment_id))"
+    }
+  ],
+  "functions": [
+    {
+      "proname": "guard_users_privileged_columns",
+      "d": "CREATE OR REPLACE FUNCTION app_private.guard_users_privileged_columns()\n RETURNS trigger\n LANGUAGE plpgsql\n SECURITY DEFINER\n SET search_path TO ''\nAS $function$\nDECLARE\n  v_uid uuid := auth.uid();\n  v_my_role text;\n  v_my_inst uuid;\nBEGIN\n  IF app_private.is_trusted_caller() THEN\n    RETURN NEW;\n  END IF;\n\n  IF TG_OP = 'INSERT' THEN\n    -- An upsert on an existing row is checked by the UPDATE branch instead.\n    IF EXISTS (SELECT 1 FROM public.users WHERE id = NEW.id) THEN\n      RETURN NEW;\n    END IF;\n    IF NEW.role NOT IN ('student', 'teacher', 'institution_admin') THEN\n      RAISE EXCEPTION 'Cannot self-register with role %', NEW.role USING ERRCODE = '42501';\n    END IF;\n    IF NEW.institution_id IS NOT NULL OR NEW.department_id IS NOT NULL THEN\n      RAISE EXCEPTION 'Institution and department are assigned by an administrator'\n        USING ERRCODE = '42501';\n    END IF;\n    RETURN NEW;\n  END IF;\n\n  -- UPDATE\n  IF NEW.id IS DISTINCT FROM OLD.id OR NEW.email IS DISTINCT FROM OLD.email THEN\n    RAISE EXCEPTION 'id and email cannot be changed here' USING ERRCODE = '42501';\n  END IF;\n\n  IF NEW.role IS NOT DISTINCT FROM OLD.role\n     AND NEW.institution_id IS NOT DISTINCT FROM OLD.institution_id\n     AND NEW.department_id IS NOT DISTINCT FROM OLD.department_id THEN\n    RETURN NEW;\n  END IF;\n\n  SELECT role, institution_id INTO v_my_role, v_my_inst FROM public.users WHERE id = v_uid;\n\n  -- Institution admins managing existing members of their own institution.\n  -- They can never grant system_admin, and can't pull in users from elsewhere.\n  IF v_my_role = 'institution_admin' AND v_my_inst IS NOT NULL\n     AND OLD.institution_id = v_my_inst\n     AND (NEW.institution_id IS NULL OR NEW.institution_id = v_my_inst)\n     AND NEW.role IN ('student', 'teacher', 'department_admin', 'institution_admin')\n     AND (NEW.department_id IS NULL OR EXISTS (\n           SELECT 1 FROM public.departments d\n           WHERE d.id = NEW.department_id AND d.institution_id = v_my_inst)) THEN\n    RETURN NEW;\n  END IF;\n\n  -- Institution setup: an institution_admin with no institution claims the one\n  -- they just created (see /api/institutions/create).\n  IF NEW.id = v_uid AND OLD.role = 'institution_admin' AND NEW.role = OLD.role\n     AND OLD.institution_id IS NULL AND NEW.institution_id IS NOT NULL\n     AND NEW.department_id IS NOT DISTINCT FROM OLD.department_id\n     AND EXISTS (SELECT 1 FROM public.institutions i\n                 WHERE i.id = NEW.institution_id AND i.created_by = v_uid) THEN\n    RETURN NEW;\n  END IF;\n\n  -- Anyone picking a department inside the institution they already belong to.\n  IF NEW.id = v_uid AND NEW.role = OLD.role\n     AND NEW.institution_id IS NOT DISTINCT FROM OLD.institution_id\n     AND NEW.department_id IS NOT NULL\n     AND EXISTS (SELECT 1 FROM public.departments d\n                 WHERE d.id = NEW.department_id AND d.institution_id = OLD.institution_id) THEN\n    RETURN NEW;\n  END IF;\n\n  RAISE EXCEPTION 'Not allowed to change role, institution or department'\n    USING ERRCODE = '42501';\nEND;\n$function$\n"
+    }
+  ]
+}
