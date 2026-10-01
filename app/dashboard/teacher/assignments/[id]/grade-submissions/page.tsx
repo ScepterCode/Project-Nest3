@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { selectInChunks } from '@/lib/supabase/chunked-in';
 import {
   Card,
   CardContent,
@@ -195,10 +196,25 @@ export default function GradeSubmissionsPage({
         if (submissionsData && submissionsData.length > 0) {
           // Get student details manually from users table
           const studentIds = submissionsData.map(s => s.student_id);
-          const { data: studentsData, error: studentsError } = await supabase
-            .from('users')
-            .select('id, first_name, last_name, email')
-            .in('id', studentIds);
+          let studentsData:
+            | {
+                id: string;
+                first_name: string | null;
+                last_name: string | null;
+                email: string;
+              }[]
+            | null = null;
+          let studentsError: unknown = null;
+          try {
+            studentsData = await selectInChunks(studentIds, chunk =>
+              supabase
+                .from('users')
+                .select('id, first_name, last_name, email')
+                .in('id', chunk)
+            );
+          } catch (error) {
+            studentsError = error;
+          }
 
           if (studentsError) {
             console.error('Students query error:', studentsError);

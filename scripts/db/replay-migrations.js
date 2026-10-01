@@ -78,6 +78,11 @@ $$;
     ssl: { rejectUnauthorized: false },
   });
   await c.connect();
+  // If this script dies mid-transaction, the server ends the orphaned session
+  // (and releases its locks) instead of blocking the app's queries.
+  await c.query(
+    "SET idle_in_transaction_session_timeout = '60s'; SET lock_timeout = '10s'"
+  );
 
   const existing = await c.query(
     "select count(*)::int n from pg_tables where schemaname = 'public'"

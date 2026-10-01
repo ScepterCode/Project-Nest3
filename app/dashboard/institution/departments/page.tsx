@@ -19,7 +19,8 @@ import {
 } from '@/components/ui/table';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { createClient } from '../../../../lib/supabase-client';
+import { createClient } from '@/lib/supabase/client';
+import { MemberPicker } from '@/components/institution/member-picker';
 import { RoleGate } from '@/components/ui/permission-gate';
 import { DatabaseStatusBanner } from '@/components/database-status-banner';
 
@@ -28,20 +29,9 @@ interface Department {
   name: string;
 }
 
-interface User {
-  id: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  role: 'institution_admin' | 'department_admin' | 'teacher' | 'student';
-  institution_id?: string;
-  institution_name?: string;
-}
-
 export default function DepartmentManagementPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [newDepartmentName, setNewDepartmentName] = useState('');
-  const [users, setUsers] = useState<User[]>([]);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(
     null
   );
@@ -54,7 +44,6 @@ export default function DepartmentManagementPage() {
   useEffect(() => {
     if (!user) return;
     fetchDepartments();
-    fetchUsers();
   }, [user]);
 
   const fetchDepartments = async () => {
@@ -69,23 +58,6 @@ export default function DepartmentManagementPage() {
     } catch (error) {
       console.error('Database connection error:', error);
       setDepartments([]);
-    }
-  };
-
-  const fetchUsers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, first_name, last_name, role, institution_id');
-      if (error) {
-        console.error('Error fetching users:', error);
-        setUsers([]);
-      } else {
-        setUsers(data as User[]);
-      }
-    } catch (error) {
-      console.error('Database connection error:', error);
-      setUsers([]);
     }
   };
 
@@ -282,21 +254,12 @@ export default function DepartmentManagementPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="selectTeacher">Select Teacher</Label>
-              <select
+              <MemberPicker
                 id="selectTeacher"
-                value={selectedTeacher || ''}
-                onChange={e => setSelectedTeacher(e.target.value)}
-                className="p-2 border rounded"
-              >
-                <option value="">-- Select --</option>
-                {users
-                  .filter(user => user.role === 'teacher')
-                  .map(teacher => (
-                    <option key={teacher.id} value={teacher.id}>
-                      {teacher.first_name} {teacher.last_name}
-                    </option>
-                  ))}
-              </select>
+                role="teacher"
+                value={selectedTeacher}
+                onChange={setSelectedTeacher}
+              />
             </div>
             <Button
               onClick={handleAssignTeacherToDepartment}
@@ -335,21 +298,12 @@ export default function DepartmentManagementPage() {
             </div>
             <div className="grid gap-2">
               <Label htmlFor="selectStudent">Select Student</Label>
-              <select
+              <MemberPicker
                 id="selectStudent"
-                value={selectedStudent || ''}
-                onChange={e => setSelectedStudent(e.target.value)}
-                className="p-2 border rounded"
-              >
-                <option value="">-- Select --</option>
-                {users
-                  .filter(user => user.role === 'student')
-                  .map(student => (
-                    <option key={student.id} value={student.id}>
-                      {student.first_name} {student.last_name}
-                    </option>
-                  ))}
-              </select>
+                role="student"
+                value={selectedStudent}
+                onChange={setSelectedStudent}
+              />
             </div>
             <Button
               onClick={() =>

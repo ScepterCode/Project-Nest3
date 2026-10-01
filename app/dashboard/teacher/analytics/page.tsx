@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
+import { selectInChunks } from '@/lib/supabase/chunked-in';
 import {
   Card,
   CardContent,
@@ -200,10 +201,18 @@ export default function TeacherAnalyticsPage() {
       let submissionsData: any[] = [];
       if (assignmentsData.length > 0) {
         const assignmentIds = assignmentsData.map(a => a.id);
-        const { data: submissions, error: submissionError } = await supabase
-          .from('submissions')
-          .select('id, assignment_id, student_id, grade, status')
-          .in('assignment_id', assignmentIds);
+        let submissions: any[] | null = null;
+        let submissionError: unknown = null;
+        try {
+          submissions = await selectInChunks(assignmentIds, chunk =>
+            supabase
+              .from('submissions')
+              .select('id, assignment_id, student_id, grade, status')
+              .in('assignment_id', chunk)
+          );
+        } catch (error) {
+          submissionError = error;
+        }
 
         if (submissionError) {
           console.error('Error loading submissions:', submissionError);
@@ -292,10 +301,25 @@ export default function TeacherAnalyticsPage() {
       if (uniqueStudentIds.length > 0) {
         try {
           // RLS on users lets a teacher read the students enrolled in their classes.
-          const { data: studentProfiles, error: profileError } = await supabase
-            .from('users')
-            .select('id, first_name, last_name, email')
-            .in('id', uniqueStudentIds);
+          let studentProfiles: {
+            id: string;
+            first_name: string | null;
+            last_name: string | null;
+            email: string;
+          }[] = [];
+          let profileError: { message: string } | null = null;
+          try {
+            studentProfiles = await selectInChunks(uniqueStudentIds, chunk =>
+              supabase
+                .from('users')
+                .select('id, first_name, last_name, email')
+                .in('id', chunk)
+            );
+          } catch (error) {
+            profileError = {
+              message: error instanceof Error ? error.message : String(error),
+            };
+          }
 
           if (profileError) {
             console.error(

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { selectInChunks } from '@/lib/supabase/chunked-in';
 import {
   Card,
   CardContent,
@@ -122,10 +123,12 @@ export default function StudentGradesPage() {
 
       // Get assignment details
       const assignmentIds = submissionsData.map(s => s.assignment_id);
-      const { data: assignmentsData } = await supabase
-        .from('assignments')
-        .select('id, title, class_id')
-        .in('id', assignmentIds);
+      const assignmentsData = await selectInChunks(assignmentIds, chunk =>
+        supabase
+          .from('assignments')
+          .select('id, title, class_id')
+          .in('id', chunk)
+      ).catch(() => [] as { id: string; title: string; class_id: string }[]);
 
       // Get class details
       const classIds = [

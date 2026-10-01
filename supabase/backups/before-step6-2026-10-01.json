@@ -1,0 +1,226 @@
+{
+  "policies": [
+    {
+      "tablename": "assignments",
+      "policyname": "assignments_select",
+      "cmd": "SELECT",
+      "roles": ["authenticated"],
+      "qual": "(app_private.teaches_class(class_id) OR app_private.is_enrolled_in(class_id) OR app_private.administers_class(class_id))",
+      "with_check": null
+    },
+    {
+      "tablename": "classes",
+      "policyname": "classes_select",
+      "cmd": "SELECT",
+      "roles": ["authenticated"],
+      "qual": "((teacher_id = ( SELECT auth.uid() AS uid)) OR app_private.is_enrolled_in(id) OR app_private.is_institution_admin_of(institution_id))",
+      "with_check": null
+    },
+    {
+      "tablename": "enrollments",
+      "policyname": "enrollments_select",
+      "cmd": "SELECT",
+      "roles": ["authenticated"],
+      "qual": "((student_id = ( SELECT auth.uid() AS uid)) OR app_private.teaches_class(class_id) OR app_private.administers_class(class_id))",
+      "with_check": null
+    },
+    {
+      "tablename": "submissions",
+      "policyname": "submissions_select",
+      "cmd": "SELECT",
+      "roles": ["authenticated"],
+      "qual": "((student_id = ( SELECT auth.uid() AS uid)) OR app_private.teaches_assignment(assignment_id))",
+      "with_check": null
+    },
+    {
+      "tablename": "users",
+      "policyname": "users_select",
+      "cmd": "SELECT",
+      "roles": ["authenticated"],
+      "qual": "((id = ( SELECT auth.uid() AS uid)) OR app_private.teaches_student(id) OR app_private.is_my_teacher(id) OR app_private.is_institution_admin_of(institution_id))",
+      "with_check": null
+    }
+  ],
+  "indexes": [
+    {
+      "tablename": "assignments",
+      "indexname": "assignments_pkey",
+      "indexdef": "CREATE UNIQUE INDEX assignments_pkey ON public.assignments USING btree (id)"
+    },
+    {
+      "tablename": "assignments",
+      "indexname": "idx_assignments_class_id",
+      "indexdef": "CREATE INDEX idx_assignments_class_id ON public.assignments USING btree (class_id)"
+    },
+    {
+      "tablename": "assignments",
+      "indexname": "idx_assignments_teacher_id",
+      "indexdef": "CREATE INDEX idx_assignments_teacher_id ON public.assignments USING btree (teacher_id)"
+    },
+    {
+      "tablename": "classes",
+      "indexname": "classes_pkey",
+      "indexdef": "CREATE UNIQUE INDEX classes_pkey ON public.classes USING btree (id)"
+    },
+    {
+      "tablename": "classes",
+      "indexname": "idx_classes_teacher_id",
+      "indexdef": "CREATE INDEX idx_classes_teacher_id ON public.classes USING btree (teacher_id)"
+    },
+    {
+      "tablename": "classes",
+      "indexname": "idx_classes_institution_id",
+      "indexdef": "CREATE INDEX idx_classes_institution_id ON public.classes USING btree (institution_id)"
+    },
+    {
+      "tablename": "classes",
+      "indexname": "classes_code_unique",
+      "indexdef": "CREATE UNIQUE INDEX classes_code_unique ON public.classes USING btree (code)"
+    },
+    {
+      "tablename": "classes",
+      "indexname": "idx_classes_code",
+      "indexdef": "CREATE INDEX idx_classes_code ON public.classes USING btree (code)"
+    },
+    {
+      "tablename": "enrollments",
+      "indexname": "enrollments_pkey",
+      "indexdef": "CREATE UNIQUE INDEX enrollments_pkey ON public.enrollments USING btree (id)"
+    },
+    {
+      "tablename": "enrollments",
+      "indexname": "enrollments_unique_student_class",
+      "indexdef": "CREATE UNIQUE INDEX enrollments_unique_student_class ON public.enrollments USING btree (class_id, student_id)"
+    },
+    {
+      "tablename": "enrollments",
+      "indexname": "idx_enrollments_class_id",
+      "indexdef": "CREATE INDEX idx_enrollments_class_id ON public.enrollments USING btree (class_id)"
+    },
+    {
+      "tablename": "enrollments",
+      "indexname": "idx_enrollments_student_id",
+      "indexdef": "CREATE INDEX idx_enrollments_student_id ON public.enrollments USING btree (student_id)"
+    },
+    {
+      "tablename": "enrollments",
+      "indexname": "idx_enrollments_status",
+      "indexdef": "CREATE INDEX idx_enrollments_status ON public.enrollments USING btree (status)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "notifications_pkey",
+      "indexdef": "CREATE UNIQUE INDEX notifications_pkey ON public.notifications USING btree (id)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "idx_notifications_user_id",
+      "indexdef": "CREATE INDEX idx_notifications_user_id ON public.notifications USING btree (user_id)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "idx_notifications_created_at",
+      "indexdef": "CREATE INDEX idx_notifications_created_at ON public.notifications USING btree (created_at DESC)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "idx_notifications_is_read",
+      "indexdef": "CREATE INDEX idx_notifications_is_read ON public.notifications USING btree (is_read)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "idx_notifications_type",
+      "indexdef": "CREATE INDEX idx_notifications_type ON public.notifications USING btree (type)"
+    },
+    {
+      "tablename": "notifications",
+      "indexname": "idx_notifications_priority",
+      "indexdef": "CREATE INDEX idx_notifications_priority ON public.notifications USING btree (priority)"
+    },
+    {
+      "tablename": "peer_reviews",
+      "indexname": "peer_reviews_pkey",
+      "indexdef": "CREATE UNIQUE INDEX peer_reviews_pkey ON public.peer_reviews USING btree (id)"
+    },
+    {
+      "tablename": "peer_reviews",
+      "indexname": "peer_reviews_peer_review_assignment_id_reviewer_id_reviewee_key",
+      "indexdef": "CREATE UNIQUE INDEX peer_reviews_peer_review_assignment_id_reviewer_id_reviewee_key ON public.peer_reviews USING btree (peer_review_assignment_id, reviewer_id, reviewee_id)"
+    },
+    {
+      "tablename": "peer_reviews",
+      "indexname": "idx_peer_reviews_assignment_id",
+      "indexdef": "CREATE INDEX idx_peer_reviews_assignment_id ON public.peer_reviews USING btree (peer_review_assignment_id)"
+    },
+    {
+      "tablename": "peer_reviews",
+      "indexname": "idx_peer_reviews_reviewer_id",
+      "indexdef": "CREATE INDEX idx_peer_reviews_reviewer_id ON public.peer_reviews USING btree (reviewer_id)"
+    },
+    {
+      "tablename": "peer_reviews",
+      "indexname": "idx_peer_reviews_reviewee_id",
+      "indexdef": "CREATE INDEX idx_peer_reviews_reviewee_id ON public.peer_reviews USING btree (reviewee_id)"
+    },
+    {
+      "tablename": "submissions",
+      "indexname": "submissions_pkey",
+      "indexdef": "CREATE UNIQUE INDEX submissions_pkey ON public.submissions USING btree (id)"
+    },
+    {
+      "tablename": "submissions",
+      "indexname": "submissions_unique_student_assignment",
+      "indexdef": "CREATE UNIQUE INDEX submissions_unique_student_assignment ON public.submissions USING btree (assignment_id, student_id)"
+    },
+    {
+      "tablename": "submissions",
+      "indexname": "idx_submissions_assignment_id",
+      "indexdef": "CREATE INDEX idx_submissions_assignment_id ON public.submissions USING btree (assignment_id)"
+    },
+    {
+      "tablename": "submissions",
+      "indexname": "idx_submissions_student_id",
+      "indexdef": "CREATE INDEX idx_submissions_student_id ON public.submissions USING btree (student_id)"
+    },
+    {
+      "tablename": "submissions",
+      "indexname": "idx_submissions_status",
+      "indexdef": "CREATE INDEX idx_submissions_status ON public.submissions USING btree (status)"
+    },
+    {
+      "tablename": "submissions",
+      "indexname": "idx_submissions_submitted_at",
+      "indexdef": "CREATE INDEX idx_submissions_submitted_at ON public.submissions USING btree (submitted_at)"
+    },
+    {
+      "tablename": "submissions",
+      "indexname": "idx_submissions_rubric_scores",
+      "indexdef": "CREATE INDEX idx_submissions_rubric_scores ON public.submissions USING gin (rubric_scores)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "users_pkey",
+      "indexdef": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "users_email_key",
+      "indexdef": "CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "idx_users_email",
+      "indexdef": "CREATE INDEX idx_users_email ON public.users USING btree (email)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "idx_users_role",
+      "indexdef": "CREATE INDEX idx_users_role ON public.users USING btree (role)"
+    },
+    {
+      "tablename": "users",
+      "indexname": "idx_users_institution_id",
+      "indexdef": "CREATE INDEX idx_users_institution_id ON public.users USING btree (institution_id)"
+    }
+  ]
+}

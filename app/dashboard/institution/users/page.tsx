@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -10,6 +11,7 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   Select,
   SelectContent,
@@ -25,141 +27,150 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
-import { createClient } from '../../../../lib/supabase-client';
+import { createClient } from '@/lib/supabase/client';
 import { RoleGate } from '@/components/ui/permission-gate';
-import { DatabaseStatusBanner } from '@/components/database-status-banner';
+import { ROLE_LABELS } from '@/lib/bulk/roles';
 
-interface User {
+const PAGE_SIZE = 50;
+
+interface Member {
   id: string;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: 'teacher' | 'student' | 'institution_admin';
-  institution_id?: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: string;
 }
 
 export default function UserManagementPage() {
-  const [users, setUsers] = useState<User[]>([]);
+  const { user, loading: authLoading } = useAuth();
+
+  const [members, setMembers] = useState<Member[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(0);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [loadingList, setLoadingList] = useState(true);
+
   const [email, setEmail] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [role, setRole] = useState<'teacher' | 'student'>('student');
+  const [inviting, setInviting] = useState(false);
+  const [message, setMessage] = useState<{
+    kind: 'success' | 'error';
+    text: string;
+  } | null>(null);
 
-  const { user, loading: authLoading } = useAuth();
-  const supabase = createClient();
+  // One page at a time, filtered and counted by the database. RLS limits the
+  // rows to members of the admin's own institution.
+  const loadMembers = useCallback(async () => {
+    setLoadingList(true);
+    let query = createClient()
+      .from('users')
+      .select('id, email, first_name, last_name, role', { count: 'exact' })
+      .not('institution_id', 'is', null)
+      .order('last_name', { ascending: true, nullsFirst: false })
+      .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
+    if (roleFilter !== 'all') query = query.eq('role', roleFilter);
+    const term = search.trim().replace(/[%,()]/g, '');
+    if (term) {
+      query = query.or(
+        `email.ilike.%${term}%,first_name.ilike.%${term}%,last_name.ilike.%${term}%`
+      );
+    }
+    const { data, count, error } = await query;
+    if (error)
+      setMessage({
+        kind: 'error',
+        text: `Could not load users: ${error.message}`,
+      });
+    setMembers((data as Member[]) ?? []);
+    setTotal(count ?? 0);
+    setLoadingList(false);
+  }, [page, roleFilter, search]);
 
   useEffect(() => {
-    if (!user) return;
-    fetchUsers();
-  }, [user]);
+    if (!user) return undefined;
+    const timer = setTimeout(loadMembers, 250); // debounce typing
+    return () => clearTimeout(timer);
+  }, [user, loadMembers]);
 
-  const fetchUsers = async () => {
+  // Accounts are created on the server (see /api/bulk-import): no password
+  // is set and no email is sent; the person uses "Forgot password" to sign in.
+  const handleInvite = async () => {
+    setInviting(true);
+    setMessage(null);
     try {
-      const { data, error } = await supabase
-        .from('users')
-        .select('id, email, first_name, last_name, role, institution_id');
-
-      if (error) {
-        console.error('Error fetching users:', error);
-        setUsers([]);
-      } else {
-        setUsers(data as User[]);
-      }
-    } catch (error) {
-      console.error('Database connection error:', error);
-      setUsers([]);
-    }
-  };
-
-  const handleInviteUser = async () => {
-    try {
-      // Create user via Supabase Auth
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: 'TempPassword123!', // Temporary password - user should reset
-        options: {
-          data: {
-            first_name: firstName,
-            last_name: lastName,
-            role: role,
-          },
-        },
+      const response = await fetch('/api/bulk-import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: 'Added from the Users page',
+          totalRows: 1,
+          final: true,
+          rows: [
+            {
+              line: 1,
+              email,
+              first_name: firstName,
+              last_name: lastName,
+              role,
+            },
+          ],
+        }),
       });
-
-      if (error) {
-        alert(`Failed to invite user: ${error.message}`);
-        return;
-      }
-
-      if (data.user) {
-        alert(
-          `User invitation sent successfully!\n\nInvited: ${firstName} ${lastName}\nEmail: ${email}\nRole: ${role}\n\nThey will receive an email to confirm their account.`
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok)
+        throw new Error(
+          data.error || `Request failed (HTTP ${response.status})`
         );
-
-        // Reset form
-        setEmail('');
-        setFirstName('');
-        setLastName('');
-        setRole('student');
-
-        // Refresh users list
-        fetchUsers();
-      }
+      const problem = data.failed?.[0] ?? data.skipped?.[0];
+      if (problem) throw new Error(problem.message);
+      setMessage({
+        kind: 'success',
+        text: `Account created for ${email}. Ask them to open the sign-in page and choose "Forgot password" to set a password.`,
+      });
+      setEmail('');
+      setFirstName('');
+      setLastName('');
+      setRole('student');
+      loadMembers();
     } catch (error) {
-      console.error('Error inviting user:', error);
-      alert(`Failed to invite user: ${error}`);
+      setMessage({
+        kind: 'error',
+        text:
+          error instanceof Error
+            ? error.message
+            : 'Could not create the account',
+      });
+    } finally {
+      setInviting(false);
     }
   };
 
-  const handleSuspendUser = async (id: string) => {
-    // This would typically involve updating a status field in your 'users' table
-    // Supabase auth.admin.updateUserById might be used for more direct auth user management
-    alert('Suspend user functionality not fully implemented yet.');
-  };
+  if (authLoading) return <div>Loading...</div>;
+  if (!user) return <div>Access Denied</div>;
 
-  const handleDeleteUser = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this user?')) {
-      return;
-    }
-    // RLS silently skips rows you may not delete, so check what was removed.
-    const { data, error } = await supabase
-      .from('users')
-      .delete()
-      .eq('id', id)
-      .select('id');
-    if (error) {
-      alert('Failed to delete user.' + error.message);
-    } else if (!data || data.length === 0) {
-      alert(
-        "Deleting accounts isn't available yet. Contact support to remove this user."
-      );
-    } else {
-      alert('User deleted successfully!');
-      fetchUsers();
-    }
-  };
-
-  if (authLoading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return <div>Access Denied</div>;
-  }
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
       <div className="flex flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <DatabaseStatusBanner />
         <h1 className="text-lg font-semibold md:text-2xl">User Management</h1>
+
+        {message && (
+          <Alert variant={message.kind === 'error' ? 'destructive' : 'default'}>
+            <AlertDescription>{message.text}</AlertDescription>
+          </Alert>
+        )}
 
         <Card>
           <CardHeader>
-            <CardTitle>Invite New User</CardTitle>
+            <CardTitle>Add a User</CardTitle>
             <CardDescription>
-              Send an email invitation to a new teacher or student.
+              Create a teacher or student account in your institution. For many
+              people at once, use Bulk Import.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -197,7 +208,7 @@ export default function UserManagementPage() {
                 value={role}
                 onValueChange={(value: 'teacher' | 'student') => setRole(value)}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger id="role" className="w-[180px]">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -206,56 +217,114 @@ export default function UserManagementPage() {
                 </SelectContent>
               </Select>
             </div>
-            <Button onClick={handleInviteUser}>Invite User</Button>
+            <Button
+              onClick={handleInvite}
+              disabled={
+                inviting ||
+                !email.trim() ||
+                !firstName.trim() ||
+                !lastName.trim()
+              }
+            >
+              {inviting ? 'Creating…' : 'Create Account'}
+            </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Existing Users</CardTitle>
+            <CardTitle>Members</CardTitle>
             <CardDescription>
-              Manage existing teacher and student accounts.
+              {total} {total === 1 ? 'person' : 'people'} in your institution.
+              Change roles in Bulk Roles.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {users.map(user => (
-                  <TableRow key={user.id}>
-                    <TableCell>
-                      {user.first_name} {user.last_name}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell className="text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleSuspendUser(user.id)}
-                        className="mr-2"
-                      >
-                        Suspend
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteUser(user.id)}
-                      >
-                        Delete
-                      </Button>
-                    </TableCell>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <Input
+                placeholder="Search name or email"
+                value={search}
+                onChange={e => {
+                  setSearch(e.target.value);
+                  setPage(0);
+                }}
+                className="max-w-xs"
+              />
+              <Select
+                value={roleFilter}
+                onValueChange={value => {
+                  setRoleFilter(value);
+                  setPage(0);
+                }}
+              >
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All roles</SelectItem>
+                  {['student', 'teacher', 'institution_admin'].map(r => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {loadingList ? (
+              <p className="text-sm text-muted-foreground">Loading…</p>
+            ) : members.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No members found.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Role</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {members.map(member => (
+                    <TableRow key={member.id}>
+                      <TableCell>
+                        {[member.first_name, member.last_name]
+                          .filter(Boolean)
+                          .join(' ') || '—'}
+                      </TableCell>
+                      <TableCell>{member.email}</TableCell>
+                      <TableCell>
+                        {ROLE_LABELS[member.role] ?? member.role}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+
+            {pageCount > 1 && (
+              <div className="flex items-center gap-2 text-sm">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page === 0}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  Previous
+                </Button>
+                <span>
+                  Page {page + 1} of {pageCount}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={page + 1 >= pageCount}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
