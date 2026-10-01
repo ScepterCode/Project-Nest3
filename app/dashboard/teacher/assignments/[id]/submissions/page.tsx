@@ -27,6 +27,7 @@ interface Assignment {
   description: string;
   due_date: string;
   class_name: string;
+  points_possible: number;
 }
 
 interface Submission {
@@ -79,7 +80,7 @@ export default function AssignmentSubmissionsPage({
         .from('assignments')
         .select(
           `
-          id, title, description, due_date,
+          id, title, description, due_date, points_possible,
           classes!inner(name, teacher_id)
         `
         )
@@ -98,6 +99,7 @@ export default function AssignmentSubmissionsPage({
         description: assignmentData.description,
         due_date: assignmentData.due_date,
         class_name: one(assignmentData.classes)?.name,
+        points_possible: assignmentData.points_possible,
       });
 
       // Load submissions
@@ -284,7 +286,7 @@ export default function AssignmentSubmissionsPage({
                       }
                     >
                       {submission.status === 'graded'
-                        ? `Graded (${submission.grade}/100)`
+                        ? `Graded (${submission.grade}/${assignment.points_possible})`
                         : 'Submitted'}
                     </Badge>
                   </div>
@@ -341,6 +343,7 @@ export default function AssignmentSubmissionsPage({
                   {gradingSubmission === submission.id ? (
                     <GradingForm
                       submission={submission}
+                      pointsPossible={assignment.points_possible}
                       onSave={(grade, feedback) =>
                         handleGradeSubmission(submission.id, grade, feedback)
                       }
@@ -352,7 +355,8 @@ export default function AssignmentSubmissionsPage({
                         <div className="bg-blue-50 p-3 rounded border mb-3">
                           <h4 className="font-medium mb-2">Grade & Feedback</h4>
                           <p className="font-semibold">
-                            Grade: {submission.grade}/100
+                            Grade: {submission.grade}/
+                            {assignment.points_possible}
                           </p>
                           {submission.feedback && (
                             <p className="mt-2 text-sm">
@@ -386,10 +390,12 @@ export default function AssignmentSubmissionsPage({
 
 function GradingForm({
   submission,
+  pointsPossible,
   onSave,
   onCancel,
 }: {
   submission: Submission;
+  pointsPossible: number;
   onSave: (grade: number, feedback: string) => void;
   onCancel: () => void;
 }) {
@@ -397,9 +403,14 @@ function GradingForm({
   const [feedback, setFeedback] = useState(submission.feedback || '');
 
   const handleSave = () => {
-    const gradeNum = parseInt(grade);
-    if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > 100) {
-      toast.error('Please enter a valid grade between 0 and 100');
+    const gradeNum = Number(grade);
+    if (
+      grade.trim() === '' ||
+      !Number.isInteger(gradeNum) ||
+      gradeNum < 0 ||
+      gradeNum > pointsPossible
+    ) {
+      toast.error(`Enter a whole number of points from 0 to ${pointsPossible}`);
       return;
     }
     onSave(gradeNum, feedback);
@@ -412,12 +423,13 @@ function GradingForm({
       <div className="space-y-3">
         <div>
           <label className="block text-sm font-medium mb-1">
-            Grade (0-100)
+            Points (out of {pointsPossible})
           </label>
           <Input
             type="number"
             min="0"
-            max="100"
+            max={pointsPossible}
+            step="1"
             value={grade}
             onChange={e => setGrade(e.target.value)}
             placeholder="Enter grade"

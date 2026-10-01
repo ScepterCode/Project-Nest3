@@ -42,6 +42,12 @@ far as the repo is concerned.
    and institution membership live in `public.users`, and the
    `app_private.guard_users_privileged_columns` trigger controls who may
    change them.
+7. **Grades are points, not percent.** `submissions.grade` is points earned,
+   from 0 to the assignment's `points_possible` (enforced by the
+   `check_grade_within_points` trigger). Compute percentages when displaying
+   them, with `lib/grades.ts`. `assignments.points_possible` is the source of
+   truth; the legacy `assignments.points` column is kept equal to it by a
+   trigger, so don't read it in new code.
 
 ## Making a change
 

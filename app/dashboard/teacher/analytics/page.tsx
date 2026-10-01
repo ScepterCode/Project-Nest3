@@ -29,6 +29,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 
+import { averagePercent } from '@/lib/grades';
 interface AnalyticsData {
   totalClasses: number;
   totalStudents: number;
@@ -221,6 +222,21 @@ export default function TeacherAnalyticsPage() {
         }
       }
 
+      // Grades are points earned; averages are points earned over points
+      // possible, so a 200-point project counts twice a 100-point quiz.
+      const pointsByAssignment = new Map<string, number>(
+        assignmentsData.map(a => [a.id, a.points_possible])
+      );
+      const percentOfPoints = (
+        subs: { assignment_id: string; grade: number | null }[]
+      ) =>
+        averagePercent(
+          subs.map(sub => ({
+            grade: sub.grade,
+            pointsPossible: pointsByAssignment.get(sub.assignment_id),
+          }))
+        ) ?? 0;
+
       // Calculate overall analytics
       const totalStudents = new Set(enrollmentsData.map(e => e.student_id))
         .size;
@@ -229,11 +245,7 @@ export default function TeacherAnalyticsPage() {
       const gradedSubmissions = submissionsData.filter(
         s => s.grade !== null && s.grade !== undefined
       );
-      const averageGrade =
-        gradedSubmissions.length > 0
-          ? gradedSubmissions.reduce((sum, s) => sum + (s.grade || 0), 0) /
-            gradedSubmissions.length
-          : 0;
+      const averageGrade = percentOfPoints(gradedSubmissions);
       const submissionRate =
         totalAssignments > 0 && totalStudents > 0
           ? (totalSubmissions / (totalAssignments * totalStudents)) * 100
@@ -272,13 +284,7 @@ export default function TeacherAnalyticsPage() {
         const classGradedSubmissions = classSubmissions.filter(
           s => s.grade !== null && s.grade !== undefined
         );
-        const classAverageGrade =
-          classGradedSubmissions.length > 0
-            ? classGradedSubmissions.reduce(
-                (sum, s) => sum + (s.grade || 0),
-                0
-              ) / classGradedSubmissions.length
-            : 0;
+        const classAverageGrade = percentOfPoints(classGradedSubmissions);
 
         return {
           id: cls.id,
@@ -348,13 +354,7 @@ export default function TeacherAnalyticsPage() {
             const gradedSubmissions = studentSubmissions.filter(
               s => s.grade !== null && s.grade !== undefined
             );
-            const averageGrade =
-              gradedSubmissions.length > 0
-                ? gradedSubmissions.reduce(
-                    (sum, s) => sum + (s.grade || 0),
-                    0
-                  ) / gradedSubmissions.length
-                : 0;
+            const averageGrade = percentOfPoints(gradedSubmissions);
             const completionRate =
               totalAssignments > 0
                 ? (completedAssignments / totalAssignments) * 100
@@ -431,13 +431,7 @@ export default function TeacherAnalyticsPage() {
             const gradedSubmissions = studentSubmissions.filter(
               s => s.grade !== null && s.grade !== undefined
             );
-            const averageGrade =
-              gradedSubmissions.length > 0
-                ? gradedSubmissions.reduce(
-                    (sum, s) => sum + (s.grade || 0),
-                    0
-                  ) / gradedSubmissions.length
-                : 0;
+            const averageGrade = percentOfPoints(gradedSubmissions);
             const completionRate =
               totalAssignments > 0
                 ? (completedAssignments / totalAssignments) * 100

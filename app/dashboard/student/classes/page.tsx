@@ -25,6 +25,7 @@ import {
   Plus,
 } from 'lucide-react';
 
+import { averagePercent } from '@/lib/grades';
 interface StudentClass {
   id: string;
   name: string;
@@ -36,7 +37,10 @@ interface StudentClass {
   total_assignments: number;
   completed_assignments: number;
   pending_assignments: number;
-  average_grade: number;
+  /** Percent of points earned on graded work; null when nothing is graded. */
+  average_grade: number | null;
+  graded_points: number;
+  graded_points_possible: number;
   next_assignment_due?: string;
   next_assignment_title?: string;
 }
@@ -82,6 +86,7 @@ export default function StudentClassesPage() {
               id,
               title,
               due_date,
+              points_possible,
               submissions ( id, grade, submitted_at )
             )
           )
@@ -110,6 +115,7 @@ export default function StudentClassesPage() {
           id: string;
           title: string;
           due_date: string | null;
+          points_possible: number;
           submissions: Submission[];
         }[];
       };
@@ -142,9 +148,15 @@ export default function StudentClassesPage() {
           const submitted = assignments.filter(a =>
             a.submissions.some(s => s.submitted_at)
           );
-          const grades = assignments
-            .map(a => a.submissions[0]?.grade)
-            .filter((g): g is number => g !== null && g !== undefined);
+          const graded = assignments
+            .map(a => ({
+              grade: a.submissions[0]?.grade,
+              pointsPossible: a.points_possible,
+            }))
+            .filter(
+              (g): g is { grade: number; pointsPossible: number } =>
+                g.grade !== null && g.grade !== undefined
+            );
           const upcoming = assignments
             .filter(
               a =>
@@ -169,9 +181,12 @@ export default function StudentClassesPage() {
             total_assignments: assignments.length,
             completed_assignments: submitted.length,
             pending_assignments: assignments.length - submitted.length,
-            average_grade: grades.length
-              ? grades.reduce((sum, g) => sum + g, 0) / grades.length
-              : 0,
+            average_grade: averagePercent(graded),
+            graded_points: graded.reduce((sum, g) => sum + g.grade, 0),
+            graded_points_possible: graded.reduce(
+              (sum, g) => sum + g.pointsPossible,
+              0
+            ),
             ...(upcoming[0]
               ? {
                   next_assignment_due: upcoming[0].due_date!,
@@ -188,6 +203,20 @@ export default function StudentClassesPage() {
       setLoadingClasses(false);
     }
   };
+
+  // Points earned over points possible across every class, so bigger
+  // assignments weigh more.
+  const overallPoints = classes.reduce(
+    (acc, c) => ({
+      earned: acc.earned + c.graded_points,
+      possible: acc.possible + c.graded_points_possible,
+    }),
+    { earned: 0, possible: 0 }
+  );
+  const overallPercent =
+    overallPoints.possible > 0
+      ? (overallPoints.earned / overallPoints.possible) * 100
+      : null;
 
   const getGradeColor = (grade: number): string => {
     if (grade >= 90) return 'text-green-600';
@@ -349,22 +378,14 @@ export default function StudentClassesPage() {
                 <CardContent className="pt-6">
                   <div className="text-center">
                     <div
-                      className={`text-2xl font-bold ${getGradeColor(
-                        classes.length > 0
-                          ? classes.reduce(
-                              (sum, c) => sum + c.average_grade,
-                              0
-                            ) / classes.length
-                          : 0
-                      )}`}
+                      className={`text-2xl font-bold ${
+                        overallPercent !== null
+                          ? getGradeColor(overallPercent)
+                          : 'text-gray-400'
+                      }`}
                     >
-                      {classes.length > 0
-                        ? getLetterGrade(
-                            classes.reduce(
-                              (sum, c) => sum + c.average_grade,
-                              0
-                            ) / classes.length
-                          )
+                      {overallPercent !== null
+                        ? getLetterGrade(overallPercent)
                         : 'N/A'}
                     </div>
                     <div className="text-sm text-gray-500">Overall Grade</div>
@@ -421,7 +442,7 @@ export default function StudentClassesPage() {
                     </div>
 
                     {/* Grade */}
-                    {classItem.average_grade > 0 && (
+                    {classItem.average_grade !== null && (
                       <div className="flex justify-between items-center">
                         <span className="text-sm text-gray-600">
                           Current Grade:
