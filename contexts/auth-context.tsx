@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { createContext, useContext, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { User } from "@supabase/supabase-js";
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { User } from '@supabase/supabase-js';
 interface OnboardingStatus {
   isComplete: boolean;
   currentStep: number;
@@ -44,35 +44,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
-  const [onboardingStatus, setOnboardingStatus] = useState<OnboardingStatus | null>(null);
+  const [onboardingStatus, setOnboardingStatus] =
+    useState<OnboardingStatus | null>(null);
 
   // SECURITY FIX: Proper logout function
   const logout = async () => {
-    console.log('Auth Context: Performing secure logout');
     const supabase = createClient();
-    
+
     // Clear all local state immediately
     setUser(null);
     setUserProfile(null);
     setOnboardingStatus(null);
     setLoading(false);
-    
+
     // Clear browser storage
     if (typeof window !== 'undefined') {
       localStorage.clear();
       sessionStorage.clear();
     }
-    
+
     // Sign out from Supabase
     await supabase.auth.signOut();
-    
+
     // Force page reload to clear all cached state
     if (typeof window !== 'undefined') {
       window.location.href = '/auth/login';
     }
   };
 
-  const refreshOnboardingStatus = async () => {
+  // The signed-in user's id, readable from inside the auth listener (which is
+  // registered once and would otherwise only ever see the first render's state).
+  const currentUserId = useRef<string | null>(null);
+
+  const refreshOnboardingStatus = async (forUser: User | null = user) => {
+    const user = forUser;
     if (!user) {
       setOnboardingStatus(null);
       setUserProfile(null);
@@ -81,17 +86,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const supabase = createClient();
-      
+
       // SECURITY CHECK: Verify current auth session matches user
-      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+        error: authError,
+      } = await supabase.auth.getUser();
       if (authError || !currentUser || currentUser.id !== user.id) {
-        console.log('Auth Context: SECURITY ALERT - Session mismatch detected, clearing data');
         setUser(null);
         setUserProfile(null);
         setOnboardingStatus(null);
         return;
       }
-      
+
       const { data: profile, error } = await supabase
         .from('users')
         .select('id, email, role, first_name, last_name, onboarding_completed')
@@ -99,42 +106,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (error && error.code !== 'PGRST116') {
-        console.log('Database table not found or error checking onboarding status, assuming onboarding needed');
+        console.error('Auth Context: Could not load profile:', error.message);
         setUserProfile({
           id: user.id,
           email: user.email || '',
           role: user.user_metadata?.role || 'student',
           first_name: user.user_metadata?.first_name,
           last_name: user.user_metadata?.last_name,
-          onboarding_completed: false
+          onboarding_completed: false,
         });
-        setOnboardingStatus({
-          isComplete: false,
-          currentStep: 0,
-          totalSteps: 5,
-          needsOnboarding: true,
-          redirectPath: '/onboarding'
-        });
+        // Unknown, not "incomplete": the middleware already routes by the
+        // real profile, and guessing here could bounce users to onboarding.
+        setOnboardingStatus(null);
         return;
       }
 
       if (profile) {
         setUserProfile(profile);
-        
+
         if (!profile.onboarding_completed) {
           setOnboardingStatus({
             isComplete: false,
             currentStep: 0,
             totalSteps: 5,
             needsOnboarding: true,
-            redirectPath: '/onboarding'
+            redirectPath: '/onboarding',
           });
         } else {
           setOnboardingStatus({
             isComplete: true,
             currentStep: 5,
             totalSteps: 5,
-            needsOnboarding: false
+            needsOnboarding: false,
           });
         }
       } else {
@@ -145,77 +148,62 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: user.user_metadata?.role || 'student',
           first_name: user.user_metadata?.first_name,
           last_name: user.user_metadata?.last_name,
-          onboarding_completed: false
+          onboarding_completed: false,
         });
         setOnboardingStatus({
           isComplete: false,
           currentStep: 0,
           totalSteps: 5,
           needsOnboarding: true,
-          redirectPath: '/onboarding'
+          redirectPath: '/onboarding',
         });
       }
     } catch (error) {
-      console.log('Error refreshing onboarding status, using default values');
+      console.error('Auth Context: Could not load profile:', error);
       setUserProfile({
         id: user.id,
         email: user.email || '',
         role: user.user_metadata?.role || 'student',
         first_name: user.user_metadata?.first_name,
         last_name: user.user_metadata?.last_name,
-        onboarding_completed: false
+        onboarding_completed: false,
       });
-      setOnboardingStatus({
-        isComplete: false,
-        currentStep: 0,
-        totalSteps: 5,
-        needsOnboarding: true,
-        redirectPath: '/onboarding'
-      });
+      setOnboardingStatus(null);
     }
   };
 
   const getUserDisplayName = () => {
-    if (userProfile?.last_name) {
-      return userProfile.last_name;
-    }
     if (userProfile?.first_name) {
       return userProfile.first_name;
     }
-    if (user?.user_metadata?.last_name) {
-      return user.user_metadata.last_name;
-    }
     if (user?.user_metadata?.first_name) {
       return user.user_metadata.first_name;
+    }
+    if (userProfile?.last_name) {
+      return userProfile.last_name;
     }
     return user?.email?.split('@')[0] || 'User';
   };
 
   useEffect(() => {
     const supabase = createClient();
-    
+
     const getUser = async () => {
       try {
-        console.log('Auth Context: Getting user...');
-        const { data: { user }, error } = await supabase.auth.getUser();
-        if (error) {
-          // Handle auth session missing gracefully
-          if (error.message.includes('Auth session missing')) {
-            console.log('Auth Context: No active session found');
-          } else {
-            console.error('Auth Context: Auth error:', error);
-          }
+        const {
+          data: { user },
+          error,
+        } = await supabase.auth.getUser();
+        if (error && !error.message.includes('Auth session missing')) {
+          console.error('Auth Context: Auth error:', error);
         }
-        console.log('Auth Context: User retrieved:', user?.email, user?.id);
+        currentUserId.current = user?.id ?? null;
         setUser(user);
         setLoading(false);
-        
-        // Refresh onboarding status when user is loaded
         if (user) {
-          await refreshOnboardingStatus();
+          await refreshOnboardingStatus(user);
         }
-      } catch (error) {
-        console.log('Auth Context: No active session or failed to get user');
+      } catch {
         setUser(null);
         setLoading(false);
       }
@@ -223,74 +211,69 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     getUser();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth Context: Auth state changed:', event, !!session?.user, session?.user?.email);
-        
-        // CRITICAL SECURITY FIX: Clear all cached data on auth state change
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED' || !session?.user) {
-          console.log('Auth Context: Clearing all cached user data');
-          setUser(null);
-          setUserProfile(null);
-          setOnboardingStatus(null);
-          setLoading(false);
-          
-          // Clear any cached data in localStorage/sessionStorage
-          if (typeof window !== 'undefined') {
-            localStorage.removeItem('user-role-cache');
-            localStorage.removeItem('user-profile-cache');
-            sessionStorage.clear();
-          }
-          
-          if (!session?.user) {
-            return;
-          }
-        }
-        
-        // SECURITY CHECK: Verify user hasn't changed
-        if (user && session?.user && user.id !== session.user.id) {
-          console.log('Auth Context: SECURITY ALERT - User ID changed, forcing full refresh');
-          setUser(null);
-          setUserProfile(null);
-          setOnboardingStatus(null);
-          
-          // Force page reload to clear all cached state
-          if (typeof window !== 'undefined') {
-            window.location.reload();
-          }
-          return;
-        }
-        
-        setUser(session?.user ?? null);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const sessionUser = session?.user ?? null;
+
+      if (event === 'SIGNED_OUT' || !sessionUser) {
+        currentUserId.current = null;
+        setUser(null);
+        setUserProfile(null);
+        setOnboardingStatus(null);
         setLoading(false);
-        
-        // Refresh onboarding status when auth state changes
-        if (session?.user) {
-          try {
-            await refreshOnboardingStatus();
-          } catch (error) {
-            console.log('Auth Context: Error refreshing onboarding status:', error);
-          }
-        } else {
-          setOnboardingStatus(null);
-          setUserProfile(null);
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('user-role-cache');
+          localStorage.removeItem('user-profile-cache');
+          sessionStorage.clear();
         }
+        return;
       }
-    );
+
+      // A different account signed in in another tab: start from a clean page
+      // so nothing from the previous user stays on screen.
+      if (currentUserId.current && currentUserId.current !== sessionUser.id) {
+        window.location.reload();
+        return;
+      }
+
+      // Token refreshes happen hourly and don't change who is signed in;
+      // keep the same user object so pages don't refetch everything.
+      if (
+        event === 'TOKEN_REFRESHED' &&
+        currentUserId.current === sessionUser.id
+      ) {
+        return;
+      }
+
+      currentUserId.current = sessionUser.id;
+      setUser(sessionUser);
+      setLoading(false);
+      try {
+        await refreshOnboardingStatus(sessionUser);
+      } catch (error) {
+        console.error(
+          'Auth Context: Error refreshing onboarding status:',
+          error
+        );
+      }
+    });
 
     return () => subscription.unsubscribe();
   }, []);
 
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      userProfile,
-      loading, 
-      onboardingStatus, 
-      refreshOnboardingStatus,
-      getUserDisplayName,
-      logout
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        userProfile,
+        loading,
+        onboardingStatus,
+        refreshOnboardingStatus,
+        getUserDisplayName,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

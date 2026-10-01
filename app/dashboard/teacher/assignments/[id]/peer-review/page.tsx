@@ -27,6 +27,7 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Save, Users, Clock, Settings } from 'lucide-react';
 import Link from 'next/link';
 
+import { toast } from '@/lib/toast';
 interface Assignment {
   id: string;
   title: string;
@@ -178,7 +179,7 @@ export default function CreatePeerReviewPage() {
           }
         );
         if (publishError) {
-          alert(
+          toast.error(
             `Saved as a draft, but it couldn't be published yet: ${publishError.message}`
           );
         }
@@ -187,7 +188,7 @@ export default function CreatePeerReviewPage() {
       router.push('/dashboard/teacher/peer-reviews');
     } catch (error: any) {
       console.error('Error creating peer review:', error);
-      alert('Failed to create peer review: ' + error.message);
+      toast.error('Failed to create peer review: ' + error.message);
     } finally {
       setSaving(false);
     }

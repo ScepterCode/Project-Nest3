@@ -24,6 +24,7 @@ import { MemberPicker } from '@/components/institution/member-picker';
 import { RoleGate } from '@/components/ui/permission-gate';
 import { DatabaseStatusBanner } from '@/components/database-status-banner';
 
+import { toast } from '@/lib/toast';
 interface Department {
   id: string;
   name: string;
@@ -63,7 +64,7 @@ export default function DepartmentManagementPage() {
 
   const handleCreateDepartment = async () => {
     if (!newDepartmentName.trim()) {
-      alert('Department name cannot be empty.');
+      toast.error('Department name cannot be empty.');
       return;
     }
 
@@ -76,7 +77,7 @@ export default function DepartmentManagementPage() {
         .single();
 
       if (profileError || !profile?.institution_id) {
-        alert(
+        toast.error(
           "Your account isn't linked to an institution yet, so departments can't be created."
         );
         return;
@@ -88,15 +89,15 @@ export default function DepartmentManagementPage() {
       });
 
       if (error) {
-        alert(`Failed to create department: ${error.message}`);
+        toast.error(`Failed to create department: ${error.message}`);
       } else {
-        alert('Department created successfully!');
+        toast.success('Department created successfully!');
         setNewDepartmentName('');
         fetchDepartments();
       }
     } catch (error) {
       console.error('Error creating department:', error);
-      alert('Failed to create department. Please try again.');
+      toast.error('Failed to create department. Please try again.');
     }
   };
 
@@ -108,11 +109,11 @@ export default function DepartmentManagementPage() {
       .eq('id', id)
       .select('id');
     if (error) {
-      alert('Failed to delete department.' + error.message);
+      toast.error('Failed to delete department.' + error.message);
     } else if (!data || data.length === 0) {
-      alert('You can only delete departments in your own institution.');
+      toast.error('You can only delete departments in your own institution.');
     } else {
-      alert('Department deleted successfully!');
+      toast.success('Department deleted successfully!');
       fetchDepartments();
     }
   };
@@ -137,9 +138,9 @@ export default function DepartmentManagementPage() {
   ) => {
     const error = await setUserDepartment(departmentId, userId);
     if (error) {
-      alert('Failed to add member to department. ' + error);
+      toast.error('Failed to add member to department. ' + error);
     } else {
-      alert('Member added to department successfully!');
+      toast.success('Member added to department successfully!');
     }
   };
 
@@ -148,9 +149,9 @@ export default function DepartmentManagementPage() {
 
     const error = await setUserDepartment(selectedDepartment, selectedTeacher);
     if (error) {
-      alert('Failed to assign teacher to department. ' + error);
+      toast.error('Failed to assign teacher to department. ' + error);
     } else {
-      alert('Teacher assigned to department successfully!');
+      toast.success('Teacher assigned to department successfully!');
       setSelectedDepartment(null);
       setSelectedTeacher(null);
     }

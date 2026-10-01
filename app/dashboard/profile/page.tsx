@@ -18,6 +18,7 @@ import { RoleRequestForm } from '@/components/role-management/role-request-form'
 import { RoleChangeHistory } from '@/components/role-management/role-change-history';
 import { User, Shield, History, UserPlus } from 'lucide-react';
 
+import { toast } from '@/lib/toast';
 export default function UserProfilePage() {
   const supabase = useSupabase();
   const [firstName, setFirstName] = useState('');
@@ -89,11 +90,11 @@ export default function UserProfilePage() {
         // const { error: authUpdateError } = await supabase.auth.updateUser({ email: email })
         // if (authUpdateError) throw authUpdateError
 
-        alert('Profile updated successfully!');
+        toast.success('Profile updated successfully!');
       }
     } catch (error: any) {
       console.error('Error updating profile:', error);
-      alert(error.message || 'Failed to update profile');
+      toast.error(error.message || 'Failed to update profile');
     } finally {
       setIsUpdating(false);
     }
