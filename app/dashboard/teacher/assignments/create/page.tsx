@@ -1,92 +1,114 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { useSupabase } from "@/components/session-provider"
-import { DatabaseStatusBanner } from "@/components/database-status-banner"
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { useSupabase } from '@/components/session-provider';
+import { DatabaseStatusBanner } from '@/components/database-status-banner';
+import { errorMessage, toast } from '@/lib/toast';
 
 export default function CreateAssignmentPage() {
-  const supabase = useSupabase()
-  const router = useRouter()
-  const [title, setTitle] = useState("")
-  const [description, setDescription] = useState("")
-  const [classId, setClassId] = useState("")
-  const [dueDate, setDueDate] = useState("")
-  const [classes, setClasses] = useState<any[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const supabase = useSupabase();
+  const router = useRouter();
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [classId, setClassId] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [classes, setClasses] = useState<{ id: string; name: string }[]>([]);
+  const [points, setPoints] = useState('100');
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchClasses = async () => {
-      try {
-        const { data, error } = await supabase.from('classes').select('id, name')
-        if (error) {
-          console.log('Database table not found, using mock classes data')
-          // Use mock data when database tables don't exist
-          setClasses([
-            { id: '1', name: 'Introduction to Biology' },
-            { id: '2', name: 'Advanced Chemistry' },
-            { id: '3', name: 'Physics 101' }
-          ])
-        } else {
-          setClasses(data || [])
-        }
-      } catch (error) {
-        console.log('Error connecting to database, using mock classes data')
-        // Fallback to mock data
-        setClasses([
-          { id: '1', name: 'Introduction to Biology' },
-          { id: '2', name: 'Advanced Chemistry' },
-          { id: '3', name: 'Physics 101' }
-        ])
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('classes')
+        .select('id, name')
+        .eq('teacher_id', user.id)
+        .order('name');
+      if (error) {
+        toast.error(`Couldn't load your classes: ${error.message}`);
+        return;
       }
-    }
+      setClasses(data ?? []);
+      // Preselect the class when coming from a class page (?class=<id>).
+      const preselected = new URLSearchParams(window.location.search).get(
+        'class'
+      );
+      if (preselected && data?.some(c => c.id === preselected)) {
+        setClassId(preselected);
+      }
+    };
 
-    fetchClasses()
-  }, [supabase])
+    fetchClasses();
+  }, [supabase]);
 
   const handleCreateAssignment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    if (!classId) {
+      toast.error('Choose a class for this assignment.');
+      return;
+    }
+    const pointsPossible = Number(points);
+    if (!Number.isInteger(pointsPossible) || pointsPossible < 0) {
+      toast.error('Points must be a whole number of 0 or more.');
+      return;
+    }
+    setIsLoading(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if (user) {
-        const { data, error } = await supabase.from('assignments').insert([
-          {
-            title,
-            description,
-            class_id: classId,
-            due_date: dueDate,
-            teacher_id: user.id,
-          },
-        ])
-
-        if (error) {
-          console.log("Database table not found, assignment creation simulated")
-          alert("Assignment created successfully! (Demo mode - not saved to database)")
-          router.push("/dashboard/teacher/assignments")
-        } else {
-          alert("Assignment created successfully!")
-          router.push("/dashboard/teacher/assignments")
-        }
-      } else {
-        alert("You must be logged in to create an assignment")
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('Your session has expired. Please sign in again.');
+        return;
       }
-    } catch (error) {
-      console.log("Database connection error, assignment creation simulated")
-      alert("Assignment created successfully! (Demo mode - not saved to database)")
-      router.push("/dashboard/teacher/assignments")
-    }
 
-    setIsLoading(false)
-  }
+      const { error } = await supabase.from('assignments').insert({
+        title,
+        description,
+        class_id: classId,
+        due_date: new Date(dueDate).toISOString(),
+        teacher_id: user.id,
+        points_possible: pointsPossible,
+        // Students in the class can see assignments as soon as they exist,
+        // so record them as published rather than as a draft.
+        status: 'published',
+      });
+
+      if (error) {
+        toast.error(`Couldn't create the assignment: ${error.message}`);
+        return;
+      }
+      toast.success('Assignment created.');
+      router.push('/dashboard/teacher/assignments');
+    } catch (error) {
+      toast.error(`Couldn't create the assignment: ${errorMessage(error)}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="p-6">
@@ -94,7 +116,9 @@ export default function CreateAssignmentPage() {
       <Card className="w-full max-w-2xl mx-auto">
         <CardHeader>
           <CardTitle>Create a New Assignment</CardTitle>
-          <CardDescription>Fill out the details below to create a new assignment.</CardDescription>
+          <CardDescription>
+            Fill out the details below to create a new assignment.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleCreateAssignment} className="space-y-4">
@@ -104,7 +128,7 @@ export default function CreateAssignmentPage() {
                 id="title"
                 placeholder="e.g., Cell Structure Lab Report"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
+                onChange={e => setTitle(e.target.value)}
                 required
               />
             </div>
@@ -114,17 +138,22 @@ export default function CreateAssignmentPage() {
                 id="description"
                 placeholder="e.g., A report on the structure of a cell."
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
+                onChange={e => setDescription(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="class">Class</Label>
-              <Select onValueChange={setClassId}>
+              <Select value={classId} onValueChange={setClassId}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a class" />
                 </SelectTrigger>
                 <SelectContent>
-                  {classes.map((c) => (
+                  {classes.length === 0 && (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">
+                      You don&apos;t have any classes yet.
+                    </div>
+                  )}
+                  {classes.map(c => (
                     <SelectItem key={c.id} value={c.id}>
                       {c.name}
                     </SelectItem>
@@ -138,16 +167,28 @@ export default function CreateAssignmentPage() {
                 id="dueDate"
                 type="datetime-local"
                 value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
+                onChange={e => setDueDate(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="points">Points possible</Label>
+              <Input
+                id="points"
+                type="number"
+                min={0}
+                step={1}
+                value={points}
+                onChange={e => setPoints(e.target.value)}
                 required
               />
             </div>
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? "Creating Assignment..." : "Create Assignment"}
+              {isLoading ? 'Creating Assignment...' : 'Create Assignment'}
             </Button>
           </form>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

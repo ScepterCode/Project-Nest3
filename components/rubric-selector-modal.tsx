@@ -1,102 +1,116 @@
-"use client"
+'use client';
 
-import { useState, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Badge } from "@/components/ui/badge"
-import { Plus, FileCheck } from "lucide-react"
-import { RubricCreatorModal } from "./rubric-creator-modal"
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Plus, FileCheck } from 'lucide-react';
+import { RubricCreatorModal } from './rubric-creator-modal';
 
+import { createClient } from '@/lib/supabase/client';
+import { errorMessage, toast } from '@/lib/toast';
 interface Rubric {
-  id: string
-  name: string
-  description: string
-  criteria_count: number
-  max_points: number
-  status: string
+  id: string;
+  name: string;
+  description: string;
+  criteria_count: number;
+  max_points: number;
+  status: string;
 }
 
 interface RubricSelectorModalProps {
-  assignmentId: string
-  onRubricSelected: (rubric: any) => void
-  trigger?: React.ReactNode
+  assignmentId: string;
+  onRubricSelected: (rubric: any) => void;
+  trigger?: React.ReactNode;
 }
 
-export function RubricSelectorModal({ assignmentId, onRubricSelected, trigger }: RubricSelectorModalProps) {
-  const [open, setOpen] = useState(false)
-  const [rubrics, setRubrics] = useState<Rubric[]>([])
-  const [loading, setLoading] = useState(true)
-  const [attaching, setAttaching] = useState<string | null>(null)
+export function RubricSelectorModal({
+  assignmentId,
+  onRubricSelected,
+  trigger,
+}: RubricSelectorModalProps) {
+  const [open, setOpen] = useState(false);
+  const [rubrics, setRubrics] = useState<Rubric[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [attaching, setAttaching] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) {
-      fetchRubrics()
+      fetchRubrics();
     }
-  }, [open])
+  }, [open]);
 
   const fetchRubrics = async () => {
     try {
-      setLoading(true)
-      
-      // Fetch from API
-      const response = await fetch('/api/rubrics')
-      const result = await response.json()
-      const apiRubrics = response.ok ? (result.rubrics || []) : []
+      setLoading(true);
 
-      // Fetch from localStorage
-      const localRubrics = JSON.parse(localStorage.getItem('teacher_rubrics') || '[]')
-        .map((rubric: any) => ({
-          id: rubric.id,
-          name: rubric.name,
-          description: rubric.description || '',
-          criteria_count: rubric.criteria?.length || 0,
-          max_points: rubric.criteria?.reduce((sum: number, c: any) => 
-            sum + Math.max(...(c.levels?.map((l: any) => l.points) || [0])), 0) || 0,
-          status: rubric.status || 'active'
-        }))
-
-      // Combine and deduplicate
-      const allRubrics = [...apiRubrics, ...localRubrics]
-      const uniqueRubrics = allRubrics.filter((rubric, index, self) => 
-        index === self.findIndex(r => r.id === rubric.id)
-      )
-
-      setRubrics(uniqueRubrics)
+      const response = await fetch('/api/rubrics');
+      const result = await response.json();
+      if (!response.ok)
+        throw new Error(result.error || 'Failed to load rubrics');
+      setRubrics(result.rubrics || []);
     } catch (error) {
-      console.error('Error fetching rubrics:', error)
-      setRubrics([])
+      console.error('Error fetching rubrics:', error);
+      toast.error(`Couldn't load your rubrics: ${errorMessage(error)}`);
+      setRubrics([]);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const attachRubric = async (rubric: Rubric) => {
-    setAttaching(rubric.id)
+    setAttaching(rubric.id);
     try {
-      // Get full rubric data
-      let fullRubric = null
-      
-      // Try localStorage first
-      const localRubrics = JSON.parse(localStorage.getItem('teacher_rubrics') || '[]')
-      const localRubric = localRubrics.find((r: any) => r.id === rubric.id)
-      
-      if (localRubric) {
-        fullRubric = {
-          id: localRubric.id,
-          name: localRubric.name,
-          description: localRubric.description,
-          criteria: localRubric.criteria
-        }
-      } else {
-        // If not in localStorage, create a basic structure
-        fullRubric = {
-          id: rubric.id,
-          name: rubric.name,
-          description: rubric.description,
-          criteria: [] // Will need to be populated
-        }
-      }
+      // The assignment stores a snapshot of the rubric, so grading stays
+      // stable if the rubric is edited later.
+      const { data, error } = await createClient()
+        .from('rubrics')
+        .select(
+          'id, name, description, rubric_criteria(id, name, description, weight, order_index, rubric_levels(id, name, description, points, order_index))'
+        )
+        .eq('id', rubric.id)
+        .single();
+      if (error || !data) throw new Error(error?.message || 'Rubric not found');
+
+      const byOrder = (
+        a: { order_index: number | null },
+        b: { order_index: number | null }
+      ) => (a.order_index ?? 0) - (b.order_index ?? 0);
+      const fullRubric = {
+        id: data.id,
+        name: data.name,
+        description: data.description,
+        criteria: [...(data.rubric_criteria ?? [])]
+          .sort(byOrder)
+          .map(criterion => ({
+            id: criterion.id,
+            name: criterion.name,
+            description: criterion.description,
+            weight: criterion.weight,
+            levels: [...(criterion.rubric_levels ?? [])]
+              .sort(byOrder)
+              .map(level => ({
+                id: level.id,
+                name: level.name,
+                description: level.description,
+                points: level.points,
+              })),
+          })),
+      };
 
       // Attach to assignment
       const response = await fetch(`/api/assignments/${assignmentId}/rubric`, {
@@ -105,23 +119,23 @@ export function RubricSelectorModal({ assignmentId, onRubricSelected, trigger }:
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ rubric: fullRubric }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to attach rubric')
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || 'Failed to attach rubric');
       }
 
-      onRubricSelected(fullRubric)
-      setOpen(false)
-      alert('Rubric attached to assignment successfully!')
-
+      onRubricSelected(fullRubric);
+      setOpen(false);
+      toast.success('Rubric attached to assignment successfully!');
     } catch (error) {
-      console.error('Error attaching rubric:', error)
-      alert('Failed to attach rubric. Please try again.')
+      console.error('Error attaching rubric:', error);
+      toast.error(`Couldn't attach the rubric: ${errorMessage(error)}`);
     } finally {
-      setAttaching(null)
+      setAttaching(null);
     }
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -147,9 +161,9 @@ export function RubricSelectorModal({ assignmentId, onRubricSelected, trigger }:
             <h3 className="font-medium mb-2">Create New Rubric</h3>
             <RubricCreatorModal
               assignmentId={assignmentId}
-              onRubricCreated={(rubric) => {
-                onRubricSelected(rubric)
-                setOpen(false)
+              onRubricCreated={rubric => {
+                onRubricSelected(rubric);
+                setOpen(false);
               }}
               trigger={
                 <Button variant="outline" className="w-full">
@@ -163,25 +177,33 @@ export function RubricSelectorModal({ assignmentId, onRubricSelected, trigger }:
           {/* Existing Rubrics */}
           <div>
             <h3 className="font-medium mb-2">Use Existing Rubric</h3>
-            
+
             {loading ? (
               <div className="text-center py-4">Loading rubrics...</div>
             ) : rubrics.length === 0 ? (
               <div className="text-center py-8">
                 <FileCheck className="h-12 w-12 mx-auto mb-4 text-gray-400" />
                 <p className="text-gray-500">No rubrics available</p>
-                <p className="text-sm text-gray-400">Create your first rubric above</p>
+                <p className="text-sm text-gray-400">
+                  Create your first rubric above
+                </p>
               </div>
             ) : (
               <div className="space-y-2 max-h-60 overflow-y-auto">
-                {rubrics.map((rubric) => (
-                  <Card key={rubric.id} className="cursor-pointer hover:shadow-md transition-shadow">
+                {rubrics.map(rubric => (
+                  <Card
+                    key={rubric.id}
+                    className="cursor-pointer hover:shadow-md transition-shadow"
+                  >
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle className="text-base">{rubric.name}</CardTitle>
+                          <CardTitle className="text-base">
+                            {rubric.name}
+                          </CardTitle>
                           <CardDescription className="text-sm">
-                            {rubric.criteria_count} criteria • {rubric.max_points} max points
+                            {rubric.criteria_count} criteria •{' '}
+                            {rubric.max_points} max points
                           </CardDescription>
                         </div>
                         <Badge variant="outline">{rubric.status}</Badge>
@@ -189,7 +211,9 @@ export function RubricSelectorModal({ assignmentId, onRubricSelected, trigger }:
                     </CardHeader>
                     <CardContent className="pt-0">
                       {rubric.description && (
-                        <p className="text-sm text-gray-600 mb-3">{rubric.description}</p>
+                        <p className="text-sm text-gray-600 mb-3">
+                          {rubric.description}
+                        </p>
                       )}
                       <Button
                         onClick={() => attachRubric(rubric)}
@@ -197,7 +221,9 @@ export function RubricSelectorModal({ assignmentId, onRubricSelected, trigger }:
                         size="sm"
                         className="w-full"
                       >
-                        {attaching === rubric.id ? 'Attaching...' : 'Use This Rubric'}
+                        {attaching === rubric.id
+                          ? 'Attaching...'
+                          : 'Use This Rubric'}
                       </Button>
                     </CardContent>
                   </Card>
@@ -208,5 +234,5 @@ export function RubricSelectorModal({ assignmentId, onRubricSelected, trigger }:
         </div>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

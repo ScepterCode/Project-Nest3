@@ -40,6 +40,7 @@ import {
   FileText,
 } from 'lucide-react';
 
+import { errorMessage, toast } from '@/lib/toast';
 interface RubricLevel {
   id: string;
   name: string;
@@ -296,25 +297,25 @@ export default function CreateRubricPage() {
 
   const validateRubric = () => {
     if (!rubricData.name.trim()) {
-      alert('Please enter a rubric name');
+      toast.error('Please enter a rubric name');
       return false;
     }
     if (criteria.length === 0) {
-      alert('Please add at least one criterion');
+      toast.error('Please add at least one criterion');
       return false;
     }
     for (const criterion of criteria) {
       if (!criterion.name.trim()) {
-        alert('Please name all criteria');
+        toast.error('Please name all criteria');
         return false;
       }
       if (criterion.levels.length < 2) {
-        alert('Each criterion must have at least 2 performance levels');
+        toast.error('Each criterion must have at least 2 performance levels');
         return false;
       }
       for (const level of criterion.levels) {
         if (!level.name.trim()) {
-          alert('Please name all performance levels');
+          toast.error('Please name all performance levels');
           return false;
         }
       }
@@ -327,41 +328,36 @@ export default function CreateRubricPage() {
 
     setSaving(true);
     try {
-      // Create rubric object for storage
-      const rubric = {
-        id: `rubric_${Date.now()}`,
-        name: rubricData.name,
-        description: rubricData.description,
-        teacher_id: user.id,
-        class_id: rubricData.classId || null,
-        is_template: rubricData.isTemplate,
-        status: 'active',
-        criteria: criteria.map(criterion => ({
-          id: criterion.id,
-          name: criterion.name,
-          description: criterion.description,
-          weight: criterion.weight,
-          levels: criterion.levels.map(level => ({
-            id: level.id,
-            name: level.name,
-            description: level.description,
-            points: level.points,
+      const response = await fetch('/api/rubrics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: rubricData.name,
+          description: rubricData.description,
+          classId: rubricData.classId || null,
+          isTemplate: rubricData.isTemplate,
+          criteria: criteria.map(criterion => ({
+            name: criterion.name,
+            description: criterion.description,
+            weight: criterion.weight,
+            levels: criterion.levels.map(level => ({
+              name: level.name,
+              description: level.description,
+              points: level.points,
+            })),
           })),
-        })),
-      };
+        }),
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        throw new Error(result.error || 'Failed to create rubric');
+      }
 
-      // Store in localStorage as a fallback since database has issues
-      const existingRubrics = JSON.parse(
-        localStorage.getItem('teacher_rubrics') || '[]'
-      );
-      existingRubrics.push(rubric);
-      localStorage.setItem('teacher_rubrics', JSON.stringify(existingRubrics));
-
-      alert('Rubric created successfully!');
+      toast.success('Rubric created successfully!');
       router.push('/dashboard/teacher/rubrics');
     } catch (error) {
       console.error('Error creating rubric:', error);
-      alert('Failed to create rubric. Please try again.');
+      toast.error(`Couldn't create the rubric: ${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }

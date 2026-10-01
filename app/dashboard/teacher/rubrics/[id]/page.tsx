@@ -29,6 +29,7 @@ import {
   Settings,
 } from 'lucide-react';
 
+import { confirmAction, toast } from '@/lib/toast';
 interface RubricData {
   id: string;
   name: string;
@@ -242,11 +243,11 @@ export default function RubricDetailPage() {
         }
       }
 
-      alert('Rubric duplicated successfully!');
+      toast.success('Rubric duplicated successfully!');
       router.push(`/dashboard/teacher/rubrics/${newRubric.id}/edit`);
     } catch (error) {
       console.error('Error duplicating rubric:', error);
-      alert('Failed to duplicate rubric');
+      toast.error('Failed to duplicate rubric');
     }
   };
 
@@ -254,16 +255,19 @@ export default function RubricDetailPage() {
     if (!rubric) return;
 
     if (rubric.usage_count > 0) {
-      alert(
+      toast.error(
         'Cannot delete a rubric that has been used in assignments. Archive it instead.'
       );
       return;
     }
 
     if (
-      !confirm(
-        'Are you sure you want to delete this rubric? This action cannot be undone.'
-      )
+      !(await confirmAction({
+        title: 'Delete this rubric?',
+        description: 'This cannot be undone.',
+        confirmLabel: 'Delete',
+        destructive: true,
+      }))
     ) {
       return;
     }
@@ -276,11 +280,11 @@ export default function RubricDetailPage() {
 
       if (error) throw error;
 
-      alert('Rubric deleted successfully!');
+      toast.success('Rubric deleted successfully!');
       router.push('/dashboard/teacher/rubrics');
     } catch (error) {
       console.error('Error deleting rubric:', error);
-      alert('Failed to delete rubric');
+      toast.error('Failed to delete rubric');
     }
   };
 

@@ -33,6 +33,7 @@ import {
   Eye,
 } from 'lucide-react';
 
+import { toast } from '@/lib/toast';
 // Reuse the same interfaces from create page
 interface RubricLevel {
   id: string;
@@ -328,25 +329,25 @@ export default function EditRubricPage() {
 
   const validateRubric = () => {
     if (!rubricData.name.trim()) {
-      alert('Please enter a rubric name');
+      toast.error('Please enter a rubric name');
       return false;
     }
     if (criteria.length === 0) {
-      alert('Please add at least one criterion');
+      toast.error('Please add at least one criterion');
       return false;
     }
     for (const criterion of criteria) {
       if (!criterion.name.trim()) {
-        alert('Please name all criteria');
+        toast.error('Please name all criteria');
         return false;
       }
       if (criterion.levels.length < 2) {
-        alert('Each criterion must have at least 2 performance levels');
+        toast.error('Each criterion must have at least 2 performance levels');
         return false;
       }
       for (const level of criterion.levels) {
         if (!level.name.trim()) {
-          alert('Please name all performance levels');
+          toast.error('Please name all performance levels');
           return false;
         }
       }
@@ -434,11 +435,11 @@ export default function EditRubricPage() {
         }
       }
 
-      alert('Rubric updated successfully!');
+      toast.success('Rubric updated successfully!');
       router.push(`/dashboard/teacher/rubrics/${params.id}`);
     } catch (error) {
       console.error('Error updating rubric:', error);
-      alert('Failed to update rubric. Please try again.');
+      toast.error('Failed to update rubric. Please try again.');
     } finally {
       setSaving(false);
     }
