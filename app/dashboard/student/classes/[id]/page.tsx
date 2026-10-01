@@ -24,7 +24,6 @@ import {
   Award,
   ArrowLeft,
   User,
-  Mail,
   GraduationCap,
 } from 'lucide-react';
 
@@ -60,7 +59,6 @@ interface Assignment {
 interface Classmate {
   id: string;
   name: string;
-  email: string;
   enrollment_date: string;
 }
 
@@ -199,49 +197,31 @@ export default function StudentClassDetailPage({
         }
       );
 
-      // Get classmates
-      const { data: classmatesData } = await supabase
-        .from('enrollments')
-        .select(
-          `
-          student_id,
-          enrolled_at,
-          users(
-            first_name,
-            last_name,
-            email
-          )
-        `
-        )
-        .eq('class_id', classId)
-        .eq('status', 'active')
-        .neq('student_id', user.id);
-
-      // NOTE: RLS only lets a student read their own enrollment, so this list
-      // is currently always empty (see step-5 notes).
-      const classmates: Classmate[] = (classmatesData || []).map(enrollment => {
-        const profile = (
-          Array.isArray(enrollment.users)
-            ? enrollment.users[0]
-            : enrollment.users
-        ) as
-          | {
-              first_name: string | null;
-              last_name: string | null;
-              email: string | null;
-            }
-          | null
-          | undefined;
-        return {
-          id: enrollment.student_id,
-          name: profile
-            ? `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim() ||
-              'Unknown Student'
-            : 'Unknown Student',
-          email: profile?.email || '',
-          enrollment_date: enrollment.enrolled_at,
-        };
-      });
+      // Classmates come from get_class_roster: names only (no emails), and
+      // only for classes the student is enrolled in.
+      const { data: rosterData, error: rosterError } = await supabase.rpc(
+        'get_class_roster',
+        { p_class: classId }
+      );
+      if (rosterError) {
+        console.error('Error loading classmates:', rosterError.message);
+      }
+      const classmates: Classmate[] = (
+        (rosterData ?? []) as {
+          student_id: string;
+          first_name: string | null;
+          last_name: string | null;
+          enrolled_at: string;
+        }[]
+      )
+        .filter(row => row.student_id !== user.id)
+        .map(row => ({
+          id: row.student_id,
+          name:
+            `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() ||
+            'Unnamed student',
+          enrollment_date: row.enrolled_at,
+        }));
 
       // Calculate statistics
       const totalAssignments = assignments.length;
@@ -559,10 +539,6 @@ export default function StudentClassDetailPage({
                           </div>
                           <div className="flex-1">
                             <h4 className="font-medium">{classmate.name}</h4>
-                            <p className="text-sm text-gray-600 flex items-center">
-                              <Mail className="h-3 w-3 mr-1" />
-                              {classmate.email}
-                            </p>
                             <p className="text-xs text-gray-500 mt-1">
                               Enrolled: {formatDate(classmate.enrollment_date)}
                             </p>
