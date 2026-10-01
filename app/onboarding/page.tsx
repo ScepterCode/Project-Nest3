@@ -9,27 +9,20 @@ import { TeacherOnboarding } from '@/components/onboarding/teacher-onboarding';
 import { InstitutionAdminOnboarding } from '@/components/onboarding/institution-admin-onboarding';
 import { Button } from '@/components/ui/button';
 
+import { toast } from '@/lib/toast';
 export default function OnboardingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [debugInfo, setDebugInfo] = useState('');
+  const [slowLoad, setSlowLoad] = useState(false);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [loadingUserData, setLoadingUserData] = useState(true);
 
+  // If loading hangs, offer a reload instead of spinning forever.
   useEffect(() => {
-    setMounted(true);
-
-    // Add a timeout to prevent infinite loading
-    const timeout = setTimeout(() => {
-      if (loading) {
-        setDebugInfo('Loading timeout - forcing continue');
-      }
-    }, 5000);
-
+    const timeout = setTimeout(() => setSlowLoad(true), 10000);
     return () => clearTimeout(timeout);
-  }, [loading]);
+  }, []);
 
   // Load user role from database or user metadata
   useEffect(() => {
@@ -84,40 +77,18 @@ export default function OnboardingPage() {
     }
   }, [user]);
 
-  // Debug logging
-  useEffect(() => {
-    const debugData = {
-      mounted,
-      user: !!user,
-      userEmail: user?.email,
-      userId: user?.id,
-      loading,
-      timestamp: new Date().toISOString(),
-    };
-    console.log('Onboarding Debug:', debugData);
-    setDebugInfo(JSON.stringify(debugData, null, 2));
-  }, [mounted, user, loading]);
-
   const handleOnboardingComplete = async (onboardingData: any) => {
     if (!user) {
-      alert('No user found. Please refresh and try again.');
+      toast.error('No user found. Please refresh and try again.');
       return;
     }
 
     if (!userRole) {
-      alert('Unable to determine your role. Please contact support.');
+      toast.error('Unable to determine your role. Please contact support.');
       return;
     }
 
     setSaving(true);
-    console.log(
-      'Completing onboarding for user:',
-      user.id,
-      'role:',
-      userRole,
-      'data:',
-      onboardingData
-    );
 
     try {
       const supabase = createClient();
@@ -130,8 +101,8 @@ export default function OnboardingPage() {
         .single();
 
       if (existingUser && existingUser.onboarding_completed) {
-        alert(
-          'Your onboarding has already been completed. Redirecting to dashboard.'
+        toast.info(
+          'Your setup is already complete. Taking you to your dashboard.'
         );
         const dashboardPath =
           userRole === 'student'
@@ -172,11 +143,9 @@ export default function OnboardingPage() {
           code: updateError.code,
           fullError: updateError,
         });
-        alert(`Failed to complete onboarding: ${updateError.message}`);
+        toast.error(`Failed to complete onboarding: ${updateError.message}`);
         return;
       }
-
-      console.log('Onboarding completed for role:', userRole);
 
       // Set flag to show completion message briefly
       if (typeof window !== 'undefined') {
@@ -193,7 +162,6 @@ export default function OnboardingPage() {
               ? '/dashboard/institution'
               : '/dashboard';
 
-      console.log('Redirecting to:', dashboardPath);
       router.push(dashboardPath);
     } catch (error) {
       console.error('Error completing onboarding:', {
@@ -201,7 +169,7 @@ export default function OnboardingPage() {
         stack: error instanceof Error ? error.stack : undefined,
         fullError: error,
       });
-      alert(
+      toast.error(
         `Something went wrong: ${error instanceof Error ? error.message : error}`
       );
     } finally {
@@ -209,74 +177,41 @@ export default function OnboardingPage() {
     }
   };
 
-  // Debug: Show what's happening
-  if (!mounted) {
+  if (loading || (user && loadingUserData)) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div>Mounting component...</div>
-      </div>
-    );
-  }
-
-  if ((loading || loadingUserData) && !debugInfo.includes('timeout')) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-md">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <div>Loading user authentication...</div>
-          <div className="text-sm text-gray-500 mt-2">
-            Debug: mounted={mounted.toString()}, loading={loading.toString()},
-            user={user ? 'exists' : 'null'}
-          </div>
-          <button
-            onClick={() => setDebugInfo('timeout-forced')}
-            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded text-sm"
-          >
-            Skip Loading (Debug)
-          </button>
-          <pre className="text-xs text-left mt-4 bg-gray-100 p-2 rounded overflow-auto max-h-32">
-            {debugInfo}
-          </pre>
+          <p className="text-gray-700">Loading your account...</p>
+          {slowLoad && (
+            <div className="mt-6">
+              <p className="text-sm text-gray-500 mb-3">
+                This is taking longer than expected.
+              </p>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+              >
+                Reload
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  if (!user && !debugInfo.includes('timeout')) {
+  if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center px-4">
         <div className="text-center max-w-md">
-          <h2 className="text-xl font-semibold mb-4">Please Log In</h2>
-          <p className="mb-4">You need to be logged in to access onboarding.</p>
-          <button
-            onClick={() => router.push('/auth/login')}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 mr-2"
-          >
-            Go to Login
-          </button>
-          <button
-            onClick={async () => {
-              // Test Supabase connection
-              try {
-                const supabase = createClient();
-                const { data, error } = await supabase
-                  .from('users')
-                  .select('count')
-                  .limit(1);
-                alert(
-                  `Supabase test: ${error ? 'Error: ' + error.message : 'Success: ' + JSON.stringify(data)}`
-                );
-              } catch (err) {
-                alert('Supabase connection failed: ' + err);
-              }
-            }}
-            className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700"
-          >
-            Test DB
-          </button>
-          <pre className="text-xs text-left mt-4 bg-gray-100 p-2 rounded overflow-auto max-h-32">
-            {debugInfo}
-          </pre>
+          <h2 className="text-xl font-semibold mb-4">Please sign in</h2>
+          <p className="mb-4 text-gray-600">
+            You need to be signed in to finish setting up your account.
+          </p>
+          <Button onClick={() => router.push('/auth/login')}>
+            Go to login
+          </Button>
         </div>
       </div>
     );
@@ -320,9 +255,6 @@ export default function OnboardingPage() {
                 <p className="text-gray-600 mb-4">
                   We couldn&apos;t determine your role. Please contact support.
                 </p>
-                <p className="text-sm text-gray-500">
-                  Role detected: {userRole}
-                </p>
               </div>
             </div>
           </div>
@@ -354,11 +286,8 @@ export default function OnboardingPage() {
                 We couldn&apos;t determine your role from your registration.
                 Please contact support.
               </p>
-              <Button
-                onClick={() => router.push('/dashboard')}
-                className="mt-4"
-              >
-                Go to Dashboard
+              <Button onClick={() => window.location.reload()} className="mt-4">
+                Try again
               </Button>
             </>
           )}

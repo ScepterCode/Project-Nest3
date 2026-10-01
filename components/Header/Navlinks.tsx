@@ -16,7 +16,7 @@ export default function NavLinks({
   return (
     <Link
       href={href}
-      className={`  font-medium  transition-colors ${className} ${href === pathname ? 'text-blue-600' : 'text-gray-700'}`}
+      className={`  font-medium  transition-colors ${className ?? ''} ${href === pathname ? 'text-blue-600' : 'text-gray-700'}`}
     >
       {children}
     </Link>

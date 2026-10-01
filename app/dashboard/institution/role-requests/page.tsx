@@ -17,6 +17,7 @@ import { selectInChunks } from '@/lib/supabase/chunked-in';
 import { ROLE_LABELS } from '@/lib/bulk/roles';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
+import { confirmAction } from '@/lib/toast';
 interface RoleRequest {
   id: string;
   user_id: string;
@@ -103,9 +104,13 @@ export default function RoleRequestsPage() {
     if (
       approve &&
       request.requested_role === 'institution_admin' &&
-      !confirm(
-        `Make ${name} an institution admin? They will be able to manage everyone in your institution.`
-      )
+      !(await confirmAction({
+        title: `Make ${name} an institution admin?`,
+        description:
+          'They will be able to manage everyone in your institution.',
+        confirmLabel: 'Make admin',
+        destructive: true,
+      }))
     ) {
       return;
     }

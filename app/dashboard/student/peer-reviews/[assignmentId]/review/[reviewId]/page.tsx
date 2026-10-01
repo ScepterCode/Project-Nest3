@@ -33,6 +33,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 
+import { toast } from '@/lib/toast';
 interface PeerReview {
   id: string;
   status: string;
@@ -184,10 +185,10 @@ export default function StudentPeerReviewPage() {
     try {
       await saveReview(false);
 
-      alert('Draft saved successfully!');
+      toast.success('Draft saved successfully!');
     } catch (error: any) {
       console.error('Error saving draft:', error);
-      alert('Failed to save draft: ' + error.message);
+      toast.error('Failed to save draft: ' + error.message);
     } finally {
       setSaving(false);
     }
@@ -198,12 +199,12 @@ export default function StudentPeerReviewPage() {
 
     // Validation
     if (peerReview.peer_review_assignment.settings?.require_rating && !rating) {
-      alert('Please provide a rating before submitting.');
+      toast.error('Please provide a rating before submitting.');
       return;
     }
 
     if (!feedback.overall_comments.trim()) {
-      alert('Please provide overall comments before submitting.');
+      toast.error('Please provide overall comments before submitting.');
       return;
     }
 
@@ -215,7 +216,7 @@ export default function StudentPeerReviewPage() {
       router.push('/dashboard/student/peer-reviews');
     } catch (error: any) {
       console.error('Error submitting review:', error);
-      alert('Failed to submit review: ' + error.message);
+      toast.error('Failed to submit review: ' + error.message);
     } finally {
       setSubmitting(false);
     }

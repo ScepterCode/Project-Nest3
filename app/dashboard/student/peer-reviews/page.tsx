@@ -27,6 +27,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
+import { toast } from '@/lib/toast';
 interface AssignedReview {
   id: string;
   title: string;
@@ -229,11 +230,11 @@ export default function StudentPeerReviewsPage() {
       });
 
       if (error) throw error;
-      alert('Review helpfulness rated!');
+      toast.success('Review helpfulness rated!');
       fetchReviews(); // Refresh data
     } catch (error: any) {
       console.error('Error rating review helpfulness:', error.message);
-      alert('Failed to rate review helpfulness.');
+      toast.error('Failed to rate review helpfulness.');
     }
   };
 

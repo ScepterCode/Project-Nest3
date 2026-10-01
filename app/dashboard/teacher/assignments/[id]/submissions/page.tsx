@@ -20,6 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, FileText, Link, Download, Save } from 'lucide-react';
 
+import { toast } from '@/lib/toast';
 interface Assignment {
   id: string;
   title: string;
@@ -398,7 +399,7 @@ function GradingForm({
   const handleSave = () => {
     const gradeNum = parseInt(grade);
     if (isNaN(gradeNum) || gradeNum < 0 || gradeNum > 100) {
-      alert('Please enter a valid grade between 0 and 100');
+      toast.error('Please enter a valid grade between 0 and 100');
       return;
     }
     onSave(gradeNum, feedback);

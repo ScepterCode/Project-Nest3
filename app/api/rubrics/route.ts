@@ -1,172 +1,185 @@
-import { createClient } from '@/lib/supabase/server'
-import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server';
+import { NextRequest, NextResponse } from 'next/server';
+
+interface LevelInput {
+  name: string;
+  description?: string;
+  points: number;
+  qualityIndicators?: string[];
+}
+
+interface CriterionInput {
+  name: string;
+  description?: string;
+  weight?: number;
+  levels: LevelInput[];
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
-    // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const supabase = await createClient();
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json()
-    const { name, description, classId, isTemplate, criteria } = body
+    const body = await request.json();
+    const { name, description, classId, isTemplate } = body;
+    const criteria: CriterionInput[] = Array.isArray(body.criteria)
+      ? body.criteria
+      : [];
 
-    // Validate required fields
-    if (!name || !criteria || criteria.length === 0) {
-      return NextResponse.json({ error: 'Name and criteria are required' }, { status: 400 })
+    if (!name?.trim() || criteria.length === 0) {
+      return NextResponse.json(
+        { error: 'Name and criteria are required' },
+        { status: 400 }
+      );
+    }
+    for (const criterion of criteria) {
+      if (
+        !criterion.name?.trim() ||
+        !Array.isArray(criterion.levels) ||
+        criterion.levels.length < 2
+      ) {
+        return NextResponse.json(
+          { error: 'Every criterion needs a name and at least 2 levels' },
+          { status: 400 }
+        );
+      }
+      for (const level of criterion.levels) {
+        if (
+          !level.name?.trim() ||
+          !Number.isInteger(level.points) ||
+          level.points < 0
+        ) {
+          return NextResponse.json(
+            { error: 'Every level needs a name and a whole number of points' },
+            { status: 400 }
+          );
+        }
+      }
     }
 
-    // Use the service role client to bypass RLS for this operation
-    const { createClient: createServiceClient } = await import('@supabase/supabase-js')
-    const serviceSupabase = createServiceClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-
-    // Create the main rubric record
-    const { data: rubric, error: rubricError } = await serviceSupabase
+    // RLS lets teachers write their own rubrics, criteria and levels, so this
+    // runs as the signed-in user. If any step fails, the rubric is deleted and
+    // its criteria/levels go with it (ON DELETE CASCADE).
+    const { data: rubric, error: rubricError } = await supabase
       .from('rubrics')
       .insert({
-        name,
+        name: name.trim(),
         description: description || null,
         teacher_id: user.id,
         class_id: classId || null,
-        is_template: isTemplate || false,
-        status: 'active'
+        is_template: !!isTemplate,
+        status: 'active',
       })
       .select()
-      .single()
+      .single();
 
-    if (rubricError) {
-      console.error('Error creating rubric:', rubricError)
-      return NextResponse.json({ error: 'Failed to create rubric' }, { status: 500 })
+    if (rubricError || !rubric) {
+      console.error('Error creating rubric:', rubricError);
+      return NextResponse.json(
+        { error: 'Failed to create rubric' },
+        { status: 500 }
+      );
     }
 
-    let totalPoints = 0
+    const fail = async (message: string, cause: unknown) => {
+      console.error(message, cause);
+      await supabase.from('rubrics').delete().eq('id', rubric.id);
+      return NextResponse.json({ error: message }, { status: 500 });
+    };
 
-    // Create criteria and their levels
-    for (const criterion of criteria) {
-      const { data: criterionData, error: criterionError } = await serviceSupabase
+    for (const [criterionIndex, criterion] of criteria.entries()) {
+      const { data: criterionRow, error: criterionError } = await supabase
         .from('rubric_criteria')
         .insert({
           rubric_id: rubric.id,
-          name: criterion.name,
+          name: criterion.name.trim(),
           description: criterion.description || null,
-          weight: criterion.weight || 25.0,
-          order_index: criterion.order_index || 0
+          weight: criterion.weight ?? 25,
+          order_index: criterionIndex,
         })
-        .select()
-        .single()
-
-      if (criterionError) {
-        console.error('Error creating criterion:', criterionError)
-        // Clean up the rubric if criterion creation fails
-        await serviceSupabase.from('rubrics').delete().eq('id', rubric.id)
-        return NextResponse.json({ error: 'Failed to create criterion' }, { status: 500 })
+        .select('id')
+        .single();
+      if (criterionError || !criterionRow) {
+        return fail('Failed to create rubric criterion', criterionError);
       }
 
-      let maxPointsForCriterion = 0
+      const { data: levelRows, error: levelError } = await supabase
+        .from('rubric_levels')
+        .insert(
+          criterion.levels.map((level, levelIndex) => ({
+            criterion_id: criterionRow.id,
+            name: level.name.trim(),
+            description: level.description || null,
+            points: level.points,
+            order_index: levelIndex,
+          }))
+        )
+        .select('id, order_index');
+      if (levelError || !levelRows) {
+        return fail('Failed to create rubric levels', levelError);
+      }
 
-      // Create levels for this criterion
-      for (const level of criterion.levels) {
-        // Since we can't bypass the trigger, let's try a different approach
-        // We'll create a temporary table or use a workaround
-        
-        try {
-          // Try the regular insert first
-          const { data: levelData, error: levelError } = await serviceSupabase
-            .from('rubric_levels')
-            .insert({
-              criterion_id: criterionData.id,
-              name: level.name,
-              description: level.description || null,
-              points: level.points,
-              order_index: level.order_index || 0
-            })
-            .select()
-            .single()
-
-          if (levelError) {
-            console.error('Level creation failed:', levelError)
-            // Clean up and return error
-            await serviceSupabase.from('rubrics').delete().eq('id', rubric.id)
-            
-            // Check if it's the specific trigger error
-            if (levelError.message && levelError.message.includes('rubric_id')) {
-              return NextResponse.json({ 
-                error: 'There is a database configuration issue that prevents rubric creation. The system needs a database schema update to fix a problematic trigger. Please use simple grading for now.',
-                technical_error: levelError.message
-              }, { status: 500 })
-            }
-            
-            return NextResponse.json({ 
-              error: 'Failed to create rubric level: ' + (levelError.message || 'Unknown error')
-            }, { status: 500 })
-          }
-
-          maxPointsForCriterion = Math.max(maxPointsForCriterion, level.points)
-
-          // Create quality indicators if any
-          if (level.qualityIndicators && level.qualityIndicators.length > 0) {
-            const indicators = level.qualityIndicators
-              .filter((indicator: string) => indicator.trim())
-              .map((indicator: string, index: number) => ({
-                level_id: levelData.id,
-                indicator: indicator.trim(),
-                order_index: index
-              }))
-
-            if (indicators.length > 0) {
-              await serviceSupabase
-                .from('rubric_quality_indicators')
-                .insert(indicators)
-            }
-          }
-        } catch (error) {
-          console.error('Unexpected error creating level:', error)
-          await serviceSupabase.from('rubrics').delete().eq('id', rubric.id)
-          return NextResponse.json({ 
-            error: 'Failed to create rubric level' 
-          }, { status: 500 })
+      const indicators = levelRows.flatMap(row =>
+        (criterion.levels[row.order_index ?? 0]?.qualityIndicators ?? [])
+          .map(indicator => indicator.trim())
+          .filter(Boolean)
+          .map((indicator, index) => ({
+            level_id: row.id,
+            indicator,
+            order_index: index,
+          }))
+      );
+      if (indicators.length > 0) {
+        const { error: indicatorError } = await supabase
+          .from('rubric_quality_indicators')
+          .insert(indicators);
+        if (indicatorError) {
+          return fail('Failed to save quality indicators', indicatorError);
         }
       }
-
-      totalPoints += maxPointsForCriterion
     }
 
-    // Update the rubric with the calculated total points
-    await serviceSupabase
+    // total_points is maintained by a trigger on criteria/levels.
+    const { data: saved } = await supabase
       .from('rubrics')
-      .update({ total_points: totalPoints })
+      .select('*')
       .eq('id', rubric.id)
+      .single();
 
-    return NextResponse.json({ 
-      success: true, 
-      rubric: { ...rubric, total_points: totalPoints } 
-    })
-
+    return NextResponse.json({ success: true, rubric: saved ?? rubric });
   } catch (error) {
-    console.error('Unexpected error in rubric creation:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Unexpected error in rubric creation:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function GET() {
   try {
-    const supabase = await createClient()
-    
+    const supabase = await createClient();
+
     // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { data: rubrics, error } = await supabase
       .from('rubrics')
-      .select(`
+      .select(
+        `
         id,
         name,
         description,
@@ -175,49 +188,62 @@ export async function GET() {
         status,
         created_at,
         rubric_criteria(count)
-      `)
+      `
+      )
       .eq('teacher_id', user.id)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false });
 
     if (error) {
-      console.error('Error fetching rubrics:', error)
-      return NextResponse.json({ error: 'Failed to fetch rubrics' }, { status: 500 })
+      console.error('Error fetching rubrics:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch rubrics' },
+        { status: 500 }
+      );
     }
 
-    const formattedRubrics = rubrics?.map((rubric: any) => ({
-      id: rubric.id,
-      name: rubric.name,
-      description: rubric.description || '',
-      criteria_count: rubric.rubric_criteria?.length || 0,
-      max_points: rubric.total_points || 0,
-      usage_count: rubric.usage_count || 0,
-      status: rubric.status,
-      created_at: rubric.created_at
-    })) || []
+    const formattedRubrics =
+      rubrics?.map((rubric: any) => ({
+        id: rubric.id,
+        name: rubric.name,
+        description: rubric.description || '',
+        criteria_count: rubric.rubric_criteria?.[0]?.count ?? 0,
+        max_points: rubric.total_points || 0,
+        usage_count: rubric.usage_count || 0,
+        status: rubric.status,
+        created_at: rubric.created_at,
+      })) || [];
 
-    return NextResponse.json({ rubrics: formattedRubrics })
-
+    return NextResponse.json({ rubrics: formattedRubrics });
   } catch (error) {
-    console.error('Unexpected error in rubric fetch:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Unexpected error in rubric fetch:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient()
-    
+    const supabase = await createClient();
+
     // Get the current user
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
     if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { searchParams } = new URL(request.url)
-    const rubricId = searchParams.get('id')
+    const { searchParams } = new URL(request.url);
+    const rubricId = searchParams.get('id');
 
     if (!rubricId) {
-      return NextResponse.json({ error: 'Rubric ID is required' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'Rubric ID is required' },
+        { status: 400 }
+      );
     }
 
     // Verify the rubric belongs to the current user
@@ -226,27 +252,35 @@ export async function DELETE(request: NextRequest) {
       .select('id')
       .eq('id', rubricId)
       .eq('teacher_id', user.id)
-      .single()
+      .single();
 
     if (fetchError || !rubric) {
-      return NextResponse.json({ error: 'Rubric not found or access denied' }, { status: 404 })
+      return NextResponse.json(
+        { error: 'Rubric not found or access denied' },
+        { status: 404 }
+      );
     }
 
     // Delete the rubric (cascade will handle related records)
     const { error: deleteError } = await supabase
       .from('rubrics')
       .delete()
-      .eq('id', rubricId)
+      .eq('id', rubricId);
 
     if (deleteError) {
-      console.error('Error deleting rubric:', deleteError)
-      return NextResponse.json({ error: 'Failed to delete rubric' }, { status: 500 })
+      console.error('Error deleting rubric:', deleteError);
+      return NextResponse.json(
+        { error: 'Failed to delete rubric' },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({ success: true })
-
+    return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Unexpected error in rubric deletion:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    console.error('Unexpected error in rubric deletion:', error);
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

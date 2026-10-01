@@ -31,6 +31,7 @@ import {
 } from '@/lib/bulk/roles';
 import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
+import { confirmAction } from '@/lib/toast';
 const PAGE_SIZE = 50;
 
 interface Member {
@@ -139,9 +140,13 @@ export default function BulkRoleAssignmentPage() {
   const apply = async () => {
     if (
       targetRole === 'institution_admin' &&
-      !confirm(
-        `Make ${selected.size} user(s) institution admins? They will be able to manage all users in your institution.`
-      )
+      !(await confirmAction({
+        title: `Make ${selected.size} user(s) institution admins?`,
+        description:
+          'They will be able to manage all users in your institution.',
+        confirmLabel: 'Make admins',
+        destructive: true,
+      }))
     ) {
       return;
     }

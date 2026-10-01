@@ -82,30 +82,17 @@ describe('Sign-up success page', () => {
     );
   });
 
-  it('sends users who finished onboarding to their dashboard', async () => {
-    signedIn(confirmedUser('teacher'), {
+  it('sends users who finished onboarding to /dashboard, which routes by their stored role', async () => {
+    // Not /dashboard/<user_metadata.role>: metadata is user-editable.
+    signedIn(confirmedUser('institution_admin'), {
       isComplete: true,
       currentStep: 5,
       totalSteps: 5,
       needsOnboarding: false,
     });
     render(<SignUpSuccessPage />);
-    await waitFor(() =>
-      expect(mockPush).toHaveBeenCalledWith('/dashboard/teacher')
-    );
-  });
-
-  it('defaults to the student dashboard when no role is known', async () => {
-    signedIn(confirmedUser(), {
-      isComplete: true,
-      currentStep: 5,
-      totalSteps: 5,
-      needsOnboarding: false,
-    });
-    render(<SignUpSuccessPage />);
-    await waitFor(() =>
-      expect(mockPush).toHaveBeenCalledWith('/dashboard/student')
-    );
+    await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/dashboard'));
+    expect(mockPush).not.toHaveBeenCalledWith('/dashboard/institution_admin');
   });
 
   it('asks unconfirmed users to confirm their email', () => {

@@ -36,6 +36,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 
+import { toast } from '@/lib/toast';
 interface PeerReviewAssignment {
   id: string;
   title: string;
@@ -137,12 +138,12 @@ export default function TeacherPeerReviewsPage() {
         p_peer_review_assignment_id: id,
       });
       if (error) throw error;
-      alert(
+      toast.error(
         `Published: ${data.students} students paired, ${data.reviews_per_student} review(s) each.`
       );
       await fetchData();
     } catch (error: any) {
-      alert(`Couldn't publish: ${error.message}`);
+      toast.error(`Couldn't publish: ${error.message}`);
     } finally {
       setPublishingId(null);
     }

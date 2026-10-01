@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { RubricSelectorModal } from '@/components/rubric-selector-modal';
 
+import { confirmAction, toast } from '@/lib/toast';
 interface Assignment {
   id: string;
   title: string;
@@ -310,14 +311,13 @@ export default function GradeSubmissionsPage({
   const handleRemoveRubric = async () => {
     if (!assignment || !assignmentRubric || removingRubric) return;
 
-    const confirmDelete = window.confirm(
-      `Are you sure you want to remove the rubric "${assignmentRubric.name}" from this assignment?\n\n` +
-        'This will:\n' +
-        '• Remove the rubric from the assignment\n' +
-        '• Switch all future grading to simple mode\n' +
-        '• Keep existing rubric-based grades intact\n\n' +
-        'This action cannot be undone.'
-    );
+    const confirmDelete = await confirmAction({
+      title: `Remove the rubric "${assignmentRubric.name}"?`,
+      description:
+        'Future grading on this assignment will use simple mode. Grades already given with the rubric are kept.',
+      confirmLabel: 'Remove rubric',
+      destructive: true,
+    });
 
     if (!confirmDelete) return;
 
@@ -337,7 +337,7 @@ export default function GradeSubmissionsPage({
 
       if (error) {
         console.error('Error removing rubric:', error);
-        alert('Error removing rubric: ' + error.message);
+        toast.error('Error removing rubric: ' + error.message);
         return;
       }
 
@@ -348,12 +348,12 @@ export default function GradeSubmissionsPage({
       setGradingModeType('simple');
       setRubricScores({});
 
-      alert(
+      toast.success(
         'Rubric removed successfully! All future grading will use simple mode.'
       );
     } catch (error) {
       console.error('Error removing rubric:', error);
-      alert('Error removing rubric');
+      toast.error('Error removing rubric');
     } finally {
       setRemovingRubric(false);
     }
@@ -388,7 +388,7 @@ export default function GradeSubmissionsPage({
             : false;
 
         if (!hasAllScores) {
-          alert('Please provide scores for all rubric criteria');
+          toast.error('Please provide scores for all rubric criteria');
           setSaving(false);
           return;
         }
@@ -401,7 +401,7 @@ export default function GradeSubmissionsPage({
           finalGrade < 0 ||
           finalGrade > (assignment?.points_possible || 100)
         ) {
-          alert(
+          toast.error(
             `Please enter a valid grade between 0 and ${assignment?.points_possible || 100}`
           );
           setSaving(false);
@@ -430,7 +430,7 @@ export default function GradeSubmissionsPage({
 
       if (error) {
         console.error('Error saving grade:', error);
-        alert('Error saving grade: ' + error.message);
+        toast.error('Error saving grade: ' + error.message);
         return;
       }
 
@@ -467,12 +467,12 @@ export default function GradeSubmissionsPage({
       setGradingPanelOpen(false);
       setSelectedSubmission(null);
 
-      alert(
+      toast.success(
         `Grade saved successfully! Final grade: ${finalGrade}/${assignment?.points_possible || 100}`
       );
     } catch (error) {
       console.error('Error saving grade:', error);
-      alert('Error saving grade');
+      toast.error('Error saving grade');
     } finally {
       setSaving(false);
     }

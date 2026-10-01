@@ -1,0 +1,16 @@
+{
+  "function_def": "CREATE OR REPLACE FUNCTION public.update_rubric_total_points()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\r\nBEGIN\r\n    UPDATE public.rubrics \r\n    SET total_points = (\r\n        SELECT COALESCE(SUM(\r\n            (SELECT MAX(points) FROM public.rubric_levels WHERE criterion_id = rc.id)\r\n        ), 0)\r\n        FROM public.rubric_criteria rc \r\n        WHERE rc.rubric_id = COALESCE(NEW.rubric_id, OLD.rubric_id)\r\n    ),\r\n    updated_at = NOW()\r\n    WHERE id = COALESCE(NEW.rubric_id, OLD.rubric_id);\r\n    \r\n    RETURN COALESCE(NEW, OLD);\r\nEND;\r\n$function$\n",
+  "function_acl": {
+    "proacl": "{=X/postgres,postgres=X/postgres,anon=X/postgres,authenticated=X/postgres,service_role=X/postgres}"
+  },
+  "indicator_policies": [],
+  "indicator_table_acl": {
+    "relacl": "{postgres=arwdDxtm/postgres,anon=arwdDxtm/postgres,authenticated=arwdDxtm/postgres,service_role=arwdDxtm/postgres}"
+  },
+  "counts": {
+    "rubrics": "0",
+    "criteria": "0",
+    "levels": "0",
+    "indicators": "0"
+  }
+}
