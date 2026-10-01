@@ -33,6 +33,7 @@ import {
 import { RubricSelectorModal } from '@/components/rubric-selector-modal';
 
 import { confirmAction, toast } from '@/lib/toast';
+import { gradePercent, rubricGradePoints } from '@/lib/grades';
 interface Assignment {
   id: string;
   title: string;
@@ -127,7 +128,7 @@ export default function GradeSubmissionsPage({
       const { data: assignmentData, error: assignmentError } = await supabase
         .from('assignments')
         .select(
-          'id, title, description, due_date, points, class_id, teacher_id, rubric'
+          'id, title, description, due_date, points_possible, class_id, teacher_id, rubric'
         )
         .eq('id', resolvedParams.id)
         .eq('teacher_id', user.id)
@@ -159,7 +160,7 @@ export default function GradeSubmissionsPage({
         title: assignmentData.title,
         description: assignmentData.description,
         due_date: assignmentData.due_date,
-        points_possible: assignmentData.points || 100,
+        points_possible: assignmentData.points_possible,
         class_name: classData?.name || 'Unknown Class',
       });
 
@@ -281,30 +282,15 @@ export default function GradeSubmissionsPage({
     }
   };
 
-  // Calculate total grade from rubric scores
+  // Points earned out of the assignment's points_possible (see lib/grades).
   const calculateRubricGrade = () => {
-    if (
-      !assignmentRubric ||
-      !assignmentRubric.criteria ||
-      !Array.isArray(assignmentRubric.criteria)
-    )
+    if (!assignmentRubric || !Array.isArray(assignmentRubric.criteria))
       return 0;
-
-    let totalWeightedScore = 0;
-    let totalWeight = 0;
-
-    assignmentRubric.criteria.forEach((criterion: any) => {
-      const score = rubricScores[criterion.id] || 0;
-      const weight = criterion.weight || 25; // Default weight as percentage
-
-      // Calculate weighted score: (score * weight) / 100
-      totalWeightedScore += (score * weight) / 100;
-      totalWeight += weight;
-    });
-
-    // The totalWeightedScore is already the final grade out of the maximum possible
-    // Since the rubric levels are designed to give the actual points
-    return Math.round(totalWeightedScore);
+    return rubricGradePoints(
+      assignmentRubric.criteria,
+      rubricScores,
+      assignment?.points_possible ?? 0
+    );
   };
 
   // Handle rubric removal from assignment
@@ -381,9 +367,7 @@ export default function GradeSubmissionsPage({
         const hasAllScores =
           assignmentRubric.criteria && Array.isArray(assignmentRubric.criteria)
             ? assignmentRubric.criteria.every(
-                (criterion: any) =>
-                  rubricScores[criterion.id] !== undefined &&
-                  rubricScores[criterion.id] > 0
+                (criterion: any) => rubricScores[criterion.id] !== undefined
               )
             : false;
 
@@ -394,16 +378,16 @@ export default function GradeSubmissionsPage({
         }
       } else {
         // Simple grading mode
-        finalGrade = parseInt(grade);
+        finalGrade = Number(grade);
+        const max = assignment?.points_possible ?? 0;
 
         if (
-          isNaN(finalGrade) ||
+          grade.trim() === '' ||
+          !Number.isInteger(finalGrade) ||
           finalGrade < 0 ||
-          finalGrade > (assignment?.points_possible || 100)
+          finalGrade > max
         ) {
-          toast.error(
-            `Please enter a valid grade between 0 and ${assignment?.points_possible || 100}`
-          );
+          toast.error(`Enter a whole number of points from 0 to ${max}`);
           setSaving(false);
           return;
         }
@@ -468,7 +452,7 @@ export default function GradeSubmissionsPage({
       setSelectedSubmission(null);
 
       toast.success(
-        `Grade saved successfully! Final grade: ${finalGrade}/${assignment?.points_possible || 100}`
+        `Grade saved successfully! Final grade: ${finalGrade}/${assignment?.points_possible}`
       );
     } catch (error) {
       console.error('Error saving grade:', error);
@@ -893,9 +877,10 @@ export default function GradeSubmissionsPage({
                             </div>
                             <div className="text-sm text-gray-600">
                               {Math.round(
-                                (calculateRubricGrade() /
-                                  (assignment.points_possible || 100)) *
-                                  100
+                                gradePercent(
+                                  calculateRubricGrade(),
+                                  assignment.points_possible
+                                ) ?? 0
                               )}
                               %
                             </div>

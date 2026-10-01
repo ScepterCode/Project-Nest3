@@ -67,7 +67,7 @@ export default function TeacherAssignmentDetailPage({
         .from('assignments')
         .select(
           `
-          id, title, description, due_date, points, created_at, class_id, teacher_id
+          id, title, description, due_date, points_possible, created_at, class_id, teacher_id
         `
         )
         .eq('id', resolvedParams.id)
@@ -108,7 +108,7 @@ export default function TeacherAssignmentDetailPage({
         title: assignmentData.title,
         description: assignmentData.description,
         due_date: assignmentData.due_date,
-        points_possible: assignmentData.points || 100,
+        points_possible: assignmentData.points_possible,
         class_name: classData?.name || 'Unknown Class',
         class_id: assignmentData.class_id,
         created_at: assignmentData.created_at,

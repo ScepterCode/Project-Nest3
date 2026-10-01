@@ -118,10 +118,10 @@ export default function StudentAssignmentsPage() {
         return;
       }
 
-      // Get assignments from enrolled classes (include points column)
+      // Get assignments from enrolled classes
       const { data: assignmentsData, error: assignmentsError } = await supabase
         .from('assignments')
-        .select('id, title, description, due_date, class_id, points')
+        .select('id, title, description, due_date, class_id, points_possible')
         .in('class_id', classIds)
         .order('due_date', { ascending: true });
 
@@ -186,7 +186,7 @@ export default function StudentAssignmentsPage() {
             status,
             class_name: classData?.name || 'Unknown Class',
             class_id: assignment.class_id,
-            points_possible: assignment.points || 0,
+            points_possible: assignment.points_possible,
             points_earned: submission?.grade || undefined,
             submission_date: submission?.submitted_at || undefined,
           };

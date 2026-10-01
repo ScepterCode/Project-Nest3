@@ -1,0 +1,89 @@
+{
+  "check_constraints": [
+    {
+      "conname": "assignments_status_check",
+      "def": "CHECK ((status = ANY (ARRAY['draft'::text, 'published'::text, 'closed'::text])))"
+    },
+    {
+      "conname": "points_possible_non_negative",
+      "def": "CHECK ((points_possible >= 0))"
+    },
+    {
+      "conname": "submissions_grade_check",
+      "def": "CHECK (((grade >= 0) AND (grade <= 100)))"
+    },
+    {
+      "conname": "submissions_status_check",
+      "def": "CHECK ((status = ANY (ARRAY['draft'::text, 'submitted'::text, 'graded'::text])))"
+    }
+  ],
+  "triggers": [
+    {
+      "tbl": "submissions",
+      "tgname": "guard_submission_grading",
+      "def": "CREATE TRIGGER guard_submission_grading BEFORE INSERT OR UPDATE ON public.submissions FOR EACH ROW EXECUTE FUNCTION app_private.guard_submission_grading()"
+    }
+  ],
+  "points_columns": [
+    {
+      "column_name": "points",
+      "is_nullable": "YES",
+      "column_default": "100"
+    },
+    {
+      "column_name": "points_possible",
+      "is_nullable": "YES",
+      "column_default": "100"
+    }
+  ],
+  "graded_submissions": [
+    {
+      "id": "eee151d8-1561-4ac5-b3e7-64bd1a34d96a",
+      "grade": 92,
+      "assignment_id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "points": 100,
+      "points_possible": 100
+    },
+    {
+      "id": "9775bc88-1239-4e5a-af4b-ed907c230a6c",
+      "grade": 88,
+      "assignment_id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "points": 100,
+      "points_possible": 100
+    },
+    {
+      "id": "1003722c-2c38-4ee4-aa9d-0f208a6101f5",
+      "grade": 4,
+      "assignment_id": "cb5891d6-cfd4-4331-b4e8-4e62e80b946d",
+      "points": 100,
+      "points_possible": 100
+    }
+  ],
+  "assignment_points": [
+    {
+      "id": "ba5baac4-deba-4ec3-8f5f-0d68a1080b81",
+      "points": 100,
+      "points_possible": 100
+    },
+    {
+      "id": "1498db21-d762-4b66-b3c0-ead3865d8c4e",
+      "points": 100,
+      "points_possible": 100
+    },
+    {
+      "id": "cb5891d6-cfd4-4331-b4e8-4e62e80b946d",
+      "points": 100,
+      "points_possible": 100
+    },
+    {
+      "id": "dac450cf-44f5-4a19-83c0-23d3adb3be32",
+      "points": 100,
+      "points_possible": 100
+    },
+    {
+      "id": "ce43ce0d-c965-4cca-9595-3c0039f18db9",
+      "points": 100,
+      "points_possible": 100
+    }
+  ]
+}

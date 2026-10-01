@@ -113,8 +113,6 @@ export default function StudentGradesPage() {
         return;
       }
 
-      console.log('Found graded submissions:', submissionsData?.length || 0);
-
       if (!submissionsData || submissionsData.length === 0) {
         setGrades([]);
         setClassGrades([]);
@@ -126,9 +124,17 @@ export default function StudentGradesPage() {
       const assignmentsData = await selectInChunks(assignmentIds, chunk =>
         supabase
           .from('assignments')
-          .select('id, title, class_id')
+          .select('id, title, class_id, points_possible')
           .in('id', chunk)
-      ).catch(() => [] as { id: string; title: string; class_id: string }[]);
+      ).catch(
+        () =>
+          [] as {
+            id: string;
+            title: string;
+            class_id: string;
+            points_possible: number;
+          }[]
+      );
 
       // Get class details
       const classIds = [
@@ -145,8 +151,9 @@ export default function StudentGradesPage() {
           a => a.id === submission.assignment_id
         );
         const classData = classesData?.find(c => c.id === assignment?.class_id);
+        // grade is points earned out of the assignment's points_possible.
         const pointsEarned = submission.grade || 0;
-        const pointsPossible = 100; // Default since we don't have this column
+        const pointsPossible = assignment?.points_possible ?? 0;
         const percentage =
           pointsPossible > 0 ? (pointsEarned / pointsPossible) * 100 : 0;
 
@@ -249,10 +256,16 @@ export default function StudentGradesPage() {
     });
   };
 
+  // Points earned over points possible across all classes.
+  const overallPossible = classGrades.reduce(
+    (sum, c) => sum + c.total_points_possible,
+    0
+  );
   const overallGPA =
-    classGrades.length > 0
-      ? classGrades.reduce((sum, grade) => sum + grade.percentage, 0) /
-        classGrades.length
+    overallPossible > 0
+      ? (classGrades.reduce((sum, c) => sum + c.total_points_earned, 0) /
+          overallPossible) *
+        100
       : 0;
 
   if (loading || loadingGrades) {

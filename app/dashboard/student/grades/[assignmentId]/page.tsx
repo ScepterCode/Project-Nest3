@@ -110,7 +110,7 @@ export default function StudentGradeDetailPage() {
         supabase
           .from('assignments')
           .select(
-            'title, description, due_date, points, points_possible, rubric, classes(name)'
+            'title, description, due_date, points_possible, rubric, classes(name)'
           )
           .eq('id', assignmentId)
           .single(),
@@ -140,7 +140,7 @@ export default function StudentGradeDetailPage() {
             assignment.classes as { name: string } | { name: string }[] | null
           )?.name ?? '',
         dueDate: assignment.due_date,
-        maxPoints: assignment.points_possible || assignment.points || 100,
+        maxPoints: assignment.points_possible,
         rubric: assignment.rubric ?? null,
         submission: submission
           ? {

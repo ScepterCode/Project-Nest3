@@ -28,6 +28,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 
+import { averagePercent } from '@/lib/grades';
 interface ClassDetail {
   id: string;
   name: string;
@@ -39,7 +40,8 @@ interface ClassDetail {
   total_assignments: number;
   completed_assignments: number;
   pending_assignments: number;
-  average_grade: number;
+  /** Percent of points earned on graded work; null when nothing is graded. */
+  average_grade: number | null;
   assignments: Assignment[];
   classmates: Classmate[];
 }
@@ -249,11 +251,12 @@ export default function StudentClassDetailPage({
       const gradedAssignments = assignments.filter(
         a => a.status === 'graded' && a.grade !== null
       );
-      const averageGrade =
-        gradedAssignments.length > 0
-          ? gradedAssignments.reduce((sum, a) => sum + (a.grade || 0), 0) /
-            gradedAssignments.length
-          : 0;
+      const averageGrade = averagePercent(
+        gradedAssignments.map(a => ({
+          grade: a.grade,
+          pointsPossible: a.points_possible,
+        }))
+      );
 
       setClassDetail({
         id: classData.id,
@@ -418,7 +421,7 @@ export default function StudentClassDetailPage({
             <CardContent className="pt-6">
               <div className="text-center">
                 <div className="text-2xl font-bold text-purple-600">
-                  {classDetail.average_grade > 0
+                  {classDetail.average_grade !== null
                     ? `${classDetail.average_grade.toFixed(1)}%`
                     : 'N/A'}
                 </div>
