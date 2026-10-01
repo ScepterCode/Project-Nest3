@@ -3,19 +3,26 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
-import { 
-  Bell, 
-  CheckCircle, 
-  Trash2, 
-  Filter, 
+import { isSafeInternalPath } from '@/lib/utils/safe-url';
+import {
+  Bell,
+  CheckCircle,
+  Trash2,
+  Filter,
   Settings,
   ExternalLink,
-  RefreshCw
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -30,7 +37,9 @@ export default function NotificationsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [selectedNotifications, setSelectedNotifications] = useState<string[]>([]);
+  const [selectedNotifications, setSelectedNotifications] = useState<string[]>(
+    []
+  );
   const [loadingNotifications, setLoadingNotifications] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [typeFilter, setTypeFilter] = useState<NotificationType | 'all'>('all');
@@ -53,11 +62,11 @@ export default function NotificationsPage() {
     try {
       setLoadingNotifications(true);
       const currentPage = reset ? 1 : page;
-      
+
       const params = new URLSearchParams({
         page: currentPage.toString(),
         limit: '20',
-        unreadOnly: filter === 'unread' ? 'true' : 'false'
+        unreadOnly: filter === 'unread' ? 'true' : 'false',
       });
 
       if (typeFilter !== 'all') {
@@ -67,14 +76,14 @@ export default function NotificationsPage() {
       const response = await fetch(`/api/notifications?${params}`);
       if (response.ok) {
         const data = await response.json();
-        
+
         if (reset) {
           setNotifications(data.notifications);
           setPage(1);
         } else {
           setNotifications(prev => [...prev, ...data.notifications]);
         }
-        
+
         setHasMore(data.pagination.hasMore);
         if (!reset) {
           setPage(prev => prev + 1);
@@ -96,16 +105,20 @@ export default function NotificationsPage() {
         },
         body: JSON.stringify({
           notificationIds,
-          markAll: !notificationIds
+          markAll: !notificationIds,
         }),
       });
 
       if (response.ok) {
         // Update local state
-        setNotifications(prev => 
-          prev.map(notification => 
+        setNotifications(prev =>
+          prev.map(notification =>
             !notificationIds || notificationIds.includes(notification.id)
-              ? { ...notification, is_read: true, read_at: new Date().toISOString() }
+              ? {
+                  ...notification,
+                  is_read: true,
+                  read_at: new Date().toISOString(),
+                }
               : notification
           )
         );
@@ -121,11 +134,11 @@ export default function NotificationsPage() {
       const deletePromises = notificationIds.map(id =>
         fetch(`/api/notifications?id=${id}`, { method: 'DELETE' })
       );
-      
+
       await Promise.all(deletePromises);
-      
+
       // Update local state
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.filter(notification => !notificationIds.includes(notification.id))
       );
       setSelectedNotifications([]);
@@ -140,8 +153,8 @@ export default function NotificationsPage() {
       await handleMarkAsRead([notification.id]);
     }
 
-    // Navigate to action URL if provided
-    if (notification.action_url) {
+    // Navigate to action URL if provided (in-app paths only)
+    if (isSafeInternalPath(notification.action_url)) {
       router.push(notification.action_url);
     }
   };
@@ -214,12 +227,12 @@ export default function NotificationsPage() {
                 <Bell className="h-6 w-6" />
                 Notifications
                 {unreadCount > 0 && (
-                  <Badge variant="secondary">
-                    {unreadCount} unread
-                  </Badge>
+                  <Badge variant="secondary">{unreadCount} unread</Badge>
                 )}
               </h1>
-              <p className="text-gray-600">Stay updated with your latest activities</p>
+              <p className="text-gray-600">
+                Stay updated with your latest activities
+              </p>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -228,7 +241,9 @@ export default function NotificationsPage() {
                 onClick={() => loadNotifications(true)}
                 disabled={loadingNotifications}
               >
-                <RefreshCw className={`h-4 w-4 mr-2 ${loadingNotifications ? 'animate-spin' : ''}`} />
+                <RefreshCw
+                  className={`h-4 w-4 mr-2 ${loadingNotifications ? 'animate-spin' : ''}`}
+                />
                 Refresh
               </Button>
               <Button
@@ -252,7 +267,10 @@ export default function NotificationsPage() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <Filter className="h-4 w-4" />
-                  <Select value={filter} onValueChange={(value: any) => setFilter(value)}>
+                  <Select
+                    value={filter}
+                    onValueChange={(value: any) => setFilter(value)}
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -263,18 +281,31 @@ export default function NotificationsPage() {
                   </Select>
                 </div>
 
-                <Select value={typeFilter} onValueChange={(value: any) => setTypeFilter(value)}>
+                <Select
+                  value={typeFilter}
+                  onValueChange={(value: any) => setTypeFilter(value)}
+                >
                   <SelectTrigger className="w-48">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="assignment_graded">Assignment Graded</SelectItem>
-                    <SelectItem value="assignment_created">New Assignment</SelectItem>
-                    <SelectItem value="assignment_due_soon">Due Soon</SelectItem>
-                    <SelectItem value="class_announcement">Announcements</SelectItem>
+                    <SelectItem value="assignment_graded">
+                      Assignment Graded
+                    </SelectItem>
+                    <SelectItem value="assignment_created">
+                      New Assignment
+                    </SelectItem>
+                    <SelectItem value="assignment_due_soon">
+                      Due Soon
+                    </SelectItem>
+                    <SelectItem value="class_announcement">
+                      Announcements
+                    </SelectItem>
                     <SelectItem value="role_changed">Role Changes</SelectItem>
-                    <SelectItem value="system_message">System Messages</SelectItem>
+                    <SelectItem value="system_message">
+                      System Messages
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -295,7 +326,9 @@ export default function NotificationsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleDeleteNotifications(selectedNotifications)}
+                    onClick={() =>
+                      handleDeleteNotifications(selectedNotifications)
+                    }
                   >
                     <Trash2 className="h-4 w-4 mr-2" />
                     Delete
@@ -311,12 +344,13 @@ export default function NotificationsPage() {
           <Card>
             <CardContent className="text-center py-12">
               <Bell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No notifications</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No notifications
+              </h3>
               <p className="text-gray-600">
-                {filter === 'unread' 
+                {filter === 'unread'
                   ? "You don't have any unread notifications."
-                  : "You don't have any notifications yet."
-                }
+                  : "You don't have any notifications yet."}
               </p>
             </CardContent>
           </Card>
@@ -343,8 +377,8 @@ export default function NotificationsPage() {
             </div>
 
             {/* Notification Items */}
-            {notifications.map((notification) => (
-              <Card 
+            {notifications.map(notification => (
+              <Card
                 key={notification.id}
                 className={`cursor-pointer hover:shadow-md transition-all border-l-4 ${getPriorityColor(notification.priority)} ${
                   !notification.is_read ? 'bg-blue-50' : ''
@@ -354,28 +388,37 @@ export default function NotificationsPage() {
                   <div className="flex items-start gap-3">
                     <Checkbox
                       checked={selectedNotifications.includes(notification.id)}
-                      onCheckedChange={(checked) => {
+                      onCheckedChange={checked => {
                         if (checked) {
-                          setSelectedNotifications(prev => [...prev, notification.id]);
+                          setSelectedNotifications(prev => [
+                            ...prev,
+                            notification.id,
+                          ]);
                         } else {
-                          setSelectedNotifications(prev => prev.filter(id => id !== notification.id));
+                          setSelectedNotifications(prev =>
+                            prev.filter(id => id !== notification.id)
+                          );
                         }
                       }}
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={e => e.stopPropagation()}
                     />
-                    
+
                     <div className="text-2xl flex-shrink-0 mt-1">
                       {getTypeIcon(notification.type)}
                     </div>
-                    
-                    <div 
+
+                    <div
                       className="flex-1 min-w-0"
                       onClick={() => handleNotificationClick(notification)}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h3 className={`font-medium ${
-                          !notification.is_read ? 'text-gray-900' : 'text-gray-700'
-                        }`}>
+                        <h3
+                          className={`font-medium ${
+                            !notification.is_read
+                              ? 'text-gray-900'
+                              : 'text-gray-700'
+                          }`}
+                        >
                           {notification.title}
                         </h3>
                         <div className="flex items-center gap-2 flex-shrink-0">
@@ -387,18 +430,25 @@ export default function NotificationsPage() {
                           </Badge>
                         </div>
                       </div>
-                      
-                      <p className={`text-sm mt-1 ${
-                        !notification.is_read ? 'text-gray-700' : 'text-gray-500'
-                      }`}>
+
+                      <p
+                        className={`text-sm mt-1 ${
+                          !notification.is_read
+                            ? 'text-gray-700'
+                            : 'text-gray-500'
+                        }`}
+                      >
                         {notification.message}
                       </p>
-                      
+
                       <div className="flex items-center justify-between mt-3">
                         <span className="text-xs text-gray-400">
-                          {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                          {formatDistanceToNow(
+                            new Date(notification.created_at),
+                            { addSuffix: true }
+                          )}
                         </span>
-                        
+
                         {notification.action_label && (
                           <div className="flex items-center gap-1 text-xs text-blue-600">
                             <span>{notification.action_label}</span>

@@ -2,20 +2,34 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, CheckCircle, ExternalLink, Settings, Trash2 } from 'lucide-react';
+import {
+  Bell,
+  CheckCircle,
+  ExternalLink,
+  Settings,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { NotificationSummary, Notification, NotificationPriority } from '@/lib/types/notifications';
+import {
+  NotificationSummary,
+  Notification,
+  NotificationPriority,
+} from '@/lib/types/notifications';
 import { formatDistanceToNow } from 'date-fns';
+import { isSafeInternalPath } from '@/lib/utils/safe-url';
 
 interface NotificationDropdownProps {
   summary: NotificationSummary;
   onNotificationRead: () => void;
 }
 
-export function NotificationDropdown({ summary, onNotificationRead }: NotificationDropdownProps) {
+export function NotificationDropdown({
+  summary,
+  onNotificationRead,
+}: NotificationDropdownProps) {
   const router = useRouter();
 
   const handleMarkAllRead = async () => {
@@ -53,8 +67,8 @@ export function NotificationDropdown({ summary, onNotificationRead }: Notificati
       }
     }
 
-    // Navigate to action URL if provided
-    if (notification.action_url) {
+    // Navigate to action URL if provided (in-app paths only)
+    if (isSafeInternalPath(notification.action_url)) {
       router.push(notification.action_url);
     }
   };
@@ -136,11 +150,13 @@ export function NotificationDropdown({ summary, onNotificationRead }: Notificati
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Bell className="h-12 w-12 text-gray-300 mb-4" />
             <p className="text-gray-500 text-sm">No notifications yet</p>
-            <p className="text-gray-400 text-xs">You'll see updates here when they arrive</p>
+            <p className="text-gray-400 text-xs">
+              You&apos;ll see updates here when they arrive
+            </p>
           </div>
         ) : (
           <div className="divide-y">
-            {summary.recent_notifications.map((notification) => (
+            {summary.recent_notifications.map(notification => (
               <div
                 key={notification.id}
                 className={`p-3 cursor-pointer hover:bg-gray-50 transition-colors border-l-4 ${getPriorityColor(notification.priority)} ${
@@ -154,23 +170,34 @@ export function NotificationDropdown({ summary, onNotificationRead }: Notificati
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className={`text-sm font-medium truncate ${
-                        !notification.is_read ? 'text-gray-900' : 'text-gray-700'
-                      }`}>
+                      <h4
+                        className={`text-sm font-medium truncate ${
+                          !notification.is_read
+                            ? 'text-gray-900'
+                            : 'text-gray-700'
+                        }`}
+                      >
                         {notification.title}
                       </h4>
                       {!notification.is_read && (
                         <div className="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-1" />
                       )}
                     </div>
-                    <p className={`text-xs mt-1 line-clamp-2 ${
-                      !notification.is_read ? 'text-gray-700' : 'text-gray-500'
-                    }`}>
+                    <p
+                      className={`text-xs mt-1 line-clamp-2 ${
+                        !notification.is_read
+                          ? 'text-gray-700'
+                          : 'text-gray-500'
+                      }`}
+                    >
                       {notification.message}
                     </p>
                     <div className="flex items-center justify-between mt-2">
                       <span className="text-xs text-gray-400">
-                        {formatDistanceToNow(new Date(notification.created_at), { addSuffix: true })}
+                        {formatDistanceToNow(
+                          new Date(notification.created_at),
+                          { addSuffix: true }
+                        )}
                       </span>
                       {notification.action_label && (
                         <div className="flex items-center gap-1 text-xs text-blue-600">

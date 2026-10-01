@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -34,13 +34,8 @@ export function DatabaseStatusBanner() {
     <Alert className="mb-6 border-orange-200 bg-orange-50">
       <AlertCircle className="h-4 w-4 text-orange-600" />
       <AlertDescription className="text-orange-800">
-        <strong>Demo Mode:</strong> Database tables not found. Showing sample data. 
-        <a 
-          href="/debug" 
-          className="ml-2 underline hover:no-underline"
-        >
-          Check system status
-        </a>
+        We can&apos;t reach the database right now. Please refresh the page or
+        try again in a few minutes.
       </AlertDescription>
     </Alert>
   );

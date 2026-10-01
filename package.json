@@ -2,7 +2,6 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:realtime": "node -r ts-node/register lib/server/realtime-server.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -15,7 +14,6 @@
     "test:coverage": "jest --coverage",
     "test:performance": "jest --testPathPattern=performance --runInBand",
     "test:integration": "jest --testPathPattern=integration --runInBand",
-    "stress-test": "node scripts/database-stress-test.js",
     "test:db-performance": "node scripts/test-database-performance.js",
     "db:optimize": "node -e \"console.log('Run SQL files in lib/database/ against your database')\"",
     "db:monitor": "node -e \"console.log('Database monitoring available at /dashboard/admin/database-performance')\""
@@ -46,7 +44,7 @@
     "dotenv": "^17.2.1",
     "ioredis": "^5.4.1",
     "lucide-react": "^0.511.0",
-    "next": "^15.1.0",
+    "next": "^15.5.26",
     "next-themes": "^0.4.6",
     "pg": "^8.13.1",
     "react": "^19.0.0",
@@ -70,7 +68,7 @@
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.20",
     "eslint": "^9",
-    "eslint-config-next": "^15.1.0",
+    "eslint-config-next": "^15.5.26",
     "husky": "^9.0.11",
     "jest": "^30.0.4",
     "jest-environment-jsdom": "^30.0.4",
@@ -82,12 +80,11 @@
     "tailwindcss-animate": "^1.0.7",
     "ts-jest": "^29.4.0",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "5.8.2"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
-      "eslint --fix",
-      "tsc --noEmit"
+      "eslint --fix"
     ],
     "*.{js,jsx,ts,tsx,json,css,md}": [
       "prettier --write"

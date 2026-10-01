@@ -1,9 +1,10 @@
 // Types for notification system
 
-export type NotificationType = 
+export type NotificationType =
   | 'assignment_created'
   | 'assignment_graded'
   | 'assignment_due_soon'
+  | 'assignment_submitted'
   | 'class_announcement'
   | 'class_created'
   | 'enrollment_approved'
