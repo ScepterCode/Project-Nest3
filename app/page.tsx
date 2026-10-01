@@ -6,12 +6,11 @@ import {
   BarChart3,
   Shield,
   Zap,
-  CheckCircle,
   Mail,
   Phone,
   MapPin,
-  Star,
-  Play,
+  GraduationCap,
+  Building2,
 } from 'lucide-react';
 import PageHeader from '@/components/Header/page-header';
 
@@ -25,7 +24,7 @@ export default function Home() {
       <section className="pt-20 pb-32 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               Transform Your
               <span className="text-blue-600 block">
                 Educational Institution
@@ -41,27 +40,15 @@ export default function Home() {
                 href="/auth/sign-up"
                 className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors flex items-center space-x-2"
               >
-                <span>Start Free Trial</span>
+                <span>Get Started</span>
                 <ArrowRight className="h-5 w-5" />
               </Link>
-              <button className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors flex items-center space-x-2">
-                <Play className="h-5 w-5" />
-                <span>Watch Demo</span>
-              </button>
-            </div>
-            <div className="mt-12 flex items-center justify-center space-x-8 text-sm text-gray-500">
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>No credit card required</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>14-day free trial</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4 text-green-500" />
-                <span>Cancel anytime</span>
-              </div>
+              <Link
+                href="/auth/login"
+                className="border border-gray-300 text-gray-700 px-8 py-4 rounded-lg text-lg font-semibold hover:bg-gray-50 transition-colors"
+              >
+                Sign In
+              </Link>
             </div>
           </div>
         </div>
@@ -99,8 +86,8 @@ export default function Home() {
                 Assignment Tracking
               </h3>
               <p className="text-gray-600">
-                Create, distribute, and grade assignments with built-in rubrics,
-                peer reviews, and automated workflows.
+                Create, distribute, and grade assignments with rubrics and
+                anonymous peer reviews.
               </p>
             </div>
 
@@ -110,8 +97,8 @@ export default function Home() {
                 Advanced Analytics
               </h3>
               <p className="text-gray-600">
-                Gain insights into student performance, class engagement, and
-                institutional metrics with comprehensive reporting.
+                See grades and submission progress per class, and
+                institution-wide reports for administrators.
               </p>
             </div>
 
@@ -132,8 +119,8 @@ export default function Home() {
                 Bulk Operations
               </h3>
               <p className="text-gray-600">
-                Import users, assign roles, and manage large datasets
-                efficiently with our powerful bulk operation tools.
+                Invite members from a CSV file and change roles for many people
+                at once.
               </p>
             </div>
 
@@ -143,8 +130,8 @@ export default function Home() {
                 Smart Notifications
               </h3>
               <p className="text-gray-600">
-                Keep everyone informed with intelligent notifications, email
-                campaigns, and real-time updates.
+                Students and teachers are notified about new assignments,
+                grades, peer reviews, and role requests.
               </p>
             </div>
           </div>
@@ -163,124 +150,45 @@ export default function Home() {
                 Built for Modern Education
               </h2>
               <p className="text-lg text-gray-600 mb-6">
-                EduNest was created by educators, for educators. We understand
-                the unique challenges facing educational institutions today and
-                have built a platform that addresses real-world needs.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      Scalable Architecture
-                    </h4>
-                    <p className="text-gray-600">
-                      Grows with your institution from small schools to large
-                      universities
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      Data Security
-                    </h4>
-                    <p className="text-gray-600">
-                      Enterprise-grade security with FERPA and GDPR compliance
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <CheckCircle className="h-6 w-6 text-green-500 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-gray-900">
-                      24/7 Support
-                    </h4>
-                    <p className="text-gray-600">
-                      Dedicated support team to help you succeed
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="bg-white p-8 rounded-2xl shadow-xl">
-              <div className="text-center">
-                <div className="text-4xl font-bold text-blue-600 mb-2">
-                  10,000+
-                </div>
-                <div className="text-gray-600 mb-6">Students Managed</div>
-
-                <div className="text-4xl font-bold text-green-600 mb-2">
-                  500+
-                </div>
-                <div className="text-gray-600 mb-6">Institutions Trust Us</div>
-
-                <div className="text-4xl font-bold text-purple-600 mb-2">
-                  99.9%
-                </div>
-                <div className="text-gray-600">Uptime Guarantee</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Demo Section */}
-      <section id="demo" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              See EduNest in Action
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Experience the power of our platform with interactive demos and
-              real screenshots from our dashboard interfaces.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-100 p-8 rounded-xl">
-              <div className="aspect-video bg-white rounded-lg shadow-lg mb-6 flex items-center justify-center">
-                <div className="text-center">
-                  <Play className="h-16 w-16 text-blue-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Student Dashboard Demo</p>
-                </div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Student Experience
-              </h3>
-              <p className="text-gray-600">
-                See how students can easily access assignments, submit work, and
-                track their progress.
+                ProjectNest brings an institution&apos;s classes, assignments,
+                grading and peer review into one place, with each person seeing
+                exactly what their role allows.
               </p>
             </div>
-
-            <div className="bg-gradient-to-br from-green-50 to-emerald-100 p-8 rounded-xl">
-              <div className="aspect-video bg-white rounded-lg shadow-lg mb-6 flex items-center justify-center">
-                <div className="text-center">
-                  <Play className="h-16 w-16 text-green-600 mx-auto mb-4" />
-                  <p className="text-gray-600">Teacher Dashboard Demo</p>
+            <div className="bg-white p-8 rounded-2xl shadow-xl space-y-6">
+              <div className="flex items-start space-x-4">
+                <GraduationCap className="h-8 w-8 text-blue-600 shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">Students</h4>
+                  <p className="text-gray-600">
+                    Join classes with a code, submit work, review classmates
+                    anonymously, and follow their grades.
+                  </p>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Teacher Tools
-              </h3>
-              <p className="text-gray-600">
-                Discover how teachers can create assignments, grade submissions,
-                and analyze student performance.
-              </p>
+              <div className="flex items-start space-x-4">
+                <BookOpen className="h-8 w-8 text-green-600 shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">Teachers</h4>
+                  <p className="text-gray-600">
+                    Run classes, publish assignments, grade with rubrics, and
+                    set up peer review rounds.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-start space-x-4">
+                <Building2 className="h-8 w-8 text-purple-600 shrink-0" />
+                <div>
+                  <h4 className="font-semibold text-gray-900">
+                    Institution administrators
+                  </h4>
+                  <p className="text-gray-600">
+                    Manage members, departments, and role requests, and see
+                    reports across the institution.
+                  </p>
+                </div>
+              </div>
             </div>
-          </div>
-
-          <div className="mt-12 text-center">
-            <Link
-              href="/auth/sign-up"
-              className="bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-semibold hover:bg-blue-700 transition-colors inline-flex items-center space-x-2"
-            >
-              <span>Try It Free</span>
-              <ArrowRight className="h-5 w-5" />
-            </Link>
           </div>
         </div>
       </section>
@@ -301,7 +209,12 @@ export default function Home() {
                   <Mail className="h-6 w-6 text-blue-400" />
                   <div>
                     <div className="font-semibold">Email Support</div>
-                    <div className="text-gray-300">support@projectnest.com</div>
+                    <a
+                      href="mailto:support@projectnest.com"
+                      className="text-gray-300 hover:text-white"
+                    >
+                      support@projectnest.com
+                    </a>
                   </div>
                 </div>
 
@@ -309,7 +222,12 @@ export default function Home() {
                   <Phone className="h-6 w-6 text-blue-400" />
                   <div>
                     <div className="font-semibold">Phone Support</div>
-                    <div className="text-gray-300">+234 916 471 0703</div>
+                    <a
+                      href="tel:+2349164710703"
+                      className="text-gray-300 hover:text-white"
+                    >
+                      +234 916 471 0703
+                    </a>
                   </div>
                 </div>
 
@@ -325,54 +243,20 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="bg-gray-800 p-8 rounded-xl">
-              <h3 className="text-2xl font-semibold mb-6">Request a Demo</h3>
-              <form className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Name</label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Your name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="your@email.com"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Institution
-                  </label>
-                  <input
-                    type="text"
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Your institution name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-2">
-                    Message
-                  </label>
-                  <textarea
-                    rows={4}
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Tell us about your needs..."
-                  ></textarea>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                >
-                  Send Message
-                </button>
-              </form>
+            <div className="bg-gray-800 p-8 rounded-xl flex flex-col justify-center">
+              <h3 className="text-2xl font-semibold mb-4">
+                Bring ProjectNest to your institution
+              </h3>
+              <p className="text-gray-300 mb-6">
+                Tell us about your school and what you need, and we&apos;ll help
+                you get set up.
+              </p>
+              <a
+                href="mailto:support@projectnest.com?subject=ProjectNest%20for%20our%20institution"
+                className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center"
+              >
+                Email us
+              </a>
             </div>
           </div>
         </div>
@@ -387,7 +271,7 @@ export default function Home() {
               <span className="text-xl font-bold text-white">ProjectNest</span>
             </div>
             <div className="text-gray-400 text-sm">
-              © 2024 ProjectNest. All rights reserved.
+              © {new Date().getFullYear()} ProjectNest. All rights reserved.
             </div>
           </div>
         </div>
