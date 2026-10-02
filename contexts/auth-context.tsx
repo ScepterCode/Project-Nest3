@@ -213,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
+    } = supabase.auth.onAuthStateChange((event, session) => {
       const sessionUser = session?.user ?? null;
 
       if (event === 'SIGNED_OUT' || !sessionUser) {
@@ -249,14 +249,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       currentUserId.current = sessionUser.id;
       setUser(sessionUser);
       setLoading(false);
-      try {
-        await refreshOnboardingStatus(sessionUser);
-      } catch (error) {
-        console.error(
-          'Auth Context: Error refreshing onboarding status:',
-          error
+      // Supabase runs this listener while holding its auth lock, and every
+      // Supabase call (getUser, any query) waits for that lock. Awaiting one
+      // here deadlocks the client and every page spins forever, so load the
+      // profile after the listener has returned.
+      setTimeout(() => {
+        refreshOnboardingStatus(sessionUser).catch(error =>
+          console.error(
+            'Auth Context: Error refreshing onboarding status:',
+            error
+          )
         );
-      }
+      }, 0);
     });
 
     return () => subscription.unsubscribe();
