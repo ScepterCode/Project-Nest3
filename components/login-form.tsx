@@ -1,27 +1,28 @@
-"use client";
+'use client';
 
-import { cn } from "@/lib/utils";
-import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
+import { cn } from '@/lib/utils';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+} from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export function LoginForm({
   className,
+  notice,
   ...props
-}: React.ComponentPropsWithoutRef<"div">) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+}: React.ComponentPropsWithoutRef<'div'> & { notice?: string | undefined }) {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
@@ -33,42 +34,35 @@ export function LoginForm({
     setError(null);
 
     try {
-      console.log('Attempting login with email:', email);
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-      
+
       if (error) {
         console.error('Login error:', error);
         throw error;
       }
-      
-      console.log('Login successful, user:', data.user?.email);
-      
+
       // Check if user has completed onboarding
-      const { data: { user } } = await supabase.auth.getUser();
-      
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
       if (user) {
-        console.log('User authenticated:', user.email);
-        
         // Check if user profile exists and onboarding is complete
-        const { data: userProfile, error: profileError } = await supabase
+        const { data: userProfile } = await supabase
           .from('users')
           .select('onboarding_completed, role')
           .eq('id', user.id)
           .single();
 
-        console.log('User profile:', userProfile, 'Error:', profileError);
-
         if (userProfile?.onboarding_completed) {
           // User has completed onboarding, go to dashboard
           const role = userProfile.role || 'student';
-          console.log('Redirecting to dashboard:', role);
           router.push(`/dashboard/${role}`);
         } else {
           // User needs to complete onboarding
-          console.log('Redirecting to onboarding');
           router.push('/onboarding');
         }
       } else {
@@ -77,14 +71,14 @@ export function LoginForm({
       }
     } catch (error: unknown) {
       console.error('Login process error:', error);
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
+    <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl">Login</CardTitle>
@@ -93,6 +87,11 @@ export function LoginForm({
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {notice && (
+            <p className="mb-4 rounded-md bg-amber-50 p-3 text-sm text-amber-800">
+              {notice}
+            </p>
+          )}
           <form onSubmit={handleLogin}>
             <div className="flex flex-col gap-6">
               <div className="grid gap-2">
@@ -103,7 +102,7 @@ export function LoginForm({
                   placeholder="m@example.com"
                   required
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={e => setEmail(e.target.value)}
                 />
               </div>
               <div className="grid gap-2">
@@ -121,16 +120,16 @@ export function LoginForm({
                   type="password"
                   required
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={e => setPassword(e.target.value)}
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Logging in..." : "Login"}
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">
-              Don&apos;t have an account?{" "}
+              Don&apos;t have an account?{' '}
               <Link
                 href="/auth/sign-up"
                 className="underline underline-offset-4"

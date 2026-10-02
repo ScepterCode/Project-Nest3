@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { ThemeProvider } from 'next-themes';
 import { SessionProvider } from '@/components/session-provider';
 import { AuthProvider } from '@/contexts/auth-context';
+import { IdleSignOut } from '@/components/idle-sign-out';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import './globals.css';
@@ -31,6 +32,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <SessionProvider>
             <AuthProvider>
+              <IdleSignOut />
               <ThemeProvider
                 attribute="class"
                 // Most pages are styled for light mode only; following the OS

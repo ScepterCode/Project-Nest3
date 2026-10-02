@@ -1,6 +1,11 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { hasEnvVars } from '../utils';
+import {
+  ACTIVITY_COOKIE,
+  IDLE_SIGN_OUT_PATH,
+  IDLE_TIMEOUT_SECONDS,
+} from '../auth/idle';
 
 // Where each role lands. Roles without a dashboard yet go to their profile.
 const ROLE_DASHBOARD: Record<string, string> = {
@@ -84,15 +89,42 @@ export async function updateSession(request: NextRequest) {
   // Redirects must carry the refreshed session cookies, or the browser and
   // server fall out of sync and the user gets logged out.
   const redirectTo = (path: string) => {
-    const url = request.nextUrl.clone();
-    url.pathname = path;
-    url.search = '';
-    const response = NextResponse.redirect(url);
+    const response = NextResponse.redirect(new URL(path, request.url));
     supabaseResponse.cookies
       .getAll()
       .forEach(cookie => response.cookies.set(cookie));
     return response;
   };
+
+  if (user) {
+    // Idle timeout: last activity is the later of the browser's activity
+    // stamp and the sign-in itself (the stamp doesn't exist yet right after
+    // signing in).
+    const now = Math.floor(Date.now() / 1000);
+    const stamped = Number(request.cookies.get(ACTIVITY_COOKIE)?.value) || 0;
+    const signedIn = user.last_sign_in_at
+      ? Math.floor(Date.parse(user.last_sign_in_at) / 1000)
+      : 0;
+    if (
+      now - Math.max(Math.min(stamped, now), signedIn) >=
+      IDLE_TIMEOUT_SECONDS
+    ) {
+      // Revokes this session's refresh token on Supabase and clears the
+      // session cookies (through setAll above).
+      await supabase.auth.signOut({ scope: 'local' });
+      const response = redirectTo(IDLE_SIGN_OUT_PATH);
+      response.cookies.delete(ACTIVITY_COOKIE);
+      response.cookies.delete(PROFILE_COOKIE);
+      return response;
+    }
+    // A page request is activity too.
+    supabaseResponse.cookies.set(ACTIVITY_COOKIE, String(now), {
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: IDLE_TIMEOUT_SECONDS,
+    });
+  }
 
   if (!user) {
     if (
