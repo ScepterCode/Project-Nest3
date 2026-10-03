@@ -432,8 +432,9 @@ export class PermissionChecker {
       .select('*')
       .eq('user_id', userId)
       .eq('status', 'active')
-      .gte('expires_at', new Date().toISOString())
-      .or('expires_at.is.null');
+      // Permanent (no expiry) or not yet expired. Chaining .gte() and .or()
+      // ANDs them, which matched nothing.
+      .or(`expires_at.is.null,expires_at.gte.${new Date().toISOString()}`);
 
     if (error) {
       console.error('Error fetching user roles:', error);

@@ -2,15 +2,31 @@
  * Unit tests for PermissionChecker service
  */
 
-import { PermissionChecker, PermissionCheckerConfig, Action } from '../../../lib/services/permission-checker';
+import {
+  PermissionChecker,
+  PermissionCheckerConfig,
+  Action,
+} from '../../../lib/services/permission-checker';
 import {
   UserRole,
   RoleStatus,
   Permission,
   PermissionCategory,
   PermissionScope,
-  UserRoleAssignment
+  UserRoleAssignment,
 } from '../../../lib/types/role-management';
+
+// No role assignments in the database. Without this the checker queried a
+// real (non-existent) Supabase URL and timed out when DNS was slow.
+jest.mock('../../../lib/supabase/client', () => {
+  const query: Record<string, unknown> = {};
+  ['select', 'eq', 'gte', 'or', 'in'].forEach(method => {
+    query[method] = () => query;
+  });
+  query.then = (resolve: (value: unknown) => void) =>
+    resolve({ data: [], error: null });
+  return { createClient: () => ({ from: () => query }) };
+});
 
 describe('PermissionChecker', () => {
   let permissionChecker: PermissionChecker;
@@ -20,7 +36,7 @@ describe('PermissionChecker', () => {
     mockConfig = {
       cacheEnabled: true,
       cacheTtl: 300, // 5 minutes
-      bulkCheckLimit: 100
+      bulkCheckLimit: 100,
     };
 
     permissionChecker = new PermissionChecker(mockConfig);
@@ -57,7 +73,7 @@ describe('PermissionChecker', () => {
 
       // First call - should miss cache
       const result1 = await permissionChecker.hasPermission(userId, permission);
-      
+
       // Second call - should hit cache
       const result2 = await permissionChecker.hasPermission(userId, permission);
 
@@ -72,10 +88,10 @@ describe('PermissionChecker', () => {
       const permission = 'class.create';
 
       await shortTtlChecker.hasPermission(userId, permission);
-      
+
       // Wait for cache to expire
       await new Promise(resolve => setTimeout(resolve, 10));
-      
+
       const result = await shortTtlChecker.hasPermission(userId, permission);
       expect(result).toBe(false); // Should recompute
     });
@@ -84,7 +100,10 @@ describe('PermissionChecker', () => {
       const noCacheConfig = { ...mockConfig, cacheEnabled: false };
       const noCacheChecker = new PermissionChecker(noCacheConfig);
 
-      const result = await noCacheChecker.hasPermission('user-123', 'class.create');
+      const result = await noCacheChecker.hasPermission(
+        'user-123',
+        'class.create'
+      );
       expect(result).toBe(false);
     });
   });
@@ -109,10 +128,30 @@ describe('PermissionChecker', () => {
       const resourceId = 'class-456';
       const context = { resourceType: 'class' };
 
-      const createResult = await permissionChecker.canAccessResource(userId, resourceId, Action.CREATE, context);
-      const readResult = await permissionChecker.canAccessResource(userId, resourceId, Action.READ, context);
-      const updateResult = await permissionChecker.canAccessResource(userId, resourceId, Action.UPDATE, context);
-      const deleteResult = await permissionChecker.canAccessResource(userId, resourceId, Action.DELETE, context);
+      const createResult = await permissionChecker.canAccessResource(
+        userId,
+        resourceId,
+        Action.CREATE,
+        context
+      );
+      const readResult = await permissionChecker.canAccessResource(
+        userId,
+        resourceId,
+        Action.READ,
+        context
+      );
+      const updateResult = await permissionChecker.canAccessResource(
+        userId,
+        resourceId,
+        Action.UPDATE,
+        context
+      );
+      const deleteResult = await permissionChecker.canAccessResource(
+        userId,
+        resourceId,
+        Action.DELETE,
+        context
+      );
 
       // All should be false with mock implementation
       expect(createResult).toBe(false);
@@ -134,13 +173,15 @@ describe('PermissionChecker', () => {
 
   describe('getUserPermissions', () => {
     test('should return empty array for user with no roles', async () => {
-      const permissions = await permissionChecker.getUserPermissions('user-123');
+      const permissions =
+        await permissionChecker.getUserPermissions('user-123');
       expect(permissions).toEqual([]);
     });
 
     test('should deduplicate permissions from multiple roles', async () => {
       // This would require mocking the private methods to return actual data
-      const permissions = await permissionChecker.getUserPermissions('user-123');
+      const permissions =
+        await permissionChecker.getUserPermissions('user-123');
       expect(Array.isArray(permissions)).toBe(true);
     });
   });
@@ -150,10 +191,13 @@ describe('PermissionChecker', () => {
       const permissionChecks = [
         { permission: 'class.create' },
         { permission: 'class.read' },
-        { permission: 'user.manage' }
+        { permission: 'user.manage' },
       ];
 
-      const results = await permissionChecker.checkBulkPermissions('user-123', permissionChecks);
+      const results = await permissionChecker.checkBulkPermissions(
+        'user-123',
+        permissionChecks
+      );
 
       expect(results).toHaveLength(3);
       expect(results[0].permission).toBe('class.create');
@@ -162,22 +206,29 @@ describe('PermissionChecker', () => {
     });
 
     test('should enforce bulk check limit', async () => {
-      const tooManyChecks = Array(mockConfig.bulkCheckLimit + 1).fill(0).map((_, i) => ({
-        permission: `permission.${i}`
-      }));
+      const tooManyChecks = Array(mockConfig.bulkCheckLimit + 1)
+        .fill(0)
+        .map((_, i) => ({
+          permission: `permission.${i}`,
+        }));
 
       await expect(
         permissionChecker.checkBulkPermissions('user-123', tooManyChecks)
-      ).rejects.toThrow(`Bulk check limit exceeded: ${mockConfig.bulkCheckLimit}`);
+      ).rejects.toThrow(
+        `Bulk check limit exceeded: ${mockConfig.bulkCheckLimit}`
+      );
     });
 
     test('should handle errors in individual checks gracefully', async () => {
       const permissionChecks = [
         { permission: 'valid.permission' },
-        { permission: '' } // This might cause an error
+        { permission: '' }, // This might cause an error
       ];
 
-      const results = await permissionChecker.checkBulkPermissions('user-123', permissionChecks);
+      const results = await permissionChecker.checkBulkPermissions(
+        'user-123',
+        permissionChecks
+      );
 
       expect(results).toHaveLength(2);
       expect(results[1].granted).toBe(false);
@@ -188,8 +239,16 @@ describe('PermissionChecker', () => {
   describe('isAdmin', () => {
     test('should return false for non-admin users', async () => {
       const systemAdmin = await permissionChecker.isAdmin('user-123', 'system');
-      const institutionAdmin = await permissionChecker.isAdmin('user-123', 'institution', 'inst-456');
-      const departmentAdmin = await permissionChecker.isAdmin('user-123', 'department', 'dept-789');
+      const institutionAdmin = await permissionChecker.isAdmin(
+        'user-123',
+        'institution',
+        'inst-456'
+      );
+      const departmentAdmin = await permissionChecker.isAdmin(
+        'user-123',
+        'department',
+        'dept-789'
+      );
 
       expect(systemAdmin).toBe(false);
       expect(institutionAdmin).toBe(false);
@@ -198,9 +257,18 @@ describe('PermissionChecker', () => {
 
     test('should handle different admin scopes', async () => {
       // Test with different scope parameters
-      const systemResult = await permissionChecker.isAdmin('admin-123', 'system');
-      const institutionResult = await permissionChecker.isAdmin('admin-123', 'institution');
-      const departmentResult = await permissionChecker.isAdmin('admin-123', 'department');
+      const systemResult = await permissionChecker.isAdmin(
+        'admin-123',
+        'system'
+      );
+      const institutionResult = await permissionChecker.isAdmin(
+        'admin-123',
+        'institution'
+      );
+      const departmentResult = await permissionChecker.isAdmin(
+        'admin-123',
+        'department'
+      );
 
       expect(typeof systemResult).toBe('boolean');
       expect(typeof institutionResult).toBe('boolean');
@@ -211,11 +279,20 @@ describe('PermissionChecker', () => {
   describe('cache management', () => {
     test('should invalidate user cache correctly', () => {
       const cache = (permissionChecker as any).permissionCache;
-      
+
       // Add some mock cache entries
-      cache.set('user-123:permission1:context', { result: true, expires: Date.now() + 10000 });
-      cache.set('user-456:permission2:context', { result: false, expires: Date.now() + 10000 });
-      cache.set('user-123:permission3:context', { result: true, expires: Date.now() + 10000 });
+      cache.set('user-123:permission1:context', {
+        result: true,
+        expires: Date.now() + 10000,
+      });
+      cache.set('user-456:permission2:context', {
+        result: false,
+        expires: Date.now() + 10000,
+      });
+      cache.set('user-123:permission3:context', {
+        result: true,
+        expires: Date.now() + 10000,
+      });
 
       expect(cache.size).toBe(3);
 
@@ -227,10 +304,16 @@ describe('PermissionChecker', () => {
 
     test('should clear all cache', () => {
       const cache = (permissionChecker as any).permissionCache;
-      
+
       // Add some mock cache entries
-      cache.set('user-123:permission1:context', { result: true, expires: Date.now() + 10000 });
-      cache.set('user-456:permission2:context', { result: false, expires: Date.now() + 10000 });
+      cache.set('user-123:permission1:context', {
+        result: true,
+        expires: Date.now() + 10000,
+      });
+      cache.set('user-456:permission2:context', {
+        result: false,
+        expires: Date.now() + 10000,
+      });
 
       expect(cache.size).toBe(2);
 
@@ -253,7 +336,9 @@ describe('PermissionChecker', () => {
 
   describe('private helper methods', () => {
     test('should check permission scope correctly', () => {
-      const checkScope = (permissionChecker as any).checkPermissionScope.bind(permissionChecker);
+      const checkScope = (permissionChecker as any).checkPermissionScope.bind(
+        permissionChecker
+      );
 
       const permission: Permission = {
         id: 'perm-1',
@@ -261,7 +346,7 @@ describe('PermissionChecker', () => {
         description: 'Test permission',
         category: PermissionCategory.CONTENT,
         scope: PermissionScope.SELF,
-        createdAt: new Date()
+        createdAt: new Date(),
       };
 
       const roleAssignment: UserRoleAssignment = {
@@ -276,19 +361,25 @@ describe('PermissionChecker', () => {
         isTemporary: false,
         metadata: {},
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // Test SELF scope
-      const selfResult = checkScope(permission, roleAssignment, { ownerId: 'user-123' });
+      const selfResult = checkScope(permission, roleAssignment, {
+        ownerId: 'user-123',
+      });
       expect(selfResult).toBe(true);
 
-      const notSelfResult = checkScope(permission, roleAssignment, { ownerId: 'user-456' });
+      const notSelfResult = checkScope(permission, roleAssignment, {
+        ownerId: 'user-456',
+      });
       expect(notSelfResult).toBe(false);
     });
 
     test('should check admin roles correctly', () => {
-      const isAdminRole = (permissionChecker as any).isAdminRole.bind(permissionChecker);
+      const isAdminRole = (permissionChecker as any).isAdminRole.bind(
+        permissionChecker
+      );
 
       const roleAssignment: UserRoleAssignment = {
         id: 'assign-1',
@@ -301,18 +392,28 @@ describe('PermissionChecker', () => {
         isTemporary: false,
         metadata: {},
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
-      expect(isAdminRole(UserRole.SYSTEM_ADMIN, 'system', roleAssignment)).toBe(true);
-      expect(isAdminRole(UserRole.SYSTEM_ADMIN, 'institution', roleAssignment)).toBe(true);
-      expect(isAdminRole(UserRole.SYSTEM_ADMIN, 'department', roleAssignment)).toBe(true);
+      expect(isAdminRole(UserRole.SYSTEM_ADMIN, 'system', roleAssignment)).toBe(
+        true
+      );
+      expect(
+        isAdminRole(UserRole.SYSTEM_ADMIN, 'institution', roleAssignment)
+      ).toBe(true);
+      expect(
+        isAdminRole(UserRole.SYSTEM_ADMIN, 'department', roleAssignment)
+      ).toBe(true);
 
-      expect(isAdminRole(UserRole.STUDENT, 'system', roleAssignment)).toBe(false);
+      expect(isAdminRole(UserRole.STUDENT, 'system', roleAssignment)).toBe(
+        false
+      );
     });
 
     test('should map actions to permissions correctly', () => {
-      const mapActions = (permissionChecker as any).mapActionToPermissions.bind(permissionChecker);
+      const mapActions = (permissionChecker as any).mapActionToPermissions.bind(
+        permissionChecker
+      );
 
       const createPermissions = mapActions(Action.CREATE, 'class');
       expect(createPermissions).toContain('class.create');
@@ -324,7 +425,9 @@ describe('PermissionChecker', () => {
     });
 
     test('should generate cache keys correctly', () => {
-      const generateKey = (permissionChecker as any).generateCacheKey.bind(permissionChecker);
+      const generateKey = (permissionChecker as any).generateCacheKey.bind(
+        permissionChecker
+      );
 
       const key1 = generateKey('user-123', 'class.create');
       expect(key1).toBe('user-123:class.create:global');
@@ -333,13 +436,17 @@ describe('PermissionChecker', () => {
         resourceId: 'class-456',
         resourceType: 'class',
         departmentId: 'dept-789',
-        institutionId: 'inst-123'
+        institutionId: 'inst-123',
       });
-      expect(key2).toBe('user-123:class.create:class-456:class:dept-789:inst-123');
+      expect(key2).toBe(
+        'user-123:class.create:class-456:class:dept-789:inst-123'
+      );
     });
 
     test('should check time-based conditions correctly', () => {
-      const checkTimeCondition = (permissionChecker as any).checkTimeBasedCondition.bind(permissionChecker);
+      const checkTimeCondition = (
+        permissionChecker as any
+      ).checkTimeBasedCondition.bind(permissionChecker);
 
       const roleAssignment: UserRoleAssignment = {
         id: 'assign-1',
@@ -352,7 +459,7 @@ describe('PermissionChecker', () => {
         isTemporary: false,
         metadata: {},
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       // Test with no time restrictions
@@ -360,14 +467,24 @@ describe('PermissionChecker', () => {
 
       // Test with future start time
       const futureStart = new Date(Date.now() + 10000);
-      expect(checkTimeCondition({ startTime: futureStart.toISOString() }, roleAssignment)).toBe(false);
+      expect(
+        checkTimeCondition(
+          { startTime: futureStart.toISOString() },
+          roleAssignment
+        )
+      ).toBe(false);
 
       // Test with past end time
       const pastEnd = new Date(Date.now() - 10000);
-      expect(checkTimeCondition({ endTime: pastEnd.toISOString() }, roleAssignment)).toBe(false);
+      expect(
+        checkTimeCondition({ endTime: pastEnd.toISOString() }, roleAssignment)
+      ).toBe(false);
 
       // Test with expired role
-      const expiredAssignment = { ...roleAssignment, expiresAt: new Date(Date.now() - 10000) };
+      const expiredAssignment = {
+        ...roleAssignment,
+        expiresAt: new Date(Date.now() - 10000),
+      };
       expect(checkTimeCondition({}, expiredAssignment)).toBe(false);
     });
   });
@@ -399,7 +516,7 @@ describe('PermissionChecker', () => {
       const customConfig: PermissionCheckerConfig = {
         cacheEnabled: false,
         cacheTtl: 0,
-        bulkCheckLimit: 50
+        bulkCheckLimit: 50,
       };
 
       const customChecker = new PermissionChecker(customConfig);
@@ -410,7 +527,7 @@ describe('PermissionChecker', () => {
       const extremeConfig: PermissionCheckerConfig = {
         cacheEnabled: true,
         cacheTtl: 1, // 1 second
-        bulkCheckLimit: 1 // Very low limit
+        bulkCheckLimit: 1, // Very low limit
       };
 
       const extremeChecker = new PermissionChecker(extremeConfig);
