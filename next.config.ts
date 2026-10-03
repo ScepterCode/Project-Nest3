@@ -69,7 +69,7 @@ const nextConfig: NextConfig = {
       },
       {
         source: '/register',
-        destination: '/auth/register',
+        destination: '/auth/sign-up',
         permanent: true,
       },
     ];

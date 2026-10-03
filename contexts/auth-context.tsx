@@ -1,6 +1,13 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
 interface OnboardingStatus {
@@ -76,8 +83,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // registered once and would otherwise only ever see the first render's state).
   const currentUserId = useRef<string | null>(null);
 
-  const refreshOnboardingStatus = async (forUser: User | null = user) => {
-    const user = forUser;
+  // Only uses state setters, so it never changes and the auth listener below
+  // can be registered once.
+  const loadProfile = useCallback(async (user: User | null) => {
     if (!user) {
       setOnboardingStatus(null);
       setUserProfile(null);
@@ -170,7 +178,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       setOnboardingStatus(null);
     }
-  };
+  }, []);
+
+  const refreshOnboardingStatus = useCallback(
+    () => loadProfile(user),
+    [loadProfile, user]
+  );
 
   const getUserDisplayName = () => {
     if (userProfile?.first_name) {
@@ -201,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(user);
         setLoading(false);
         if (user) {
-          await refreshOnboardingStatus(user);
+          await loadProfile(user);
         }
       } catch {
         setUser(null);
@@ -254,7 +267,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // here deadlocks the client and every page spins forever, so load the
       // profile after the listener has returned.
       setTimeout(() => {
-        refreshOnboardingStatus(sessionUser).catch(error =>
+        loadProfile(sessionUser).catch(error =>
           console.error(
             'Auth Context: Error refreshing onboarding status:',
             error
@@ -264,7 +277,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [loadProfile]);
 
   return (
     <AuthContext.Provider
