@@ -1,0 +1,67 @@
+name: Database backup
+
+# The Supabase free plan keeps no backups. This dumps the database daily,
+# encrypts it and stores it as a workflow artifact for 90 days. The repo is
+# public, so artifacts are downloadable by any GitHub user: the dump is
+# encrypted with BACKUP_PASSPHRASE before upload and never printed.
+# Setup and restore: docs/backups.md
+
+on:
+  schedule:
+    - cron: '17 2 * * *' # daily, 02:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    # Forks have no secrets and shouldn't try.
+    if: github.repository == 'ScepterCode/Project-Nest3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+    steps:
+      - name: Check secrets
+        run: |
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Set the SUPABASE_DB_URL and BACKUP_PASSPHRASE repository secrets (see docs/backups.md)"
+            exit 1
+          fi
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # Supabase's documented backup: roles, schema, then data (including
+      # auth.users), each restorable with psql.
+      - name: Dump database
+        run: |
+          mkdir -p backup
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/roles.sql --role-only
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" -f backup/data.sql --use-copy --data-only
+
+      - name: Encrypt
+        run: |
+          name="db-backup-$(date -u +%Y-%m-%dT%H%MZ)"
+          tar -C backup -czf - . \
+            | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 3 \
+                --symmetric --cipher-algo AES256 -o "$name.tar.gz.gpg" \
+                3<<<"$BACKUP_PASSPHRASE"
+          rm -rf backup
+          echo "BACKUP_NAME=$name" >> "$GITHUB_ENV"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.BACKUP_NAME }}
+          path: ${{ env.BACKUP_NAME }}.tar.gz.gpg
+          retention-days: 90
+          compression-level: 0 # already compressed and encrypted
+          if-no-files-found: error
