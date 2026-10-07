@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { dashboardFor } from '@/lib/auth/dashboards';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -59,8 +60,7 @@ export function LoginForm({
 
         if (userProfile?.onboarding_completed) {
           // User has completed onboarding, go to dashboard
-          const role = userProfile.role || 'student';
-          router.push(`/dashboard/${role}`);
+          router.push(dashboardFor(userProfile.role));
         } else {
           // User needs to complete onboarding
           router.push('/onboarding');

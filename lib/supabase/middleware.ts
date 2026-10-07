@@ -6,21 +6,18 @@ import {
   IDLE_SIGN_OUT_PATH,
   IDLE_TIMEOUT_SECONDS,
 } from '../auth/idle';
-
-// Where each role lands. Roles without a dashboard yet go to their profile.
-const ROLE_DASHBOARD: Record<string, string> = {
-  student: '/dashboard/student',
-  teacher: '/dashboard/teacher',
-  institution_admin: '/dashboard/institution',
-  department_admin: '/dashboard/profile',
-  system_admin: '/dashboard/profile',
-};
+import { dashboardFor, isWithin } from '../auth/dashboards';
 
 // Short-lived cache of { role, onboarded } for navigation redirects, so rapid
 // page changes don't each query `users`. Only used to decide redirects; every
 // page and API still enforces access through RLS. Only cached once onboarding
 // is complete, so finishing onboarding takes effect immediately; a role change
 // takes effect within PROFILE_CACHE_SECONDS.
+const SHARED_DASHBOARD_PAGES = [
+  '/dashboard/profile',
+  '/dashboard/notifications',
+];
+
 const PROFILE_COOKIE = 'pn_nav';
 const PROFILE_CACHE_SECONDS = 60;
 
@@ -172,7 +169,7 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  const dashboard = ROLE_DASHBOARD[profile.role] ?? '/dashboard/student';
+  const dashboard = dashboardFor(profile.role);
 
   if (!profile.onboarded) {
     return pathname.startsWith('/dashboard')
@@ -185,15 +182,22 @@ export async function updateSession(request: NextRequest) {
   if (pathname.startsWith('/onboarding')) {
     return redirectTo(dashboard);
   }
-  if (pathname.startsWith('/auth') && !pathname.includes('/confirm')) {
+  // Except the email-confirmation callback and setting a new password, which
+  // a password-reset link opens signed in.
+  if (
+    pathname.startsWith('/auth') &&
+    !isWithin(pathname, '/auth/confirm') &&
+    !isWithin(pathname, '/auth/update-password')
+  ) {
     return redirectTo(dashboard);
   }
 
-  // Keep users inside their own role's dashboard (profile and /dashboard are shared).
+  // Keep users inside their own role's dashboard (profile and notifications
+  // are shared by every role).
   if (
     pathname.startsWith('/dashboard/') &&
-    !pathname.startsWith(dashboard) &&
-    !pathname.startsWith('/dashboard/profile')
+    !isWithin(pathname, dashboard) &&
+    !SHARED_DASHBOARD_PAGES.some(page => isWithin(pathname, page))
   ) {
     return redirectTo(dashboard);
   }
