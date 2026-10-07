@@ -98,9 +98,16 @@ export default function ManageClassPage() {
           `
           )
           .eq('class_id', classId)
-          .eq('status', 'active');
+          // Joining by class code creates 'enrolled' rows; older ones are 'active'.
+          .in('status', ['enrolled', 'active']);
 
-        if (!studentsError && enrolledStudents) {
+        if (studentsError) {
+          console.error('Error fetching students:', studentsError.message);
+          setError('Could not load the students in this class');
+          return;
+        }
+
+        if (enrolledStudents) {
           const formattedStudents = enrolledStudents.map((enrollment: any) => ({
             id: enrollment.users.id,
             first_name: enrollment.users.first_name,
