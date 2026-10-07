@@ -140,7 +140,9 @@ export default function TeacherAnalyticsPage() {
       const { data: enrollments, error: enrollmentError } = await supabase
         .from('enrollments')
         .select('student_id, class_id')
-        .in('class_id', classIds);
+        .in('class_id', classIds)
+        // Current students only, not those who dropped or finished.
+        .in('status', ['enrolled', 'active']);
 
       if (enrollmentError) {
         console.error('Error loading enrollments:', enrollmentError);

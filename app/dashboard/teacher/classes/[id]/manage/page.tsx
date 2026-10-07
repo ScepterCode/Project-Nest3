@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Users, BookOpen, Settings, UserPlus, Copy, Check } from 'lucide-react';
 import { formatClassCodeForDisplay } from '@/lib/utils/class-code-generator';
+import { errorMessage, toast } from '@/lib/toast';
 
 interface ClassData {
   id: string;
@@ -51,6 +52,9 @@ export default function ManageClassPage() {
   const [error, setError] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [editName, setEditName] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
 
   const classId = params?.id as string;
 
@@ -75,6 +79,8 @@ export default function ManageClassPage() {
         }
 
         setClassData(classInfo);
+        setEditName(classInfo.name ?? '');
+        setEditDescription(classInfo.description ?? '');
 
         // Fetch enrolled students
         const { data: enrolledStudents, error: studentsError } = await supabase
@@ -121,6 +127,43 @@ export default function ManageClassPage() {
 
     fetchClassData();
   }, [classId, user]);
+
+  const resetSettings = () => {
+    setEditName(classData?.name ?? '');
+    setEditDescription(classData?.description ?? '');
+  };
+
+  const saveSettings = async () => {
+    if (!classData || !user) return;
+    const name = editName.trim();
+    if (!name) {
+      toast.error('The class needs a name');
+      return;
+    }
+    setSavingSettings(true);
+    try {
+      const { data, error } = await createClient()
+        .from('classes')
+        .update({
+          name,
+          description: editDescription.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', classData.id)
+        .eq('teacher_id', user.id)
+        .select('*')
+        .single();
+      if (error) throw error;
+      setClassData(data);
+      setEditName(data.name ?? '');
+      setEditDescription(data.description ?? '');
+      toast.success('Class updated');
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not save the class'));
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   const copyClassCode = async () => {
     if (!classData?.code) return;
@@ -339,8 +382,10 @@ export default function ManageClassPage() {
                   <Label htmlFor="className">Class Name</Label>
                   <Input
                     id="className"
-                    defaultValue={classData.name}
+                    value={editName}
+                    onChange={e => setEditName(e.target.value)}
                     placeholder="Enter class name"
+                    required
                   />
                 </div>
 
@@ -348,15 +393,33 @@ export default function ManageClassPage() {
                   <Label htmlFor="description">Description</Label>
                   <Textarea
                     id="description"
-                    defaultValue={classData.description}
+                    value={editDescription}
+                    onChange={e => setEditDescription(e.target.value)}
                     placeholder="Enter class description"
                     rows={3}
                   />
                 </div>
 
                 <div className="flex gap-2">
-                  <Button>Save Changes</Button>
-                  <Button variant="outline">Cancel</Button>
+                  <Button
+                    onClick={saveSettings}
+                    disabled={
+                      savingSettings ||
+                      !editName.trim() ||
+                      (editName.trim() === classData.name &&
+                        editDescription.trim() ===
+                          (classData.description ?? ''))
+                    }
+                  >
+                    {savingSettings ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={resetSettings}
+                    disabled={savingSettings}
+                  >
+                    Cancel
+                  </Button>
                 </div>
               </CardContent>
             </Card>

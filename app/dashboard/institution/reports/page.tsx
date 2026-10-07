@@ -105,7 +105,7 @@ export default function InstitutionReportsPage() {
 
   if (loading) {
     return (
-      <RoleGate allowedRoles={['institution_admin']}>
+      <RoleGate userId={user?.id ?? ''} allowedRoles={['institution_admin']}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
           <DatabaseStatusBanner />
           <div className="max-w-7xl mx-auto">
@@ -120,7 +120,7 @@ export default function InstitutionReportsPage() {
 
   if (error) {
     return (
-      <RoleGate allowedRoles={['institution_admin']}>
+      <RoleGate userId={user?.id ?? ''} allowedRoles={['institution_admin']}>
         <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
           <DatabaseStatusBanner />
           <div className="max-w-7xl mx-auto">
@@ -140,7 +140,7 @@ export default function InstitutionReportsPage() {
   }
 
   return (
-    <RoleGate allowedRoles={['institution_admin']}>
+    <RoleGate userId={user?.id ?? ''} allowedRoles={['institution_admin']}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
         <DatabaseStatusBanner />
         <div className="max-w-7xl mx-auto space-y-6">
