@@ -1,67 +1,97 @@
-"use client"
+'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import Link from 'next/link'
-import { useAuth } from "@/contexts/auth-context"
-import { RoleGate } from '@/components/ui/permission-gate'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import Link from 'next/link';
+import { useAuth } from '@/contexts/auth-context';
+import { RoleGate } from '@/components/ui/permission-gate';
+import { InstitutionAdminPanel } from '@/components/institution/institution-membership';
 
 export default function InstitutionDashboardPage() {
-  const { user, loading } = useAuth()
+  const { user, loading } = useAuth();
 
   if (loading) {
-    return <div>Loading...</div>
+    return <div>Loading...</div>;
   }
 
   if (!user) {
-    return <div>Access Denied</div>
+    return <div>Access Denied</div>;
   }
 
   return (
     <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
-    <div className="flex flex-col gap-4 p-4 md:gap-8 md:p-6">
-      <h1 className="text-lg font-semibold md:text-2xl">Institution Dashboard</h1>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Manage Users</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <CardDescription>Invite, suspend, and delete teacher and student accounts.</CardDescription>
-            <Button asChild className="mt-4">
-              <Link href="/dashboard/institution/users">Go to User Management</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Manage Departments</CardTitle>
-            <Building className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <CardDescription>Create and manage departments, assign teachers to student groups.</CardDescription>
-            <Button asChild className="mt-4">
-              <Link href="/dashboard/institution/departments">Go to Department Management</Link>
-            </Button>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">View Reports & Analytics</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <CardDescription>Monitor platform usage and generate institutional reports.</CardDescription>
-            <Button asChild className="mt-4">
-              <Link href="/dashboard/institution/reports">View Reports</Link>
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col gap-4 p-4 md:gap-8 md:p-6">
+        <h1 className="text-lg font-semibold md:text-2xl">
+          Institution Dashboard
+        </h1>
+        <InstitutionAdminPanel>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Manage Users
+                </CardTitle>
+                <Users className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Invite, suspend, and delete teacher and student accounts.
+                </CardDescription>
+                <Button asChild className="mt-4">
+                  <Link href="/dashboard/institution/users">
+                    Go to User Management
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  Manage Departments
+                </CardTitle>
+                <Building className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Create and manage departments, assign teachers to student
+                  groups.
+                </CardDescription>
+                <Button asChild className="mt-4">
+                  <Link href="/dashboard/institution/departments">
+                    Go to Department Management
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">
+                  View Reports & Analytics
+                </CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <CardDescription>
+                  Monitor platform usage and generate institutional reports.
+                </CardDescription>
+                <Button asChild className="mt-4">
+                  <Link href="/dashboard/institution/reports">
+                    View Reports
+                  </Link>
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </InstitutionAdminPanel>
       </div>
-    </div>
     </RoleGate>
-  )
+  );
 }
 
 function Users(props: React.SVGProps<SVGSVGElement>) {
@@ -84,7 +114,7 @@ function Users(props: React.SVGProps<SVGSVGElement>) {
       <path d="M16 14a4 4 0 0 1 4 4v2" />
       <circle cx="18" cy="7" r="4" />
     </svg>
-  )
+  );
 }
 
 function Building(props: React.SVGProps<SVGSVGElement>) {
@@ -113,7 +143,7 @@ function Building(props: React.SVGProps<SVGSVGElement>) {
       <path d="M8 10h.01" />
       <path d="M8 14h.01" />
     </svg>
-  )
+  );
 }
 
 function Activity(props: React.SVGProps<SVGSVGElement>) {
@@ -132,5 +162,5 @@ function Activity(props: React.SVGProps<SVGSVGElement>) {
     >
       <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
     </svg>
-  )
+  );
 }
