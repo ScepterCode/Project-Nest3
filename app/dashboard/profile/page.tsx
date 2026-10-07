@@ -16,6 +16,7 @@ import { useSupabase } from '@/components/session-provider';
 import { UserRoleProfileSection } from '@/components/role-management/user-role-profile-section';
 import { RoleRequestForm } from '@/components/role-management/role-request-form';
 import { RoleChangeHistory } from '@/components/role-management/role-change-history';
+import { JoinInstitutionCard } from '@/components/institution/institution-membership';
 import { User, Shield, History, UserPlus } from 'lucide-react';
 
 import { toast } from '@/lib/toast';
@@ -26,6 +27,7 @@ export default function UserProfilePage() {
   const [email, setEmail] = useState('');
   const [userId, setUserId] = useState<string | null>(null);
   const [institutionId, setInstitutionId] = useState<string | null>(null);
+  const [role, setRole] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +47,7 @@ export default function UserProfilePage() {
           const { data: userProfileData, error: profileError } = await supabase
             .from('users')
             .select(
-              'first_name, last_name, email, institution_id, department_id'
+              'first_name, last_name, email, role, institution_id, department_id'
             )
             .eq('id', user.id)
             .single();
@@ -56,6 +58,7 @@ export default function UserProfilePage() {
           setLastName(userProfileData.last_name);
           setEmail(userProfileData.email);
           setInstitutionId(userProfileData.institution_id);
+          setRole(userProfileData.role);
         }
       } catch (error: any) {
         setError(error.message);
@@ -192,6 +195,13 @@ export default function UserProfilePage() {
               </form>
             </CardContent>
           </Card>
+          {(role === 'student' || role === 'teacher') && (
+            <div className="mt-6">
+              <JoinInstitutionCard
+                onJoined={institution => setInstitutionId(institution.id)}
+              />
+            </div>
+          )}
         </TabsContent>
 
         {/* Roles & Permissions Tab */}
