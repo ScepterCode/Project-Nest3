@@ -63,11 +63,18 @@ interface Classmate {
   enrollment_date: string;
 }
 
+const TABS = ['assignments', 'materials', 'classmates', 'details'];
+
 export default function StudentClassDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
+  // ?tab=materials opens a tab directly (used by material notifications).
+  const { tab } = use(searchParams);
+  const initialTab = tab && TABS.includes(tab) ? tab : 'assignments';
   const { user, loading } = useAuth();
   const router = useRouter();
   const resolvedParams = use(params);
@@ -412,7 +419,7 @@ export default function StudentClassDetailPage({
           </Card>
         </div>
 
-        <Tabs defaultValue="assignments" className="space-y-6">
+        <Tabs defaultValue={initialTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="materials">Materials</TabsTrigger>

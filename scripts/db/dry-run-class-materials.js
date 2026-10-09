@@ -13,14 +13,15 @@ if (!url) {
   console.error('Set DATABASE_URL.');
   process.exit(1);
 }
-const MIGRATION = fs
-  .readFileSync(
-    'supabase/migrations/20261009120000_class_materials.sql',
-    'utf8'
-  )
-  .replace(/^BEGIN;\s*$/m, '')
-  .replace(/^COMMIT;\s*$/m, '')
-  .replace(/^NOTIFY .*$/m, '');
+const strip = file =>
+  fs
+    .readFileSync(`supabase/migrations/${file}`, 'utf8')
+    .replace(/^BEGIN;\s*$/m, '')
+    .replace(/^COMMIT;\s*$/m, '')
+    .replace(/^NOTIFY .*$/m, '');
+const MIGRATION =
+  strip('20261009120000_class_materials.sql') +
+  strip('20261009130000_notify_class_materials.sql');
 
 const id = n => `eeeeeeee-0000-0000-0000-${String(n).padStart(12, '0')}`;
 const TEACHER = id(1);
@@ -28,6 +29,7 @@ const OTHER_TEACHER = id(2);
 const STUDENT = id(3);
 const OUTSIDER = id(4); // student, not in the class
 const ADMIN = id(5); // admin of the class's institution
+const QUIET_STUDENT = id(6); // enrolled, announcements turned off
 const INSTITUTION = id(10);
 const CLASS = id(20);
 const OTHER_CLASS = id(21);
@@ -90,6 +92,7 @@ const OTHER_CLASS = id(21);
       [STUDENT, 'student'],
       [OUTSIDER, 'student'],
       [ADMIN, 'institution_admin'],
+      [QUIET_STUDENT, 'student'],
     ]) {
       await q(
         'insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)',
@@ -109,8 +112,14 @@ const OTHER_CLASS = id(21);
       [CLASS, TEACHER, INSTITUTION, OTHER_CLASS, OTHER_TEACHER]
     );
     await q(
-      "insert into public.enrollments (class_id, student_id, status) values ($1, $2, 'enrolled')",
-      [CLASS, STUDENT]
+      "insert into public.enrollments (class_id, student_id, status) values ($1, $2, 'enrolled'), ($1, $3, 'active')",
+      [CLASS, STUDENT, QUIET_STUDENT]
+    );
+    await q(
+      `insert into public.notification_preferences (user_id, announcement_notifications)
+       values ($1, false)
+       on conflict (user_id) do update set announcement_notifications = false`,
+      [QUIET_STUDENT]
     );
 
     const bucket = (
@@ -187,6 +196,40 @@ const OTHER_CLASS = id(21);
       ),
       true
     );
+
+    // --- notifications for the two materials just added ---
+    await asOwner();
+    const notes = (
+      await q(
+        'select user_id, type, title, action_url from public.notifications where user_id = any($1) order by created_at',
+        [[STUDENT, QUIET_STUDENT, OUTSIDER, TEACHER, ADMIN]]
+      )
+    ).rows;
+    const first = notes.find(n => n.user_id === STUDENT);
+    check(
+      'enrolled student is notified of each new material',
+      notes.filter(n => n.user_id === STUDENT).length,
+      2
+    );
+    check(
+      'notification names the class and links to its materials tab',
+      first && {
+        type: first.type,
+        title: first.title,
+        action_url: first.action_url,
+      },
+      {
+        type: 'class_announcement',
+        title: 'New material in Biology',
+        action_url: `/dashboard/student/classes/${CLASS}?tab=materials`,
+      }
+    );
+    check(
+      'nobody else is notified (announcements off, outsider, teacher, admin)',
+      notes.filter(n => n.user_id !== STUDENT).length,
+      0
+    );
+    await as(TEACHER);
 
     // --- other teacher ---
     await as(OTHER_TEACHER);
