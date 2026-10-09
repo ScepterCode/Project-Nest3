@@ -57,7 +57,9 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA auth TO anon, authenticated, service_ro
 CREATE TABLE IF NOT EXISTS storage.buckets (
   id text PRIMARY KEY,
   name text NOT NULL,
-  public boolean DEFAULT false
+  public boolean DEFAULT false,
+  file_size_limit bigint,
+  allowed_mime_types text[]
 );
 CREATE TABLE IF NOT EXISTS storage.objects (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -67,6 +69,8 @@ CREATE TABLE IF NOT EXISTS storage.objects (
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;
+-- As on Supabase: the API roles may use the tables, and RLS decides what they see.
+GRANT ALL ON storage.buckets, storage.objects TO anon, authenticated, service_role;
 CREATE OR REPLACE FUNCTION storage.foldername(name text) RETURNS text[] LANGUAGE sql IMMUTABLE AS $$
   SELECT (string_to_array(name, '/'))[1:array_length(string_to_array(name, '/'), 1) - 1]
 $$;

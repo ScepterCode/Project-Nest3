@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Users, BookOpen, Settings, UserPlus, Copy, Check } from 'lucide-react';
+import { ClassMaterials } from '@/components/classes/class-materials';
 import { formatClassCodeForDisplay } from '@/lib/utils/class-code-generator';
 import { errorMessage, toast } from '@/lib/toast';
 
@@ -264,6 +265,7 @@ export default function ManageClassPage() {
             <TabsTrigger value="students">
               Students ({students.length})
             </TabsTrigger>
+            <TabsTrigger value="materials">Materials</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
 
@@ -367,6 +369,10 @@ export default function ManageClassPage() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="materials" className="space-y-6">
+            <ClassMaterials classId={classData.id} canManage />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
