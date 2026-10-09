@@ -26,6 +26,7 @@ import {
   User,
   GraduationCap,
 } from 'lucide-react';
+import { ClassMaterials } from '@/components/classes/class-materials';
 
 import { averagePercent } from '@/lib/grades';
 interface ClassDetail {
@@ -414,6 +415,7 @@ export default function StudentClassDetailPage({
         <Tabs defaultValue="assignments" className="space-y-6">
           <TabsList>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
+            <TabsTrigger value="materials">Materials</TabsTrigger>
             <TabsTrigger value="classmates">Classmates</TabsTrigger>
             <TabsTrigger value="details">Class Details</TabsTrigger>
           </TabsList>
@@ -509,6 +511,10 @@ export default function StudentClassDetailPage({
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="materials" className="space-y-4">
+            <ClassMaterials classId={classId} canManage={false} />
           </TabsContent>
 
           <TabsContent value="classmates" className="space-y-4">
