@@ -102,7 +102,8 @@ export default function StudentAssignmentsPage() {
       const { data: enrollments, error: enrollmentError } = await supabase
         .from('enrollments')
         .select('class_id')
-        .eq('student_id', user.id);
+        .eq('student_id', user.id)
+        .in('status', ['enrolled', 'active']);
 
       if (enrollmentError) {
         console.error('Error loading enrollments:', enrollmentError);

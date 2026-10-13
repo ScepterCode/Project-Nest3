@@ -61,6 +61,19 @@ export default function ManageClassPage() {
   const [error, setError] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
+  const [pending, setPending] = useState<Student[]>([]);
+  const [answering, setAnswering] = useState<string | null>(null);
+
+  // ?tab=students opens a tab directly (used by join-request notifications).
+  useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get('tab');
+    if (
+      tab &&
+      ['overview', 'students', 'materials', 'settings'].includes(tab)
+    ) {
+      setActiveTab(tab);
+    }
+  }, []);
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
@@ -126,6 +139,27 @@ export default function ManageClassPage() {
           }));
           setStudents(formattedStudents);
         }
+
+        // Students waiting for the teacher to accept them.
+        const { data: requests, error: requestsError } = await supabase
+          .from('enrollments')
+          .select('enrolled_at, users!inner(id, first_name, last_name, email)')
+          .eq('class_id', classId)
+          .eq('status', 'pending')
+          .order('enrolled_at', { ascending: true });
+        if (requestsError) {
+          console.error('Error fetching join requests:', requestsError.message);
+        } else {
+          setPending(
+            (requests ?? []).map((r: any) => ({
+              id: r.users.id,
+              first_name: r.users.first_name,
+              last_name: r.users.last_name,
+              email: r.users.email,
+              enrolled_at: r.enrolled_at,
+            }))
+          );
+        }
       } catch (err) {
         console.error('Error fetching class data:', err);
         setError('Failed to load class data');
@@ -136,6 +170,34 @@ export default function ManageClassPage() {
 
     fetchClassData();
   }, [classId, user]);
+
+  const answerRequest = async (student: Student, accept: boolean) => {
+    if (!classData) return;
+    setAnswering(student.id);
+    const { error } = await createClient().rpc('review_join_request', {
+      p_class: classData.id,
+      p_student: student.id,
+      p_accept: accept,
+    });
+    setAnswering(null);
+    const name =
+      `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() ||
+      student.email;
+    if (error) {
+      toast.error(errorMessage(error, 'Could not answer the request'));
+      return;
+    }
+    setPending(current => current.filter(s => s.id !== student.id));
+    if (accept) {
+      setStudents(current => [
+        ...current,
+        { ...student, enrolled_at: new Date().toISOString() },
+      ]);
+      toast.success(`${name} joined the class`);
+    } else {
+      toast.success(`Declined ${name}'s request`);
+    }
+  };
 
   const removeStudent = async (student: Student) => {
     if (!classData) return;
@@ -299,6 +361,11 @@ export default function ManageClassPage() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="students">
               Students ({students.length})
+              {pending.length > 0 && (
+                <span className="ml-2 rounded-full bg-amber-500 px-2 text-xs text-white">
+                  {pending.length} new
+                </span>
+              )}
             </TabsTrigger>
             <TabsTrigger value="materials">Materials</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
@@ -347,9 +414,71 @@ export default function ManageClassPage() {
           </TabsContent>
 
           <TabsContent value="students" className="space-y-6">
+            {pending.length > 0 && (
+              <Card className="border-amber-200 bg-amber-50">
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    Waiting to join ({pending.length})
+                  </CardTitle>
+                  <CardDescription>
+                    These students entered your class code. They can&apos;t see
+                    the class until you accept them.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {pending.map(student => (
+                    <div
+                      key={student.id}
+                      className="flex flex-wrap items-center justify-between gap-2 rounded-md bg-white px-3 py-2"
+                    >
+                      <div>
+                        <p className="font-medium">
+                          {student.first_name} {student.last_name}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {student.email} · asked{' '}
+                          {new Date(student.enrolled_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => answerRequest(student, true)}
+                          disabled={answering === student.id}
+                        >
+                          Accept
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => answerRequest(student, false)}
+                          disabled={answering === student.id}
+                        >
+                          Decline
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
             <div className="flex justify-between items-center">
               <h3 className="text-lg font-semibold">Enrolled Students</h3>
-              <Button>
+              <Button
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(classData.code);
+                    toast.success(
+                      `Class code ${classData.code} copied. Share it with your students; you accept each request here.`
+                    );
+                  } catch {
+                    toast.info(
+                      `Share the class code ${classData.code} with your students; you accept each request here.`
+                    );
+                  }
+                }}
+              >
                 <UserPlus className="h-4 w-4 mr-2" />
                 Invite Students
               </Button>

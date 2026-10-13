@@ -115,11 +115,11 @@ export default function JoinClassPage() {
             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <CardTitle className="text-green-800">
-              Successfully Enrolled!
-            </CardTitle>
+            <CardTitle className="text-green-800">Request sent</CardTitle>
             <CardDescription className="text-green-700">
-              You have been enrolled in the class
+              Your teacher has been asked to accept you. You&apos;ll get a
+              notification when they do, and the class will then appear in your
+              classes.
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center space-y-4">
@@ -141,7 +141,7 @@ export default function JoinClassPage() {
                 className="bg-green-600 hover:bg-green-700"
               >
                 <BookOpen className="h-4 w-4 mr-2" />
-                View My Classes
+                Back to My Classes
               </Button>
               <Button variant="outline" onClick={handleReset}>
                 Join Another Class
@@ -160,7 +160,8 @@ export default function JoinClassPage() {
             </div>
             <CardTitle>Join a Class</CardTitle>
             <CardDescription>
-              Enter the class code provided by your teacher to join their class
+              Enter the class code from your teacher. They&apos;ll be asked to
+              accept you.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -194,7 +195,7 @@ export default function JoinClassPage() {
                 className="w-full"
                 disabled={isLoading || !classCode.trim()}
               >
-                {isLoading ? 'Joining Class...' : 'Join Class'}
+                {isLoading ? 'Sending request...' : 'Ask to join'}
               </Button>
             </form>
 
@@ -205,7 +206,10 @@ export default function JoinClassPage() {
               <ol className="text-sm text-gray-600 space-y-1">
                 <li>1. Get the class code from your teacher</li>
                 <li>2. Enter the code in the field above</li>
-                <li>3. Click &ldquo;Join Class&rdquo; to enroll</li>
+                <li>
+                  3. Click &ldquo;Ask to join&rdquo;; your teacher accepts the
+                  request
+                </li>
                 <li>4. Start accessing assignments and materials</li>
               </ol>
             </div>

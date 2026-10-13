@@ -249,7 +249,8 @@ export default function GradeSubmissionsPage({
       const { data: enrollments, error: enrollmentsError } = await supabase
         .from('enrollments')
         .select('student_id')
-        .eq('class_id', assignmentData.class_id);
+        .eq('class_id', assignmentData.class_id)
+        .in('status', ['enrolled', 'active']);
 
       if (enrollmentsError) {
         console.error('Enrollments query error:', enrollmentsError);

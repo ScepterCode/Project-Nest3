@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 
 import { averagePercent } from '@/lib/grades';
+import { PendingJoinRequests } from '@/components/classes/pending-join-requests';
 interface StudentClass {
   id: string;
   name: string;
@@ -308,6 +309,10 @@ export default function StudentClassesPage() {
             <p className="text-red-800">{error}</p>
           </div>
         )}
+
+        <div className="mb-6">
+          <PendingJoinRequests />
+        </div>
 
         {classes.length === 0 ? (
           <Card>
