@@ -100,6 +100,10 @@ export function NotificationDropdown({
         return '📢';
       case 'enrollment_approved':
         return '✅';
+      case 'enrollment_requested':
+        return '🙋';
+      case 'enrollment_declined':
+        return '✖️';
       case 'role_changed':
         return '👤';
       case 'system_message':

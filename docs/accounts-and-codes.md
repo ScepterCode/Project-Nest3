@@ -1,13 +1,14 @@
 # Accounts and sign-up codes
 
-Anyone can sign up as a **student**. Teacher and school-admin accounts need a
-code, so nobody can make themselves staff.
+Anyone can create a **student** account without a sign-up code. Teacher and
+school-admin accounts need one, so nobody can make themselves staff. Joining a
+class always needs the class code and the teacher's approval.
 
-| Who          | How they get their role                                                                                                                                  |
-| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Student      | Signs up with no code, then joins classes with a class code (and their school with the school's student code, or automatically through a class).         |
-| Teacher      | Signs up with their school's **teacher code**, shown to the school admin on the Institution dashboard. They join that school as a teacher straight away. |
-| School admin | Signs up with a one-time **admin invite** from the programme operator, then creates their school on the Institution dashboard.                           |
+| Who          | How they get their role                                                                                                                                                                                                                                       |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Student      | Signs up with no sign-up code. To join a class they enter the teacher's **class code**; the teacher gets a notification and accepts or declines the request. Once accepted they also join the teacher's school (or they join a school with its student code). |
+| Teacher      | Signs up with their school's **teacher code**, shown to the school admin on the Institution dashboard. They join that school as a teacher straight away.                                                                                                      |
+| School admin | Signs up with a one-time **admin invite** from the programme operator, then creates their school on the Institution dashboard.                                                                                                                                |
 
 Existing accounts keep their roles. A member can still ask for a different
 role from their profile page, and their school's admin approves it under

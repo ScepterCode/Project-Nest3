@@ -251,10 +251,24 @@ const id = n => `ffffffff-0000-0000-0000-${String(n).padStart(12, '0')}`;
         [TEACHER]
       )
     ).id;
+    // From 20261014120000 joining creates a request the teacher accepts.
+    const accept = async student => {
+      const { ok } = await one(
+        "select to_regprocedure('public.review_join_request(uuid,uuid,boolean)') is not null ok"
+      );
+      if (!ok) return;
+      await as(TEACHER);
+      await q('select public.review_join_request($1, $2, true)', [
+        CLASS,
+        student,
+      ]);
+    };
     await as(S1);
     await q("select public.join_class_by_code('ENRDRY01')");
     await as(S2);
     await q("select public.join_class_by_code('ENRDRY01')");
+    await accept(S1);
+    await accept(S2);
     check('count after two students join', await count(CLASS), 2);
 
     await as(OTHER_TEACHER);
@@ -290,6 +304,7 @@ const id = n => `ffffffff-0000-0000-0000-${String(n).padStart(12, '0')}`;
       0
     );
     await q("select public.join_class_by_code('ENRDRY01')");
+    await accept(S2);
     check('rejoining with the code counts again', await count(CLASS), 1);
 
     await as(S1);

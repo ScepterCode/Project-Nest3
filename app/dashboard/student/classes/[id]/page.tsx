@@ -131,6 +131,7 @@ export default function StudentClassDetailPage({
         .select('*')
         .eq('class_id', classId)
         .eq('student_id', user.id)
+        .in('status', ['enrolled', 'active'])
         .single();
 
       if (enrollmentError || !enrollment) {

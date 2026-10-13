@@ -113,6 +113,7 @@ export default function StudentAssignmentDetailPage({
         .select('id')
         .eq('class_id', assignmentData.class_id)
         .eq('student_id', user?.id)
+        .in('status', ['enrolled', 'active'])
         .single();
 
       if (enrollmentError) {

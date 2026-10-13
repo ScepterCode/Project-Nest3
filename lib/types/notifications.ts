@@ -8,6 +8,8 @@ export type NotificationType =
   | 'class_announcement'
   | 'class_created'
   | 'enrollment_approved'
+  | 'enrollment_declined'
+  | 'enrollment_requested'
   | 'role_changed'
   | 'system_message';
 
