@@ -18,8 +18,10 @@ import { confirmAction, errorMessage, toast } from '@/lib/toast';
 export interface MyInstitution {
   id: string;
   name: string;
-  /** Only returned to the institution's admins. */
+  /** Student join code; only returned to the institution's admins. */
   join_code: string | null;
+  /** Teacher sign-up code; only returned to the institution's admins. */
+  staff_code?: string | null;
 }
 
 async function fetchMyInstitution(): Promise<MyInstitution | null> {
@@ -80,7 +82,7 @@ export function InstitutionAdminPanel({
   }
 
   if (!institution) {
-    return <CreateInstitutionForm onCreated={setInstitution} />;
+    return <CreateInstitutionForm onCreated={() => load()} />;
   }
 
   return (
@@ -159,13 +161,58 @@ function JoinCodeCard({
   institution: MyInstitution;
   onChange: (institution: MyInstitution) => void;
 }) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Building2 className="h-5 w-5" />
+          {institution.name}
+        </CardTitle>
+        <CardDescription>
+          Share each code only with the people it&apos;s for. Students who join
+          a class taught by one of your teachers are added automatically.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <CodeRow
+          label="Student code"
+          help="Students (and existing teachers) enter this on their profile page to join your school."
+          code={institution.join_code}
+          kind="student"
+          onReplaced={code => onChange({ ...institution, join_code: code })}
+        />
+        <CodeRow
+          label="Teacher code"
+          help="New teachers enter this when they sign up. It makes them a teacher at your school, so keep it to staff."
+          code={institution.staff_code ?? null}
+          kind="staff"
+          onReplaced={code => onChange({ ...institution, staff_code: code })}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function CodeRow({
+  label,
+  help,
+  code,
+  kind,
+  onReplaced,
+}: {
+  label: string;
+  help: string;
+  code: string | null;
+  kind: 'student' | 'staff';
+  onReplaced: (code: string) => void;
+}) {
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
   const copy = async () => {
-    if (!institution.join_code) return;
+    if (!code) return;
     try {
-      await navigator.clipboard.writeText(institution.join_code);
+      await navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -175,9 +222,9 @@ function JoinCodeCard({
 
   const regenerate = async () => {
     const ok = await confirmAction({
-      title: 'Replace the join code?',
+      title: `Replace the ${label.toLowerCase()}?`,
       description:
-        'The current code stops working. People who already joined stay in the institution.',
+        'The current code stops working. People who already joined keep their access.',
       confirmLabel: 'Replace code',
       destructive: true,
     });
@@ -185,11 +232,12 @@ function JoinCodeCard({
     setRegenerating(true);
     try {
       const { data, error } = await createClient().rpc(
-        'regenerate_institution_join_code'
+        'regenerate_institution_join_code',
+        { p_kind: kind }
       );
       if (error) throw error;
-      onChange({ ...institution, join_code: data as string });
-      toast.success('New join code created');
+      onReplaced(data as string);
+      toast.success(`New ${label.toLowerCase()} created`);
     } catch (error) {
       toast.error(errorMessage(error, 'Could not replace the code'));
     } finally {
@@ -198,23 +246,13 @@ function JoinCodeCard({
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Building2 className="h-5 w-5" />
-          {institution.name}
-        </CardTitle>
-        <CardDescription>
-          Teachers and students enter this code on their profile page to join.
-          Students who join a class taught by one of your teachers are added
-          automatically.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-wrap items-center gap-3">
+    <div className="space-y-2">
+      <p className="text-sm font-medium">{label}</p>
+      <div className="flex flex-wrap items-center gap-3">
         <code className="rounded-md bg-gray-100 px-3 py-2 font-mono text-lg tracking-widest">
-          {institution.join_code}
+          {code ?? '········'}
         </code>
-        <Button variant="outline" size="sm" onClick={copy}>
+        <Button variant="outline" size="sm" onClick={copy} disabled={!code}>
           {copied ? (
             <Check className="h-4 w-4 mr-2" />
           ) : (
@@ -231,8 +269,9 @@ function JoinCodeCard({
           <RefreshCw className="h-4 w-4 mr-2" />
           New code
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+      <p className="text-xs text-muted-foreground">{help}</p>
+    </div>
   );
 }
 

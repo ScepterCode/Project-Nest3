@@ -27,6 +27,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { ClassMaterials } from '@/components/classes/class-materials';
+import { confirmAction, errorMessage, toast } from '@/lib/toast';
 
 import { averagePercent } from '@/lib/grades';
 interface ClassDetail {
@@ -77,6 +78,29 @@ export default function StudentClassDetailPage({
   const initialTab = tab && TABS.includes(tab) ? tab : 'assignments';
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [leaving, setLeaving] = useState(false);
+
+  const leaveClass = async () => {
+    const ok = await confirmAction({
+      title: 'Leave this class?',
+      description:
+        'You will lose access to its materials and assignments. Your submitted work and grades are kept, and you can rejoin with the class code.',
+      confirmLabel: 'Leave class',
+      destructive: true,
+    });
+    if (!ok) return;
+    setLeaving(true);
+    const { error } = await createClient().rpc('leave_class', {
+      p_class: classId,
+    });
+    setLeaving(false);
+    if (error) {
+      toast.error(errorMessage(error, 'Could not leave the class'));
+      return;
+    }
+    toast.success('You left the class');
+    router.push('/dashboard/student/classes');
+  };
   const resolvedParams = use(params);
   const classId = resolvedParams.id;
 
@@ -617,6 +641,21 @@ export default function StudentClassDetailPage({
                     />
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+                <p className="text-sm text-gray-600">
+                  Joined the wrong class, or finished with it?
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={leaveClass}
+                  disabled={leaving}
+                  className="text-red-600"
+                >
+                  {leaving ? 'Leaving...' : 'Leave this class'}
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

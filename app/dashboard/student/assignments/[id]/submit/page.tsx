@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
+import { formatBytes, normalizeLink, safeFileName } from '@/lib/materials';
+import { SUBMISSION_ACCEPT, submissionFileType } from '@/lib/submissions';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -147,10 +149,11 @@ export default function SubmitAssignmentPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check file size (200KB = 200 * 1024 bytes)
-    const maxSize = 200 * 1024;
-    if (file.size > maxSize) {
-      setError('File size must be less than 200KB');
+    const checked = submissionFileType(file);
+    if ('problem' in checked) {
+      setError(checked.problem);
+      e.target.value = '';
+      setSelectedFile(null);
       return;
     }
 
@@ -180,8 +183,11 @@ export default function SubmitAssignmentPage() {
         setError('Please select a file to upload');
         return;
       }
-      if (submissionType === 'link' && !linkUrl.trim()) {
-        setError('Please enter a link URL');
+      const link = submissionType === 'link' ? normalizeLink(linkUrl) : null;
+      if (submissionType === 'link' && !link) {
+        setError(
+          'Enter a link to your work, e.g. https://youtu.be/... or a Google Drive link'
+        );
         return;
       }
 
@@ -189,14 +195,22 @@ export default function SubmitAssignmentPage() {
 
       // Handle file upload if there's a new file
       if (submissionType === 'file' && selectedFile) {
-        const fileName = `${user.id}/${assignmentId}/${Date.now()}-${selectedFile.name}`;
+        const checked = submissionFileType(selectedFile);
+        if ('problem' in checked) {
+          setError(checked.problem);
+          return;
+        }
+        // Storage keys can't hold every character a file name can.
+        const fileName = `${user.id}/${assignmentId}/${Date.now()}-${safeFileName(selectedFile.name)}`;
 
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('submissions')
-          .upload(fileName, selectedFile);
+          .upload(fileName, selectedFile, {
+            contentType: checked.contentType,
+          });
 
         if (uploadError) {
-          setError('Failed to upload file');
+          setError(`Failed to upload file: ${uploadError.message}`);
           return;
         }
 
@@ -211,7 +225,7 @@ export default function SubmitAssignmentPage() {
         student_id: user.id,
         content: submissionType === 'text' ? textContent : null,
         file_url: submissionType === 'file' ? fileUrl : null,
-        link_url: submissionType === 'link' ? linkUrl : null,
+        link_url: link,
         submitted_at: new Date().toISOString(),
         status: 'submitted',
       };
@@ -445,18 +459,18 @@ export default function SubmitAssignmentPage() {
 
               <TabsContent value="file" className="space-y-4">
                 <div>
-                  <Label htmlFor="fileUpload">Upload File (Max 200KB)</Label>
+                  <Label htmlFor="fileUpload">Upload file (up to 50 MB)</Label>
                   <Input
                     id="fileUpload"
                     type="file"
                     onChange={handleFileChange}
                     className="mt-2"
-                    accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                    accept={SUBMISSION_ACCEPT}
                   />
                   {selectedFile && (
                     <p className="text-sm text-gray-600 mt-2">
                       Selected: {selectedFile.name} (
-                      {Math.round(selectedFile.size / 1024)}KB)
+                      {formatBytes(selectedFile.size)})
                     </p>
                   )}
                   {existingSubmission?.file_url && !selectedFile && (
@@ -472,14 +486,16 @@ export default function SubmitAssignmentPage() {
                   <Label htmlFor="linkUrl">Link URL</Label>
                   <Input
                     id="linkUrl"
-                    type="url"
-                    placeholder="https://example.com/your-work"
+                    type="text"
+                    inputMode="url"
+                    placeholder="https://youtu.be/... or a Google Drive link"
                     value={linkUrl}
                     onChange={e => setLinkUrl(e.target.value)}
                     className="mt-2"
                   />
                   <p className="text-sm text-gray-500 mt-1">
-                    Provide a link to your work (Google Docs, GitHub, etc.)
+                    Link to your work: a YouTube, Vimeo or Google Drive video, a
+                    Google Doc, etc. Best for videos over 50 MB.
                   </p>
                 </div>
               </TabsContent>
