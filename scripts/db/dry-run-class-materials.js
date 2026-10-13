@@ -98,6 +98,9 @@ const OTHER_CLASS = id(21);
         'insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)',
         [uid, `${uid}@dry-run.test`, { role }]
       );
+      // Sign-up only grants roles through codes (20261013120000), so set
+      // the test role directly (as owner, i.e. a trusted caller).
+      await q('update public.users set role = $2 where id = $1', [uid, role]);
     }
     await q(
       "insert into public.institutions (id, name, status, created_by) values ($1, 'Materials U', 'active', $2)",

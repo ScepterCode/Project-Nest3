@@ -4,6 +4,11 @@
 // persists. Meant for a throwaway database with the migrations replayed
 // (npm run db:replay).
 //
+// Re-applying this migration after 20261013120000 recreates the old
+// zero-argument regenerate_institution_join_code() next to the new one, so
+// the regenerate checks fail there; replay only up to 20261009130000 to
+// re-run this script.
+//
 // Usage: DATABASE_URL=postgres://... node scripts/db/dry-run-institution-membership.js
 const { Client } = require('pg');
 const fs = require('fs');
@@ -98,6 +103,9 @@ const S_CODE = id(9); // joins with the regenerated code
         'insert into auth.users (id, email, raw_user_meta_data) values ($1, $2, $3)',
         [uid, `${uid}@dry-run.test`, { role }]
       );
+      // Sign-up only grants roles through codes (20261013120000), so set
+      // the test role directly (as owner, i.e. a trusted caller).
+      await q('update public.users set role = $2 where id = $1', [uid, role]);
     }
     const CLASS = (
       await one(

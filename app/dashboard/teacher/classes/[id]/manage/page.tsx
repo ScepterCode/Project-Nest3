@@ -19,10 +19,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Users, BookOpen, Settings, UserPlus, Copy, Check } from 'lucide-react';
+import {
+  Users,
+  BookOpen,
+  Settings,
+  UserPlus,
+  Copy,
+  Check,
+  UserMinus,
+} from 'lucide-react';
 import { ClassMaterials } from '@/components/classes/class-materials';
 import { formatClassCodeForDisplay } from '@/lib/utils/class-code-generator';
-import { errorMessage, toast } from '@/lib/toast';
+import { confirmAction, errorMessage, toast } from '@/lib/toast';
 
 interface ClassData {
   id: string;
@@ -128,6 +136,33 @@ export default function ManageClassPage() {
 
     fetchClassData();
   }, [classId, user]);
+
+  const removeStudent = async (student: Student) => {
+    if (!classData) return;
+    const name =
+      `${student.first_name ?? ''} ${student.last_name ?? ''}`.trim() ||
+      student.email;
+    const ok = await confirmAction({
+      title: `Remove ${name} from this class?`,
+      description:
+        'They lose access to its materials and assignments. Their submitted work and grades are kept, and they can rejoin with the class code.',
+      confirmLabel: 'Remove',
+      destructive: true,
+    });
+    if (!ok) return;
+    const { error } = await createClient()
+      .from('enrollments')
+      .update({ status: 'dropped', updated_at: new Date().toISOString() })
+      .eq('class_id', classData.id)
+      .eq('student_id', student.id)
+      .in('status', ['enrolled', 'active']);
+    if (error) {
+      toast.error(errorMessage(error, 'Could not remove the student'));
+      return;
+    }
+    setStudents(current => current.filter(s => s.id !== student.id));
+    toast.success(`${name} was removed from the class`);
+  };
 
   const resetSettings = () => {
     setEditName(classData?.name ?? '');
@@ -359,9 +394,20 @@ export default function ManageClassPage() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-sm text-gray-500">
-                          Joined{' '}
-                          {new Date(student.enrolled_at).toLocaleDateString()}
+                        <div className="flex items-center gap-3">
+                          <div className="text-sm text-gray-500">
+                            Joined{' '}
+                            {new Date(student.enrolled_at).toLocaleDateString()}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeStudent(student)}
+                            aria-label={`Remove ${student.first_name ?? ''} ${student.last_name ?? ''} from the class`}
+                          >
+                            <UserMinus className="h-4 w-4 mr-1 text-red-600" />
+                            Remove
+                          </Button>
                         </div>
                       </div>
                     </CardContent>
