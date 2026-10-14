@@ -18,175 +18,140 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  Building,
-  Users,
-  Settings,
-  Shield,
-  ArrowRight,
   ArrowLeft,
+  ArrowRight,
+  Building,
+  CheckCircle,
+  Layers,
+  Plus,
+  Shield,
+  X,
 } from 'lucide-react';
 
-interface InstitutionAdminOnboardingProps {
-  onComplete: (data: InstitutionAdminOnboardingData) => void;
-  userName?: string;
-}
+// Every answer here is used: the name and job title go on the admin's
+// profile and the school's main contact; the school details and departments
+// create the school (set_up_my_institution) when onboarding finishes.
 
-interface InstitutionAdminOnboardingData {
+export interface InstitutionAdminOnboardingData {
   firstName: string;
   lastName: string;
   jobTitle: string;
   institutionName: string;
   institutionType: string;
   institutionSize: string;
-  departments: string[];
-  responsibilities: string[];
-  managementExperience: string;
-  priorities: string[];
   contactEmail: string;
-  contactPhone?: string;
-  institutionId?: string;
+  contactPhone: string;
+  departments: string[];
+}
+
+interface InstitutionAdminOnboardingProps {
+  onComplete: (data: InstitutionAdminOnboardingData) => void;
+  userName?: string;
+  /** Pre-fills the school's contact email. */
+  userEmail?: string;
+  /** True while the parent saves; disables the finish button. */
+  saving?: boolean;
 }
 
 const INSTITUTION_TYPES = [
+  'Animation academy or studio school',
+  'Art & design school',
   'University',
-  'College',
-  'Community College',
-  'High School',
-  'Middle School',
-  'Elementary School',
-  'Training Center',
-  'Corporate Training',
+  'College / polytechnic',
+  'Secondary school',
+  'Primary school',
+  'Training centre',
   'Other',
 ];
 
 const INSTITUTION_SIZES = [
-  'Small (1-100 users)',
-  'Medium (101-500 users)',
-  'Large (501-2000 users)',
-  'Very Large (2000+ users)',
+  'Up to 100 students',
+  '101–500 students',
+  '501–2,000 students',
+  'More than 2,000 students',
 ];
 
-const COMMON_DEPARTMENTS = [
-  'Computer Science',
-  'Mathematics',
-  'English/Literature',
-  'Science',
-  'History/Social Studies',
-  'Business',
-  'Engineering',
-  'Arts & Design',
-  'Music',
-  'Physical Education',
-  'Foreign Languages',
-  'Psychology',
-  'Medicine/Health Sciences',
+// Suggestions only; admins can add their own and change them later.
+const SUGGESTED_DEPARTMENTS = [
+  '2D Animation',
+  '3D Animation',
+  'Storyboarding',
+  'Character Design',
+  'Visual Effects (VFX)',
+  'Motion Graphics',
+  'Game Art',
+  'Illustration',
+  'Film & Video',
+  'Sound Design',
+  'Foundation Year',
 ];
 
-const ADMIN_RESPONSIBILITIES = [
-  'User account management',
-  'Course and curriculum oversight',
-  'Faculty management',
-  'Student enrollment',
-  'Academic policy enforcement',
-  'System configuration',
-  'Data and analytics review',
-  'Budget and resource allocation',
-  'Compliance and reporting',
-  'Technology integration',
-];
-
-const MANAGEMENT_EXPERIENCE = [
-  'New to educational administration',
-  '1-3 years of experience',
-  '4-7 years of experience',
-  '8-15 years of experience',
-  '15+ years of experience',
-];
-
-const ADMIN_PRIORITIES = [
-  'Streamline administrative processes',
-  'Improve student outcomes',
-  'Enhance faculty productivity',
-  'Better data and reporting',
-  'Cost reduction and efficiency',
-  'Technology modernization',
-  'Compliance and accreditation',
-  'Student engagement',
-  'Faculty development',
-  'Institutional growth',
-];
+const STEPS = ['About you', 'Your school', 'Departments', 'Review'];
 
 export function InstitutionAdminOnboarding({
   onComplete,
   userName = 'there',
+  userEmail = '',
+  saving = false,
 }: InstitutionAdminOnboardingProps) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState<InstitutionAdminOnboardingData>({
+  const [step, setStep] = useState(0);
+  const [customDepartment, setCustomDepartment] = useState('');
+  const [data, setData] = useState<InstitutionAdminOnboardingData>({
     firstName: '',
     lastName: '',
     jobTitle: '',
     institutionName: '',
     institutionType: '',
     institutionSize: '',
-    departments: [],
-    responsibilities: [],
-    managementExperience: '',
-    priorities: [],
-    contactEmail: '',
+    contactEmail: userEmail,
     contactPhone: '',
-    institutionId: '',
+    departments: [],
   });
 
-  const totalSteps = 5;
+  const update = (changes: Partial<InstitutionAdminOnboardingData>) =>
+    setData(prev => ({ ...prev, ...changes }));
 
-  const updateFormData = (updates: Partial<InstitutionAdminOnboardingData>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
+  const toggleDepartment = (name: string) =>
+    update({
+      departments: data.departments.includes(name)
+        ? data.departments.filter(d => d !== name)
+        : [...data.departments, name],
+    });
+
+  const addCustomDepartment = () => {
+    const name = customDepartment.trim().slice(0, 100);
+    if (
+      name &&
+      !data.departments.some(d => d.toLowerCase() === name.toLowerCase())
+    ) {
+      update({ departments: [...data.departments, name] });
+    }
+    setCustomDepartment('');
   };
 
-  const toggleDepartment = (department: string) => {
-    const newDepartments = formData.departments.includes(department)
-      ? formData.departments.filter(d => d !== department)
-      : [...formData.departments, department];
-    updateFormData({ departments: newDepartments });
-  };
+  const emailOk =
+    !data.contactEmail.trim() ||
+    /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(data.contactEmail.trim());
 
-  const toggleResponsibility = (responsibility: string) => {
-    const newResponsibilities = formData.responsibilities.includes(
-      responsibility
-    )
-      ? formData.responsibilities.filter(r => r !== responsibility)
-      : [...formData.responsibilities, responsibility];
-    updateFormData({ responsibilities: newResponsibilities });
-  };
-
-  const togglePriority = (priority: string) => {
-    const newPriorities = formData.priorities.includes(priority)
-      ? formData.priorities.filter(p => p !== priority)
-      : [...formData.priorities, priority];
-    updateFormData({ priorities: newPriorities });
-  };
-
-  const nextStep = () => {
-    if (currentStep < totalSteps - 1) {
-      setCurrentStep(currentStep + 1);
+  const canProceed = () => {
+    switch (step) {
+      case 0:
+        return !!(data.firstName.trim() && data.lastName.trim());
+      case 1:
+        return data.institutionName.trim().length >= 2 && emailOk;
+      default:
+        return true;
     }
   };
 
-  const prevStep = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleComplete = () => {
-    onComplete(formData);
-  };
+  const customDepartments = data.departments.filter(
+    d => !SUGGESTED_DEPARTMENTS.includes(d)
+  );
 
   const renderStep = () => {
-    switch (currentStep) {
+    switch (step) {
       case 0:
         return (
           <Card>
@@ -196,65 +161,43 @@ export function InstitutionAdminOnboarding({
                 Welcome, {userName}!
               </CardTitle>
               <CardDescription>
-                Let&apos;s set up your administrative profile
+                You&apos;re setting up your school on ProjectNest. This takes
+                about two minutes.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="firstName">First Name</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="firstName">First name</Label>
                   <Input
                     id="firstName"
-                    value={formData.firstName}
-                    onChange={e =>
-                      updateFormData({ firstName: e.target.value })
-                    }
-                    placeholder="Enter your first name"
+                    value={data.firstName}
+                    onChange={e => update({ firstName: e.target.value })}
                   />
                 </div>
-                <div>
-                  <Label htmlFor="lastName">Last Name</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="lastName">Last name</Label>
                   <Input
                     id="lastName"
-                    value={formData.lastName}
-                    onChange={e => updateFormData({ lastName: e.target.value })}
-                    placeholder="Enter your last name"
+                    value={data.lastName}
+                    onChange={e => update({ lastName: e.target.value })}
                   />
                 </div>
               </div>
-              <div>
-                <Label htmlFor="jobTitle">Job Title</Label>
+              <div className="space-y-2">
+                <Label htmlFor="jobTitle">
+                  Job title{' '}
+                  <span className="text-muted-foreground">(optional)</span>
+                </Label>
                 <Input
                   id="jobTitle"
-                  value={formData.jobTitle}
-                  onChange={e => updateFormData({ jobTitle: e.target.value })}
-                  placeholder="e.g., Dean, Principal, Director, Administrator"
+                  placeholder="e.g. Head of Animation, Programme Coordinator"
+                  value={data.jobTitle}
+                  onChange={e => update({ jobTitle: e.target.value })}
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="contactEmail">Contact Email</Label>
-                  <Input
-                    id="contactEmail"
-                    type="email"
-                    value={formData.contactEmail}
-                    onChange={e =>
-                      updateFormData({ contactEmail: e.target.value })
-                    }
-                    placeholder="your.email@institution.edu"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="contactPhone">Phone (Optional)</Label>
-                  <Input
-                    id="contactPhone"
-                    value={formData.contactPhone}
-                    onChange={e =>
-                      updateFormData({ contactPhone: e.target.value })
-                    }
-                    placeholder="(555) 123-4567"
-                  />
-                </div>
+                <p className="text-xs text-muted-foreground">
+                  Shown with your name as your school&apos;s main contact.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -266,33 +209,32 @@ export function InstitutionAdminOnboarding({
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Building className="h-5 w-5" />
-                Institution Information
+                Your school
               </CardTitle>
-              <CardDescription>Tell us about your institution</CardDescription>
+              <CardDescription>
+                This creates your school on ProjectNest. Teachers and students
+                you invite will join it.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label htmlFor="institutionName">Institution Name</Label>
+              <div className="space-y-2">
+                <Label htmlFor="institutionName">School name</Label>
                 <Input
                   id="institutionName"
-                  value={formData.institutionName}
-                  onChange={e =>
-                    updateFormData({ institutionName: e.target.value })
-                  }
-                  placeholder="Enter your institution's name"
+                  placeholder="e.g. Lagos Animation Academy"
+                  value={data.institutionName}
+                  onChange={e => update({ institutionName: e.target.value })}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Institution Type</Label>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Type of school</Label>
                   <Select
-                    value={formData.institutionType}
-                    onValueChange={value =>
-                      updateFormData({ institutionType: value })
-                    }
+                    value={data.institutionType}
+                    onValueChange={value => update({ institutionType: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Choose one" />
                     </SelectTrigger>
                     <SelectContent>
                       {INSTITUTION_TYPES.map(type => (
@@ -303,16 +245,14 @@ export function InstitutionAdminOnboarding({
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <Label>Institution Size</Label>
+                <div className="space-y-2">
+                  <Label>Number of students</Label>
                   <Select
-                    value={formData.institutionSize}
-                    onValueChange={value =>
-                      updateFormData({ institutionSize: value })
-                    }
+                    value={data.institutionSize}
+                    onValueChange={value => update({ institutionSize: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select size" />
+                      <SelectValue placeholder="Roughly" />
                     </SelectTrigger>
                     <SelectContent>
                       {INSTITUTION_SIZES.map(size => (
@@ -324,6 +264,38 @@ export function InstitutionAdminOnboarding({
                   </Select>
                 </div>
               </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="contactEmail">Contact email</Label>
+                  <Input
+                    id="contactEmail"
+                    type="email"
+                    value={data.contactEmail}
+                    onChange={e => update({ contactEmail: e.target.value })}
+                  />
+                  {!emailOk && (
+                    <p className="text-xs text-red-600">
+                      Enter a valid email address.
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="contactPhone">
+                    Contact phone{' '}
+                    <span className="text-muted-foreground">(optional)</span>
+                  </Label>
+                  <Input
+                    id="contactPhone"
+                    type="tel"
+                    value={data.contactPhone}
+                    onChange={e => update({ contactPhone: e.target.value })}
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                The contact details are kept on your school&apos;s record so the
+                programme organiser knows who to reach.
+              </p>
             </CardContent>
           </Card>
         );
@@ -333,216 +305,173 @@ export function InstitutionAdminOnboarding({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Departments & Structure
+                <Layers className="h-5 w-5" />
+                Departments
               </CardTitle>
               <CardDescription>
-                Which departments will you be managing?
+                Pick the departments your school has. They&apos;re created for
+                you, and you can add or remove them later on the Departments
+                page. You can also skip this.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <Label>Departments (Select all that apply)</Label>
-                <div className="grid grid-cols-2 gap-2 mt-2 max-h-60 overflow-y-auto">
-                  {COMMON_DEPARTMENTS.map(department => (
-                    <div
-                      key={department}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={department}
-                        checked={formData.departments.includes(department)}
-                        onCheckedChange={() => toggleDepartment(department)}
-                      />
-                      <Label
-                        htmlFor={department}
-                        className="text-sm font-normal"
-                      >
-                        {department}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {SUGGESTED_DEPARTMENTS.map(name => (
+                  <label
+                    key={name}
+                    className="flex cursor-pointer items-center gap-2 text-sm"
+                  >
+                    <Checkbox
+                      checked={data.departments.includes(name)}
+                      onCheckedChange={() => toggleDepartment(name)}
+                    />
+                    {name}
+                  </label>
+                ))}
               </div>
-            </CardContent>
-          </Card>
-        );
-
-      case 3:
-        return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="h-5 w-5" />
-                Administrative Role
-              </CardTitle>
-              <CardDescription>
-                What are your key responsibilities?
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Management Experience</Label>
-                <Select
-                  value={formData.managementExperience}
-                  onValueChange={value =>
-                    updateFormData({ managementExperience: value })
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select your experience level" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {MANAGEMENT_EXPERIENCE.map(level => (
-                      <SelectItem key={level} value={level}>
-                        {level}
-                      </SelectItem>
+              <div className="space-y-2">
+                <Label htmlFor="customDepartment">Add another</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="customDepartment"
+                    value={customDepartment}
+                    maxLength={100}
+                    onChange={e => setCustomDepartment(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addCustomDepartment();
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addCustomDepartment}
+                    disabled={!customDepartment.trim()}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+                {customDepartments.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {customDepartments.map(name => (
+                      <span
+                        key={name}
+                        className="flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm"
+                      >
+                        {name}
+                        <button
+                          type="button"
+                          onClick={() => toggleDepartment(name)}
+                          aria-label={`Remove ${name}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
                     ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Key Responsibilities (Select all that apply)</Label>
-                <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
-                  {ADMIN_RESPONSIBILITIES.map(responsibility => (
-                    <div
-                      key={responsibility}
-                      className="flex items-center space-x-2"
-                    >
-                      <Checkbox
-                        id={responsibility}
-                        checked={formData.responsibilities.includes(
-                          responsibility
-                        )}
-                        onCheckedChange={() =>
-                          toggleResponsibility(responsibility)
-                        }
-                      />
-                      <Label
-                        htmlFor={responsibility}
-                        className="text-sm font-normal"
-                      >
-                        {responsibility}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
         );
 
-      case 4:
+      default:
         return (
           <Card>
             <CardHeader>
-              <CardTitle>Administrative Priorities</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                Ready to create your school
+              </CardTitle>
               <CardDescription>
-                What are your main goals for this platform?
+                Check the details. You can change departments later.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <Label>Top Priorities (Select your main goals)</Label>
-                <div className="space-y-2 mt-2 max-h-48 overflow-y-auto">
-                  {ADMIN_PRIORITIES.map(priority => (
-                    <div key={priority} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={priority}
-                        checked={formData.priorities.includes(priority)}
-                        onCheckedChange={() => togglePriority(priority)}
-                      />
-                      <Label htmlFor={priority} className="text-sm font-normal">
-                        {priority}
-                      </Label>
-                    </div>
-                  ))}
+            <CardContent>
+              <dl className="space-y-3 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">School</dt>
+                  <dd className="font-medium">
+                    {data.institutionName.trim()}
+                    {data.institutionType && ` · ${data.institutionType}`}
+                    {data.institutionSize && ` · ${data.institutionSize}`}
+                  </dd>
                 </div>
-              </div>
-              <div className="bg-purple-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">What&apos;s Next?</h4>
-                <ul className="text-sm space-y-1">
-                  <li>• Set up your institution profile</li>
-                  <li>• Create and manage departments</li>
-                  <li>• Invite faculty and staff</li>
-                  <li>• Configure system settings</li>
-                  <li>• Monitor institutional analytics</li>
-                </ul>
-              </div>
+                <div>
+                  <dt className="text-muted-foreground">Main contact</dt>
+                  <dd>
+                    {data.firstName} {data.lastName}
+                    {data.jobTitle && `, ${data.jobTitle}`}
+                    {data.contactEmail && ` · ${data.contactEmail}`}
+                    {data.contactPhone && ` · ${data.contactPhone}`}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Departments</dt>
+                  <dd>
+                    {data.departments.length
+                      ? data.departments.join(', ')
+                      : 'None yet'}
+                  </dd>
+                </div>
+              </dl>
+              <p className="mt-4 text-sm text-muted-foreground">
+                Next, your dashboard shows a teacher code for your staff and a
+                student code for your students.
+              </p>
             </CardContent>
           </Card>
         );
-
-      default:
-        return null;
     }
   };
 
-  const canProceed = () => {
-    switch (currentStep) {
-      case 0:
-        return (
-          formData.firstName.trim() &&
-          formData.lastName.trim() &&
-          formData.jobTitle.trim() &&
-          formData.contactEmail.trim()
-        );
-      case 1:
-        return (
-          formData.institutionName.trim() &&
-          formData.institutionType &&
-          formData.institutionSize
-        );
-      case 2:
-        return formData.departments.length > 0;
-      case 3:
-        return (
-          formData.managementExperience && formData.responsibilities.length > 0
-        );
-      case 4:
-        return true; // Priorities are optional
-      default:
-        return false;
-    }
-  };
+  const last = step === STEPS.length - 1;
 
   return (
     <div className="min-h-screen bg-gray-50 py-12">
       <div className="max-w-2xl mx-auto px-4">
-        {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Administrator Setup</span>
+            <span className="text-sm font-medium">{STEPS[step]}</span>
             <span className="text-sm text-gray-500">
-              Step {currentStep + 1} of {totalSteps}
+              Step {step + 1} of {STEPS.length}
             </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${((currentStep + 1) / totalSteps) * 100}%` }}
+              style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
             />
           </div>
         </div>
 
         {renderStep()}
 
-        {/* Navigation buttons */}
         <div className="flex justify-between mt-6">
-          {currentStep > 0 && (
-            <Button variant="outline" onClick={prevStep}>
+          {step > 0 ? (
+            <Button
+              variant="outline"
+              onClick={() => setStep(step - 1)}
+              disabled={saving}
+            >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Previous
             </Button>
+          ) : (
+            <div />
           )}
-          {currentStep === 0 && <div></div>}
-
           <Button
-            onClick={currentStep === totalSteps - 1 ? handleComplete : nextStep}
-            disabled={!canProceed()}
+            onClick={() => (last ? onComplete(data) : setStep(step + 1))}
+            disabled={!canProceed() || saving}
           >
-            {currentStep === totalSteps - 1 ? 'Complete Setup' : 'Next'}
-            <ArrowRight className="h-4 w-4 ml-2" />
+            {last
+              ? saving
+                ? 'Creating your school...'
+                : 'Create my school'
+              : 'Next'}
+            {!last && <ArrowRight className="h-4 w-4 ml-2" />}
           </Button>
         </div>
       </div>
