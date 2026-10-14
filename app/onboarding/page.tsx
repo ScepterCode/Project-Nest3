@@ -116,6 +116,30 @@ export default function OnboardingPage() {
         return;
       }
 
+      // School admins: create (or update) their school from their answers,
+      // including its departments, before onboarding is marked complete.
+      if (userRole === 'institution_admin') {
+        const { error: schoolError } = await supabase.rpc(
+          'set_up_my_institution',
+          {
+            p_name: onboardingData.institutionName,
+            p_type: onboardingData.institutionType || null,
+            p_size: onboardingData.institutionSize || null,
+            p_contact_name:
+              `${onboardingData.firstName ?? ''} ${onboardingData.lastName ?? ''}`.trim() ||
+              null,
+            p_contact_title: onboardingData.jobTitle || null,
+            p_contact_email: onboardingData.contactEmail || null,
+            p_contact_phone: onboardingData.contactPhone || null,
+            p_departments: onboardingData.departments ?? [],
+          }
+        );
+        if (schoolError) {
+          toast.error(`Could not create your school: ${schoolError.message}`);
+          return;
+        }
+      }
+
       // Complete onboarding with user data (role should already be set from registration)
       const { error: updateError } = await supabase.from('users').upsert(
         {
@@ -244,6 +268,8 @@ export default function OnboardingPage() {
           <InstitutionAdminOnboarding
             onComplete={handleOnboardingComplete}
             userName={userName}
+            userEmail={user?.email ?? ''}
+            saving={saving}
           />
         );
       default:

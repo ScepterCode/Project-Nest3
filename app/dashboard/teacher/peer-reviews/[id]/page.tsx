@@ -31,6 +31,7 @@ import {
   Download,
 } from 'lucide-react';
 import { Label } from 'recharts';
+import { downloadCsv, slug } from '@/lib/csv';
 
 interface PeerReviewAssignment {
   id: string;
@@ -81,6 +82,62 @@ export default function PeerReviewManagementPage() {
   const [studentProgress, setStudentProgress] = useState<StudentProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [openReview, setOpenReview] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const list = (value: unknown) =>
+    Array.isArray(value) ? value.filter(Boolean).join('; ') : '';
+
+  const exportResults = () => {
+    if (!peerReviewAssignment) return;
+    downloadCsv(`peer-review-${slug(peerReviewAssignment.title)}.csv`, [
+      [peerReviewAssignment.title, peerReviewAssignment.class_name],
+      [],
+      ['Reviews'],
+      [
+        'Reviewer',
+        'Reviewed student',
+        'Status',
+        'Rating (out of 5)',
+        'Minutes spent',
+        'Submitted',
+        'Flagged',
+        'Overall comments',
+        'Strengths',
+        'Improvements',
+      ],
+      ...reviews.map(r => [
+        r.reviewer_name,
+        r.reviewee_name,
+        r.status,
+        r.overall_rating || '',
+        r.time_spent || '',
+        r.submitted_at ? r.submitted_at.slice(0, 10) : '',
+        r.is_flagged ? 'yes' : '',
+        r.feedback?.overall_comments ?? '',
+        list(r.feedback?.strengths),
+        list(r.feedback?.improvements),
+      ]),
+      [],
+      ['Students'],
+      [
+        'Student',
+        'Reviews assigned',
+        'Reviews completed',
+        'Reviews received',
+        'Average rating given',
+        'Average rating received',
+      ],
+      ...studentProgress.map(st => [
+        st.student_name,
+        st.reviews_assigned,
+        st.reviews_completed,
+        st.reviews_received,
+        st.average_rating_given ? st.average_rating_given.toFixed(1) : '',
+        st.average_rating_received ? st.average_rating_received.toFixed(1) : '',
+      ]),
+    ]);
+  };
 
   useEffect(() => {
     if (user && params.id) {
@@ -410,16 +467,79 @@ export default function PeerReviewManagementPage() {
             <Badge variant={getStatusColor(peerReviewAssignment.status)}>
               {peerReviewAssignment.status}
             </Badge>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportResults}
+              disabled={reviews.length === 0 && studentProgress.length === 0}
+            >
               <Download className="h-4 w-4 mr-2" />
               Export Results
             </Button>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowSettings(v => !v)}
+              aria-expanded={showSettings}
+            >
               <Settings className="h-4 w-4 mr-2" />
-              Settings
+              Review settings
             </Button>
           </div>
         </div>
+
+        {showSettings && (
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-base">Review settings</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
+                <div>
+                  <dt className="text-gray-500">Review type</dt>
+                  <dd className="capitalize">
+                    {(peerReviewAssignment.review_type || '').replace(
+                      /_/g,
+                      ' '
+                    ) || 'Not set'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Reviews per student</dt>
+                  <dd>
+                    {peerReviewAssignment.reviews_per_student ?? 'Not set'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Opens</dt>
+                  <dd>
+                    {peerReviewAssignment.start_date
+                      ? new Date(
+                          peerReviewAssignment.start_date
+                        ).toLocaleString()
+                      : 'Not set'}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-gray-500">Closes</dt>
+                  <dd>
+                    {peerReviewAssignment.end_date
+                      ? new Date(peerReviewAssignment.end_date).toLocaleString()
+                      : 'Not set'}
+                  </dd>
+                </div>
+                {peerReviewAssignment.instructions && (
+                  <div className="sm:col-span-2">
+                    <dt className="text-gray-500">Instructions</dt>
+                    <dd className="whitespace-pre-line">
+                      {peerReviewAssignment.instructions}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -664,12 +784,26 @@ export default function PeerReviewManagementPage() {
                       </div>
 
                       <div className="flex items-center space-x-2 ml-4">
-                        <Button variant="outline" size="sm">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            setOpenReview(id =>
+                              id === review.id ? null : review.id
+                            )
+                          }
+                          aria-expanded={openReview === review.id}
+                        >
                           <Eye className="h-4 w-4 mr-2" />
-                          View Details
+                          {openReview === review.id
+                            ? 'Hide Details'
+                            : 'View Details'}
                         </Button>
                       </div>
                     </div>
+                    {openReview === review.id && (
+                      <ReviewDetails feedback={review.feedback} />
+                    )}
                   </CardContent>
                 </Card>
               ))}
@@ -775,6 +909,57 @@ export default function PeerReviewManagementPage() {
           </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+function ReviewDetails({ feedback }: { feedback: any }) {
+  const strengths: string[] = Array.isArray(feedback?.strengths)
+    ? feedback.strengths.filter(Boolean)
+    : [];
+  const improvements: string[] = Array.isArray(feedback?.improvements)
+    ? feedback.improvements.filter(Boolean)
+    : [];
+  const specific = Object.entries(feedback?.specific_feedback ?? {}).filter(
+    ([, text]) => Boolean(text)
+  );
+
+  if (!strengths.length && !improvements.length && !specific.length) {
+    return (
+      <p className="mt-4 border-t pt-4 text-sm text-gray-500">
+        No further written feedback in this review.
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-4 space-y-3 border-t pt-4 text-sm">
+      {strengths.length > 0 && (
+        <div>
+          <p className="font-medium">Strengths</p>
+          <ul className="ml-5 list-disc text-gray-700">
+            {strengths.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {improvements.length > 0 && (
+        <div>
+          <p className="font-medium">To improve</p>
+          <ul className="ml-5 list-disc text-gray-700">
+            {improvements.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {specific.map(([criterion, text]) => (
+        <div key={criterion}>
+          <p className="font-medium">{criterion}</p>
+          <p className="whitespace-pre-line text-gray-700">{String(text)}</p>
+        </div>
+      ))}
     </div>
   );
 }

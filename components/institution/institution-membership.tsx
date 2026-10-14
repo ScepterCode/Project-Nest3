@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Building2, Check, Copy, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -22,6 +23,14 @@ export interface MyInstitution {
   join_code: string | null;
   /** Teacher sign-up code; only returned to the institution's admins. */
   staff_code?: string | null;
+  // School details from admin onboarding; only returned to its admins.
+  institution_type?: string | null;
+  size_band?: string | null;
+  contact_name?: string | null;
+  contact_title?: string | null;
+  contact_email?: string | null;
+  contact_phone?: string | null;
+  department_count?: number;
 }
 
 async function fetchMyInstitution(): Promise<MyInstitution | null> {
@@ -168,6 +177,7 @@ function JoinCodeCard({
           <Building2 className="h-5 w-5" />
           {institution.name}
         </CardTitle>
+        <SchoolDetails institution={institution} />
         <CardDescription>
           Share each code only with the people it&apos;s for. Students who join
           a class taught by one of your teachers are added automatically.
@@ -190,6 +200,39 @@ function JoinCodeCard({
         />
       </CardContent>
     </Card>
+  );
+}
+
+function SchoolDetails({ institution }: { institution: MyInstitution }) {
+  const about = [institution.institution_type, institution.size_band]
+    .filter(Boolean)
+    .join(' · ');
+  const contact = [
+    [institution.contact_name, institution.contact_title]
+      .filter(Boolean)
+      .join(', '),
+    institution.contact_email,
+    institution.contact_phone,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const departments = institution.department_count ?? 0;
+  if (!about && !contact && departments === 0) return null;
+  return (
+    <div className="space-y-1 text-sm text-gray-700">
+      {about && <p>{about}</p>}
+      {contact && <p>Main contact: {contact}</p>}
+      <p>
+        {departments === 1 ? '1 department' : `${departments} departments`}
+        {' · '}
+        <Link
+          href="/dashboard/institution/departments"
+          className="underline underline-offset-4"
+        >
+          Manage departments
+        </Link>
+      </p>
+    </div>
   );
 }
 

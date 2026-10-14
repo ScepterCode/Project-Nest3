@@ -6,6 +6,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { DatabaseStatusBanner } from '@/components/database-status-banner';
 import { RoleGate } from '@/components/ui/permission-gate';
+import { downloadCsv } from '@/lib/csv';
+import { errorMessage, toast } from '@/lib/toast';
 
 interface InstitutionStats {
   totalUsers: number;
@@ -97,6 +99,78 @@ export default function InstitutionReportsPage() {
     }
   };
 
+  const [exporting, setExporting] = useState(false);
+
+  // Totals plus the member and class lists behind them, as one CSV. RLS
+  // limits every query to the admin's own institution.
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const supabase = createClient();
+      const [members, classes] = await Promise.all([
+        supabase
+          .from('users')
+          .select('id, first_name, last_name, email, role, created_at')
+          .not('institution_id', 'is', null)
+          .order('role')
+          .order('last_name'),
+        supabase
+          .from('classes')
+          .select(
+            'name, code, teacher_id, enrollment_count, status, created_at'
+          )
+          .order('name'),
+      ]);
+      if (members.error) throw members.error;
+      if (classes.error) throw classes.error;
+
+      const names = new Map(
+        (members.data ?? []).map(m => [
+          m.id,
+          `${m.first_name ?? ''} ${m.last_name ?? ''}`.trim() || m.email,
+        ])
+      );
+      const date = (d: string | null) => (d ? d.slice(0, 10) : '');
+      const today = new Date().toISOString().slice(0, 10);
+      downloadCsv(`institution-report-${today}.csv`, [
+        ['Institution report', today],
+        [],
+        ['Totals'],
+        ['Members', institutionStats.totalUsers],
+        ['Teachers', institutionStats.totalTeachers],
+        ['Students', institutionStats.totalStudents],
+        ['Admins', institutionStats.totalAdmins],
+        ['Classes', institutionStats.totalClasses],
+        ['Assignments', institutionStats.totalAssignments],
+        [],
+        ['Members'],
+        ['First name', 'Last name', 'Email', 'Role', 'Joined'],
+        ...(members.data ?? []).map(m => [
+          m.first_name,
+          m.last_name,
+          m.email,
+          m.role,
+          date(m.created_at),
+        ]),
+        [],
+        ['Classes'],
+        ['Class', 'Code', 'Teacher', 'Students', 'Status', 'Created'],
+        ...(classes.data ?? []).map(c => [
+          c.name,
+          c.code,
+          names.get(c.teacher_id) ?? '',
+          c.enrollment_count ?? 0,
+          c.status,
+          date(c.created_at),
+        ]),
+      ]);
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not export the report'));
+    } finally {
+      setExporting(false);
+    }
+  };
+
   const handleRefresh = () => {
     if (user) {
       fetchReportsData();
@@ -156,7 +230,13 @@ export default function InstitutionReportsPage() {
               <Button variant="outline" onClick={handleRefresh}>
                 Refresh Data
               </Button>
-              <Button variant="outline">Export Report</Button>
+              <Button
+                variant="outline"
+                onClick={handleExport}
+                disabled={exporting}
+              >
+                {exporting ? 'Exporting...' : 'Export Report'}
+              </Button>
             </div>
           </div>
 
