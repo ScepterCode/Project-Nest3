@@ -135,7 +135,7 @@ describe('OnboardingGuard', () => {
     }
   });
 
-  it('maps roles to dashboards (roles without a dashboard go to their profile)', () => {
+  it('maps roles to dashboards (department admins, with no dashboard yet, go to their profile)', () => {
     expect(OnboardingGuard.getDashboardPath('student')).toBe(
       '/dashboard/student'
     );
@@ -149,7 +149,7 @@ describe('OnboardingGuard', () => {
       '/dashboard/profile'
     );
     expect(OnboardingGuard.getDashboardPath('system_admin')).toBe(
-      '/dashboard/profile'
+      '/dashboard/platform'
     );
     expect(OnboardingGuard.getDashboardPath()).toBe('/dashboard');
     expect(OnboardingGuard.getDashboardPath('unknown_role')).toBe('/dashboard');

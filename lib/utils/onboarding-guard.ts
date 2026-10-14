@@ -129,9 +129,10 @@ export class OnboardingGuard {
         return '/dashboard/teacher';
       case 'institution_admin':
         return '/dashboard/institution';
-      case 'department_admin':
       case 'system_admin':
-        // No dashboards for these roles yet.
+        return '/dashboard/platform';
+      case 'department_admin':
+        // No dashboard for this role yet.
         return '/dashboard/profile';
       default:
         return '/dashboard';
