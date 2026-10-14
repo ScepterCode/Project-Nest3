@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
@@ -19,11 +19,11 @@ export default function Dashboard() {
     // CRITICAL SECURITY FIX: Role-based routing
     if (user && !loading && !redirecting) {
       setRedirecting(true);
-      
+
       const redirectToRoleDashboard = async () => {
         try {
           const supabase = createClient();
-          
+
           // Get user role from database (not cached)
           const { data: profile, error } = await supabase
             .from('users')
@@ -32,12 +32,20 @@ export default function Dashboard() {
             .single();
 
           if (error || !profile) {
-            console.error('SECURITY: Cannot determine user role, forcing logout');
+            console.error(
+              'SECURITY: Cannot determine user role, forcing logout'
+            );
             await logout();
             return;
           }
 
-          console.log('Dashboard: Redirecting user', profile.email, 'to', profile.role, 'dashboard');
+          console.log(
+            'Dashboard: Redirecting user',
+            profile.email,
+            'to',
+            profile.role,
+            'dashboard'
+          );
 
           // Redirect based on role
           switch (profile.role) {
@@ -50,12 +58,22 @@ export default function Dashboard() {
             case 'institution_admin':
               router.replace('/dashboard/institution');
               break;
+            case 'system_admin':
+              router.replace('/dashboard/platform');
+              break;
             default:
-              console.error('SECURITY: Unknown role', profile.role, 'forcing logout');
+              console.error(
+                'SECURITY: Unknown role',
+                profile.role,
+                'forcing logout'
+              );
               await logout();
           }
         } catch (error) {
-          console.error('SECURITY: Error determining user role, forcing logout:', error);
+          console.error(
+            'SECURITY: Error determining user role, forcing logout:',
+            error
+          );
           await logout();
         }
       };
@@ -99,11 +117,13 @@ export default function Dashboard() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome, {getUserDisplayName()}!</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Welcome, {getUserDisplayName()}!
+          </h2>
           <p className="text-gray-600 mb-6">
             Welcome to your dashboard. Choose your role to get started:
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <button
               onClick={() => router.push('/dashboard/student')}
@@ -113,11 +133,13 @@ export default function Dashboard() {
                 <div className="text-3xl mr-4">👨‍🎓</div>
                 <div>
                   <h3 className="font-semibold">Student Dashboard</h3>
-                  <p className="text-gray-600 text-sm">Access classes, assignments, and grades</p>
+                  <p className="text-gray-600 text-sm">
+                    Access classes, assignments, and grades
+                  </p>
                 </div>
               </div>
             </button>
-            
+
             <button
               onClick={() => router.push('/dashboard/teacher')}
               className="p-6 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
@@ -126,16 +148,21 @@ export default function Dashboard() {
                 <div className="text-3xl mr-4">👨‍🏫</div>
                 <div>
                   <h3 className="font-semibold">Teacher Dashboard</h3>
-                  <p className="text-gray-600 text-sm">Manage classes, create assignments</p>
+                  <p className="text-gray-600 text-sm">
+                    Manage classes, create assignments
+                  </p>
                 </div>
               </div>
             </button>
           </div>
 
           <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <h3 className="font-semibold text-blue-800 mb-2">💡 Getting Started</h3>
+            <h3 className="font-semibold text-blue-800 mb-2">
+              💡 Getting Started
+            </h3>
             <p className="text-blue-700 text-sm">
-              Select the dashboard that matches your role to access the appropriate features and tools.
+              Select the dashboard that matches your role to access the
+              appropriate features and tools.
             </p>
           </div>
         </div>

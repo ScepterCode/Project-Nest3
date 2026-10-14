@@ -38,7 +38,10 @@ CREATE TABLE IF NOT EXISTS auth.users (
   role text,
   email text,
   raw_user_meta_data jsonb,
-  created_at timestamptz DEFAULT now()
+  created_at timestamptz DEFAULT now(),
+  last_sign_in_at timestamptz,
+  email_confirmed_at timestamptz,
+  banned_until timestamptz
 );
 
 CREATE OR REPLACE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
@@ -66,6 +69,7 @@ CREATE TABLE IF NOT EXISTS storage.objects (
   bucket_id text REFERENCES storage.buckets(id),
   name text,
   owner uuid,
+  metadata jsonb,
   created_at timestamptz DEFAULT now()
 );
 ALTER TABLE storage.objects ENABLE ROW LEVEL SECURITY;

@@ -4,7 +4,7 @@ export const ROLE_DASHBOARD: Record<string, string> = {
   teacher: '/dashboard/teacher',
   institution_admin: '/dashboard/institution',
   department_admin: '/dashboard/profile',
-  system_admin: '/dashboard/profile',
+  system_admin: '/dashboard/platform',
 };
 
 export function dashboardFor(role: string | null | undefined): string {
