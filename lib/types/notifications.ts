@@ -10,6 +10,7 @@ export type NotificationType =
   | 'enrollment_approved'
   | 'enrollment_declined'
   | 'enrollment_requested'
+  | 'revision_requested'
   | 'role_changed'
   | 'system_message';
 

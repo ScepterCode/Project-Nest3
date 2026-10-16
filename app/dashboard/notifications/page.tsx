@@ -198,6 +198,8 @@ export default function NotificationsPage() {
         return '🙋';
       case 'enrollment_declined':
         return '✖️';
+      case 'revision_requested':
+        return '✏️';
       case 'role_changed':
         return '👤';
       case 'system_message':
@@ -305,6 +307,9 @@ export default function NotificationsPage() {
                     </SelectItem>
                     <SelectItem value="class_announcement">
                       Announcements
+                    </SelectItem>
+                    <SelectItem value="revision_requested">
+                      Changes Requested
                     </SelectItem>
                     <SelectItem value="enrollment_requested">
                       Join Requests

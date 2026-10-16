@@ -14,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  AlertCircle,
   ArrowLeft,
   Calendar,
   FileText,
@@ -39,7 +40,7 @@ interface Submission {
   file_url?: string;
   link_url?: string;
   submitted_at: string;
-  status: 'submitted' | 'graded';
+  status: 'draft' | 'submitted' | 'revision_requested' | 'graded';
   grade?: number;
   feedback?: string;
 }
@@ -184,7 +185,9 @@ export default function StudentAssignmentDetailPage({
   const status = submission
     ? submission.status === 'graded'
       ? 'graded'
-      : 'submitted'
+      : submission.status === 'revision_requested'
+        ? 'revision'
+        : 'submitted'
     : 'pending';
 
   return (
@@ -227,6 +230,18 @@ export default function StudentAssignmentDetailPage({
                 }
               >
                 Update Submission
+              </Button>
+            )}
+            {status === 'revision' && (
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  router.push(
+                    `/dashboard/student/assignments/${assignment.id}/submit`
+                  )
+                }
+              >
+                Revise and resubmit
               </Button>
             )}
             {status === 'graded' && (
@@ -308,6 +323,9 @@ export default function StudentAssignmentDetailPage({
                 {status === 'graded' && (
                   <Star className="h-5 w-5 mr-2 text-blue-500" />
                 )}
+                {status === 'revision' && (
+                  <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
+                )}
                 Submission Status
               </CardTitle>
             </CardHeader>
@@ -327,6 +345,11 @@ export default function StudentAssignmentDetailPage({
                   {status === 'graded' && (
                     <Badge variant="default" className="text-lg px-4 py-2">
                       Graded
+                    </Badge>
+                  )}
+                  {status === 'revision' && (
+                    <Badge variant="destructive" className="text-lg px-4 py-2">
+                      Changes requested
                     </Badge>
                   )}
                 </div>
@@ -351,7 +374,11 @@ export default function StudentAssignmentDetailPage({
 
                     {submission.feedback && (
                       <div>
-                        <h4 className="font-medium mb-1">Feedback:</h4>
+                        <h4 className="font-medium mb-1">
+                          {status === 'revision'
+                            ? 'What your teacher wants changed:'
+                            : 'Feedback:'}
+                        </h4>
                         <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
                           {submission.feedback}
                         </p>
@@ -384,6 +411,19 @@ export default function StudentAssignmentDetailPage({
                       }
                     >
                       Update Submission
+                    </Button>
+                  )}
+                  {status === 'revision' && (
+                    <Button
+                      className="w-full"
+                      variant="destructive"
+                      onClick={() =>
+                        router.push(
+                          `/dashboard/student/assignments/${assignment.id}/submit`
+                        )
+                      }
+                    >
+                      Revise and resubmit
                     </Button>
                   )}
                   {status === 'graded' && (

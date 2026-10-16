@@ -104,6 +104,8 @@ export function NotificationDropdown({
         return '🙋';
       case 'enrollment_declined':
         return '✖️';
+      case 'revision_requested':
+        return '✏️';
       case 'role_changed':
         return '👤';
       case 'system_message':

@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { statusBadgeVariant, statusLabel } from '@/lib/submission-status';
 import { selectInChunks } from '@/lib/supabase/chunked-in';
 import { one } from '@/lib/supabase/relations';
 import {
@@ -280,14 +281,10 @@ export default function AssignmentSubmissionsPage({
                         {new Date(submission.submitted_at).toLocaleString()}
                       </CardDescription>
                     </div>
-                    <Badge
-                      variant={
-                        submission.status === 'graded' ? 'default' : 'secondary'
-                      }
-                    >
+                    <Badge variant={statusBadgeVariant(submission.status)}>
                       {submission.status === 'graded'
                         ? `Graded (${submission.grade}/${assignment.points_possible})`
-                        : 'Submitted'}
+                        : statusLabel(submission.status)}
                     </Badge>
                   </div>
                 </CardHeader>
