@@ -45,6 +45,7 @@ export function RubricSelectorModal({
 }: RubricSelectorModalProps) {
   const [open, setOpen] = useState(false);
   const [rubrics, setRubrics] = useState<Rubric[]>([]);
+  const [templates, setTemplates] = useState<Rubric[]>([]);
   const [loading, setLoading] = useState(true);
   const [attaching, setAttaching] = useState<string | null>(null);
 
@@ -63,10 +64,12 @@ export function RubricSelectorModal({
       if (!response.ok)
         throw new Error(result.error || 'Failed to load rubrics');
       setRubrics(result.rubrics || []);
+      setTemplates(result.templates || []);
     } catch (error) {
       console.error('Error fetching rubrics:', error);
       toast.error(`Couldn't load your rubrics: ${errorMessage(error)}`);
       setRubrics([]);
+      setTemplates([]);
     } finally {
       setLoading(false);
     }
@@ -156,6 +159,39 @@ export function RubricSelectorModal({
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Programme templates: shared marking guides for every school */}
+          {!loading && templates.length > 0 && (
+            <div className="border-b pb-4">
+              <h3 className="font-medium">Programme templates</h3>
+              <p className="mb-2 text-sm text-gray-500">
+                Shared marking guides, so every school assesses the same way.
+              </p>
+              <div className="space-y-2">
+                {templates.map(template => (
+                  <div
+                    key={template.id}
+                    className="flex items-center justify-between gap-3 rounded-md border border-blue-200 bg-blue-50 p-3"
+                  >
+                    <div>
+                      <p className="font-medium">{template.name}</p>
+                      <p className="text-xs text-gray-600">
+                        {template.criteria_count} criteria •{' '}
+                        {template.max_points} max points
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => attachRubric(template)}
+                      disabled={attaching === template.id}
+                    >
+                      {attaching === template.id ? 'Attaching...' : 'Use'}
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Create New Rubric */}
           <div className="border-b pb-4">
             <h3 className="font-medium mb-2">Create New Rubric</h3>

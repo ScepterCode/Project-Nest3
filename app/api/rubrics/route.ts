@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, description, classId, isTemplate } = body;
+    const { name, description, classId, isTemplate, programmeTemplate } = body;
     const criteria: CriterionInput[] = Array.isArray(body.criteria)
       ? body.criteria
       : [];
@@ -147,6 +147,22 @@ export async function POST(request: NextRequest) {
     }
 
     // total_points is maintained by a trigger on criteria/levels.
+    // Platform admins publish straight to the programme library. The
+    // database refuses anyone else (and anyone without two-factor).
+    if (programmeTemplate === true) {
+      const { error: publishError } = await supabase.rpc(
+        'platform_set_programme_template',
+        { p_rubric: rubric.id, p_published: true }
+      );
+      if (publishError) {
+        await supabase.from('rubrics').delete().eq('id', rubric.id);
+        return NextResponse.json(
+          { error: publishError.message },
+          { status: 403 }
+        );
+      }
+    }
+
     const { data: saved } = await supabase
       .from('rubrics')
       .select('*')
@@ -201,6 +217,28 @@ export async function GET() {
       );
     }
 
+    // Programme templates published for every tutor (attaching one stores a
+    // snapshot on the assignment, like any rubric).
+    const { data: templateRows } = await supabase
+      .from('rubrics')
+      .select(
+        'id, name, description, total_points, usage_count, status, created_at, rubric_criteria(count)'
+      )
+      .eq('is_programme_template', true)
+      .neq('teacher_id', user.id)
+      .order('name');
+
+    const format = (rubric: any) => ({
+      id: rubric.id,
+      name: rubric.name,
+      description: rubric.description || '',
+      criteria_count: rubric.rubric_criteria?.[0]?.count ?? 0,
+      max_points: rubric.total_points || 0,
+      usage_count: rubric.usage_count || 0,
+      status: rubric.status,
+      created_at: rubric.created_at,
+    });
+
     const formattedRubrics =
       rubrics?.map((rubric: any) => ({
         id: rubric.id,
@@ -213,7 +251,10 @@ export async function GET() {
         created_at: rubric.created_at,
       })) || [];
 
-    return NextResponse.json({ rubrics: formattedRubrics });
+    return NextResponse.json({
+      rubrics: formattedRubrics,
+      templates: (templateRows ?? []).map(format),
+    });
   } catch (error) {
     console.error('Unexpected error in rubric fetch:', error);
     return NextResponse.json(

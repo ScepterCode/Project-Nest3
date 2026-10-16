@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import { formatBytes, normalizeLink, safeFileName } from '@/lib/materials';
 import { SUBMISSION_ACCEPT, submissionFileType } from '@/lib/submissions';
+import { statusBadgeVariant, statusLabel } from '@/lib/submission-status';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -47,6 +48,8 @@ interface ExistingSubmission {
   link_url?: string;
   submitted_at: string;
   status: string;
+  feedback?: string | null;
+  revision_count?: number;
 }
 
 export default function SubmitAssignmentPage() {
@@ -118,7 +121,9 @@ export default function SubmitAssignmentPage() {
       // Check for existing submission
       const { data: submissionData } = await supabase
         .from('submissions')
-        .select('id, content, file_url, link_url, submitted_at, status')
+        .select(
+          'id, content, file_url, link_url, submitted_at, status, feedback, revision_count'
+        )
         .eq('assignment_id', assignmentId)
         .eq('student_id', user.id)
         .single();
@@ -262,8 +267,14 @@ export default function SubmitAssignmentPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             type: 'assignment_submitted',
-            title: 'New Assignment Submission',
-            message: `A student has submitted "${assignment?.title}"`,
+            title:
+              existingSubmission?.status === 'revision_requested'
+                ? 'Revised work handed in'
+                : 'New Assignment Submission',
+            message:
+              existingSubmission?.status === 'revision_requested'
+                ? `A student resubmitted "${assignment?.title}" after your requested changes`
+                : `A student has submitted "${assignment?.title}"`,
             priority: 'medium',
             target_user_id: assignment?.teacher_id,
             action_url: `/dashboard/teacher/assignments/${assignmentId}/submissions`,
@@ -375,10 +386,8 @@ export default function SubmitAssignmentPage() {
             <div className="flex items-center gap-2">
               {isOverdue && <Badge variant="destructive">Overdue</Badge>}
               {existingSubmission && (
-                <Badge variant="default">
-                  {existingSubmission.status === 'submitted'
-                    ? 'Submitted'
-                    : 'Draft'}
+                <Badge variant={statusBadgeVariant(existingSubmission.status)}>
+                  {statusLabel(existingSubmission.status)}
                 </Badge>
               )}
             </div>
@@ -405,122 +414,158 @@ export default function SubmitAssignmentPage() {
         </CardContent>
       </Card>
 
-      {/* Submission Form */}
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {existingSubmission ? 'Update Submission' : 'Submit Assignment'}
-          </CardTitle>
-          <CardDescription>
-            Choose how you&apos;d like to submit your work
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {error && (
-              <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
-                {error}
-              </div>
+      {existingSubmission?.status === 'revision_requested' && (
+        <Card className="mb-6 border-red-200 bg-red-50">
+          <CardHeader>
+            <CardTitle className="text-base text-red-800">
+              Your teacher asked for changes
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-red-900">
+            {existingSubmission.feedback ? (
+              <p className="whitespace-pre-line">
+                {existingSubmission.feedback}
+              </p>
+            ) : (
+              <p>Revise your work and hand it in again.</p>
             )}
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Submission Type Tabs */}
-            <Tabs
-              value={submissionType}
-              onValueChange={value => setSubmissionType(value as any)}
-            >
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="text" className="flex items-center gap-2">
-                  <FileText className="h-4 w-4" />
-                  Text
-                </TabsTrigger>
-                <TabsTrigger value="file" className="flex items-center gap-2">
-                  <Upload className="h-4 w-4" />
-                  File
-                </TabsTrigger>
-                <TabsTrigger value="link" className="flex items-center gap-2">
-                  <Link className="h-4 w-4" />
-                  Link
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="text" className="space-y-4">
-                <div>
-                  <Label htmlFor="textContent">Your Submission</Label>
-                  <Textarea
-                    id="textContent"
-                    placeholder="Enter your assignment submission here..."
-                    value={textContent}
-                    onChange={e => setTextContent(e.target.value)}
-                    rows={10}
-                    className="mt-2"
-                  />
+      {existingSubmission?.status === 'graded' ? (
+        <Card>
+          <CardContent className="p-6 text-sm text-gray-700">
+            This work has been graded, so it can&apos;t be changed. See your
+            grade and feedback on the assignment page.
+          </CardContent>
+        </Card>
+      ) : (
+        /* Submission Form */
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {existingSubmission?.status === 'revision_requested'
+                ? 'Hand in your revised work'
+                : existingSubmission
+                  ? 'Update Submission'
+                  : 'Submit Assignment'}
+            </CardTitle>
+            <CardDescription>
+              Choose how you&apos;d like to submit your work
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+                  {error}
                 </div>
-              </TabsContent>
+              )}
 
-              <TabsContent value="file" className="space-y-4">
-                <div>
-                  <Label htmlFor="fileUpload">Upload file (up to 50 MB)</Label>
-                  <Input
-                    id="fileUpload"
-                    type="file"
-                    onChange={handleFileChange}
-                    className="mt-2"
-                    accept={SUBMISSION_ACCEPT}
-                  />
-                  {selectedFile && (
-                    <p className="text-sm text-gray-600 mt-2">
-                      Selected: {selectedFile.name} (
-                      {formatBytes(selectedFile.size)})
-                    </p>
-                  )}
-                  {existingSubmission?.file_url && !selectedFile && (
-                    <p className="text-sm text-green-600 mt-2">
-                      Current file uploaded. Select a new file to replace it.
-                    </p>
-                  )}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="link" className="space-y-4">
-                <div>
-                  <Label htmlFor="linkUrl">Link URL</Label>
-                  <Input
-                    id="linkUrl"
-                    type="text"
-                    inputMode="url"
-                    placeholder="https://youtu.be/... or a Google Drive link"
-                    value={linkUrl}
-                    onChange={e => setLinkUrl(e.target.value)}
-                    className="mt-2"
-                  />
-                  <p className="text-sm text-gray-500 mt-1">
-                    Link to your work: a YouTube, Vimeo or Google Drive video, a
-                    Google Doc, etc. Best for videos over 50 MB.
-                  </p>
-                </div>
-              </TabsContent>
-            </Tabs>
-
-            {/* Submit Button */}
-            <div className="flex gap-3">
-              <Button type="submit" disabled={submitting} className="flex-1">
-                {submitting
-                  ? 'Submitting...'
-                  : existingSubmission
-                    ? 'Update Submission'
-                    : 'Submit Assignment'}
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push('/dashboard/student/assignments')}
+              {/* Submission Type Tabs */}
+              <Tabs
+                value={submissionType}
+                onValueChange={value => setSubmissionType(value as any)}
               >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="text" className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Text
+                  </TabsTrigger>
+                  <TabsTrigger value="file" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    File
+                  </TabsTrigger>
+                  <TabsTrigger value="link" className="flex items-center gap-2">
+                    <Link className="h-4 w-4" />
+                    Link
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="text" className="space-y-4">
+                  <div>
+                    <Label htmlFor="textContent">Your Submission</Label>
+                    <Textarea
+                      id="textContent"
+                      placeholder="Enter your assignment submission here..."
+                      value={textContent}
+                      onChange={e => setTextContent(e.target.value)}
+                      rows={10}
+                      className="mt-2"
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="file" className="space-y-4">
+                  <div>
+                    <Label htmlFor="fileUpload">
+                      Upload file (up to 50 MB)
+                    </Label>
+                    <Input
+                      id="fileUpload"
+                      type="file"
+                      onChange={handleFileChange}
+                      className="mt-2"
+                      accept={SUBMISSION_ACCEPT}
+                    />
+                    {selectedFile && (
+                      <p className="text-sm text-gray-600 mt-2">
+                        Selected: {selectedFile.name} (
+                        {formatBytes(selectedFile.size)})
+                      </p>
+                    )}
+                    {existingSubmission?.file_url && !selectedFile && (
+                      <p className="text-sm text-green-600 mt-2">
+                        Current file uploaded. Select a new file to replace it.
+                      </p>
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="link" className="space-y-4">
+                  <div>
+                    <Label htmlFor="linkUrl">Link URL</Label>
+                    <Input
+                      id="linkUrl"
+                      type="text"
+                      inputMode="url"
+                      placeholder="https://youtu.be/... or a Google Drive link"
+                      value={linkUrl}
+                      onChange={e => setLinkUrl(e.target.value)}
+                      className="mt-2"
+                    />
+                    <p className="text-sm text-gray-500 mt-1">
+                      Link to your work: a YouTube, Vimeo or Google Drive video,
+                      a Google Doc, etc. Best for videos over 50 MB.
+                    </p>
+                  </div>
+                </TabsContent>
+              </Tabs>
+
+              {/* Submit Button */}
+              <div className="flex gap-3">
+                <Button type="submit" disabled={submitting} className="flex-1">
+                  {submitting
+                    ? 'Submitting...'
+                    : existingSubmission?.status === 'revision_requested'
+                      ? 'Resubmit'
+                      : existingSubmission
+                        ? 'Update Submission'
+                        : 'Submit Assignment'}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.push('/dashboard/student/assignments')}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -26,7 +26,7 @@ interface Assignment {
   title: string;
   description: string;
   due_date: string;
-  status: 'pending' | 'submitted' | 'graded';
+  status: 'pending' | 'submitted' | 'revision' | 'graded';
   class_name: string;
   class_id: string;
   points_possible: number;
@@ -169,10 +169,13 @@ export default function StudentAssignmentsPage() {
             s => s.assignment_id === assignment.id
           );
 
-          let status: 'pending' | 'submitted' | 'graded' = 'pending';
+          let status: 'pending' | 'submitted' | 'revision' | 'graded' =
+            'pending';
 
           if (submission) {
-            if (submission.grade !== null) {
+            if (submission.status === 'revision_requested') {
+              status = 'revision';
+            } else if (submission.grade !== null) {
               status = 'graded';
             } else if (submission.submitted_at) {
               status = 'submitted';
@@ -216,6 +219,13 @@ export default function StudentAssignmentsPage() {
     }
 
     switch (status) {
+      case 'revision':
+        return (
+          <Badge variant="destructive" className="flex items-center gap-1">
+            <AlertCircle className="h-3 w-3" />
+            Changes requested
+          </Badge>
+        );
       case 'graded':
         return (
           <Badge
@@ -439,6 +449,19 @@ export default function StudentAssignmentsPage() {
                           variant="secondary"
                         >
                           Update Submission
+                        </Button>
+                      )}
+                      {assignment.status === 'revision' && (
+                        <Button
+                          onClick={() =>
+                            router.push(
+                              `/dashboard/student/assignments/${assignment.id}/submit`
+                            )
+                          }
+                          size="sm"
+                          variant="destructive"
+                        >
+                          Revise and resubmit
                         </Button>
                       )}
                       {assignment.status === 'graded' && (

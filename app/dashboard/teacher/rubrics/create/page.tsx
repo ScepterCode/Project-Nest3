@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -74,6 +74,11 @@ interface Class {
 
 export default function CreateRubricPage() {
   const router = useRouter();
+  // The same builder makes programme templates on the platform dashboard.
+  const programme = (usePathname() ?? '').startsWith('/dashboard/platform');
+  const listPath = programme
+    ? '/dashboard/platform/rubrics'
+    : '/dashboard/teacher/rubrics';
   const [activeTab, setActiveTab] = useState('create');
   const [rubricData, setRubricData] = useState({
     name: '',
@@ -336,6 +341,7 @@ export default function CreateRubricPage() {
           description: rubricData.description,
           classId: rubricData.classId || null,
           isTemplate: rubricData.isTemplate,
+          programmeTemplate: programme,
           criteria: criteria.map(criterion => ({
             name: criterion.name,
             description: criterion.description,
@@ -354,7 +360,7 @@ export default function CreateRubricPage() {
       }
 
       toast.success('Rubric created successfully!');
-      router.push('/dashboard/teacher/rubrics');
+      router.push(listPath);
     } catch (error) {
       console.error('Error creating rubric:', error);
       toast.error(`Couldn't create the rubric: ${errorMessage(error)}`);
@@ -432,9 +438,13 @@ export default function CreateRubricPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Create Rubric</h1>
+          <h1 className="text-3xl font-bold">
+            {programme ? 'New programme template' : 'Create Rubric'}
+          </h1>
           <p className="text-gray-600">
-            Design a comprehensive grading rubric for your assignments
+            {programme
+              ? 'Published for every tutor at every school as soon as you save it'
+              : 'Design a comprehensive grading rubric for your assignments'}
           </p>
         </div>
         <div className="flex gap-2">

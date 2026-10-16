@@ -4,6 +4,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, use } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { statusBadgeVariant } from '@/lib/submission-status';
 import { selectInChunks } from '@/lib/supabase/chunked-in';
 import {
   Card,
@@ -32,7 +33,7 @@ import {
 } from 'lucide-react';
 import { RubricSelectorModal } from '@/components/rubric-selector-modal';
 
-import { confirmAction, toast } from '@/lib/toast';
+import { confirmAction, errorMessage, toast } from '@/lib/toast';
 import { gradePercent, rubricGradePoints } from '@/lib/grades';
 interface Assignment {
   id: string;
@@ -52,9 +53,10 @@ interface Submission {
   file_url?: string;
   link_url?: string;
   submitted_at: string;
-  status: 'submitted' | 'graded';
+  status: 'draft' | 'submitted' | 'revision_requested' | 'graded';
   grade?: number;
   feedback?: string;
+  revision_count?: number;
 }
 
 interface SubmissionStats {
@@ -184,7 +186,7 @@ export default function GradeSubmissionsPage({
       const { data: submissionsData, error: submissionsError } = await supabase
         .from('submissions')
         .select(
-          'id, student_id, content, file_url, link_url, submitted_at, status, grade, feedback'
+          'id, student_id, content, file_url, link_url, submitted_at, status, grade, feedback, revision_count'
         )
         .eq('assignment_id', resolvedParams.id)
         .order('submitted_at', { ascending: false });
@@ -343,6 +345,42 @@ export default function GradeSubmissionsPage({
       toast.error('Error removing rubric');
     } finally {
       setRemovingRubric(false);
+    }
+  };
+
+  // Ask the student to revise instead of grading. The database notifies
+  // them with this feedback and lets them resubmit.
+  const handleRequestRevision = async () => {
+    if (!selectedSubmission) return;
+    const note = feedback.trim();
+    if (!note) {
+      toast.error('Write what the student should change in the feedback box');
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await createClient()
+        .from('submissions')
+        .update({ status: 'revision_requested', feedback: note })
+        .eq('id', selectedSubmission.id);
+      if (error) throw error;
+      setSubmissions(prev =>
+        prev.map(sub =>
+          sub.id === selectedSubmission.id
+            ? { ...sub, status: 'revision_requested' as const, feedback: note }
+            : sub
+        )
+      );
+      setGrade('');
+      setFeedback('');
+      setRubricScores({});
+      setGradingPanelOpen(false);
+      setSelectedSubmission(null);
+      toast.success('Changes requested. The student has been notified.');
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not request changes'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -609,15 +647,15 @@ export default function GradeSubmissionsPage({
                         </div>
                         <div className="text-right">
                           <Badge
-                            variant={
-                              submission.status === 'graded'
-                                ? 'default'
-                                : 'secondary'
-                            }
+                            variant={statusBadgeVariant(submission.status)}
                           >
                             {submission.status === 'graded'
                               ? `${submission.grade}/${assignment.points_possible}`
-                              : 'Ungraded'}
+                              : submission.status === 'revision_requested'
+                                ? 'Changes requested'
+                                : (submission.revision_count ?? 0) > 0
+                                  ? `Resubmitted (round ${(submission.revision_count ?? 0) + 1})`
+                                  : 'Ungraded'}
                           </Badge>
                           <p className="text-xs text-gray-500 mt-1">
                             {new Date(
@@ -910,6 +948,14 @@ export default function GradeSubmissionsPage({
                       >
                         <Save className="h-4 w-4 mr-2" />
                         {saving ? 'Saving...' : 'Save Grade'}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={handleRequestRevision}
+                        disabled={saving}
+                        title="Send the work back with your feedback; the student can resubmit"
+                      >
+                        Request changes
                       </Button>
                       <Button
                         variant="outline"

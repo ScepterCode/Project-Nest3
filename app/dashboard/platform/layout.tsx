@@ -10,6 +10,7 @@ const TABS = [
   { href: '/dashboard/platform', label: 'Overview', exact: true },
   { href: '/dashboard/platform/schools', label: 'Schools' },
   { href: '/dashboard/platform/people', label: 'People' },
+  { href: '/dashboard/platform/rubrics', label: 'Rubric templates' },
   { href: '/dashboard/platform/invites', label: 'Admin invites' },
   { href: '/dashboard/platform/announcements', label: 'Announcements' },
   { href: '/dashboard/platform/health', label: 'Health' },
