@@ -2,6 +2,7 @@ import {
   BarChart,
   ClipboardCheck,
   ClipboardList,
+  Clapperboard,
   FileText,
   GraduationCap,
   Layers,
@@ -36,6 +37,12 @@ export const studentsRolegate = [
     href: '/dashboard/portfolio',
     icon: <Layers />,
   },
+  {
+    permission: 'assignments.read',
+    text: 'Projects',
+    href: '/dashboard/projects',
+    icon: <Clapperboard />,
+  },
 ];
 export const teachersRolegate = [
   {
@@ -67,6 +74,12 @@ export const teachersRolegate = [
     text: 'Rubrics',
     href: '/dashboard/teacher/rubrics',
     icon: <ClipboardList />,
+  },
+  {
+    permission: 'classes.manage',
+    text: 'Projects',
+    href: '/dashboard/projects',
+    icon: <Clapperboard />,
   },
 ];
 export const InstitutionRolegate = [

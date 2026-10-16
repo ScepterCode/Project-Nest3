@@ -15,6 +15,7 @@ export type NotificationType =
   | 'nomination_decided'
   | 'support_request'
   | 'support_reply'
+  | 'project_update'
   | 'role_changed'
   | 'system_message';
 

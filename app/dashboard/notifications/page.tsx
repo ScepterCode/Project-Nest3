@@ -206,6 +206,8 @@ export default function NotificationsPage() {
       case 'support_request':
       case 'support_reply':
         return '🛟';
+      case 'project_update':
+        return '🎬';
       case 'role_changed':
         return '👤';
       case 'system_message':
