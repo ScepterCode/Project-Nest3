@@ -74,7 +74,7 @@ describe('Sign-up success page', () => {
     render(<SignUpSuccessPage />);
     await waitFor(() =>
       expect(
-        screen.getByText('Redirecting to onboarding...')
+        screen.getByText('Taking you to set up your profile…')
       ).toBeInTheDocument()
     );
     await waitFor(() =>
@@ -98,16 +98,19 @@ describe('Sign-up success page', () => {
   it('asks unconfirmed users to confirm their email', () => {
     signedIn({ ...confirmedUser('student'), email_confirmed_at: null }, null);
     render(<SignUpSuccessPage />);
-    expect(screen.getByText('Thank you for signing up!')).toBeInTheDocument();
-    expect(screen.getByText('Check your email to confirm')).toBeInTheDocument();
-    expect(screen.getByText(/I've confirmed my email/i)).toBeInTheDocument();
+    expect(screen.getByText('Check your email')).toBeInTheDocument();
+    expect(screen.getByText(/works on any device/i)).toBeInTheDocument();
+    expect(screen.getByText(/I've confirmed: sign in/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: /send the confirmation email again/i })
+    ).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
   });
 
   it('shows a loading state while auth is resolving', () => {
     signedIn(null, null, true);
     render(<SignUpSuccessPage />);
-    expect(screen.getByText('Loading...')).toBeInTheDocument();
+    expect(screen.getByText('Loading…')).toBeInTheDocument();
   });
 });
 

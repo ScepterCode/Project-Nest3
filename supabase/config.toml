@@ -242,6 +242,21 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
+# Email links go to /auth/confirm with a one-time token hash, so they work on
+# any device. The hosted project needs the same templates pasted in the
+# dashboard (docs/accounts-and-codes.md).
+[auth.email.template.confirmation]
+subject = "Confirm your ProjectNest account"
+content_path = "./supabase/templates/confirmation.html"
+
+[auth.email.template.recovery]
+subject = "Reset your ProjectNest password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.email_change]
+subject = "Confirm your new email address"
+content_path = "./supabase/templates/email_change.html"
+
 # Uncomment to customize email template
 # [auth.email.template.invite]
 # subject = "You have been invited"
