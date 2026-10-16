@@ -13,6 +13,8 @@ export type NotificationType =
   | 'revision_requested'
   | 'nomination_submitted'
   | 'nomination_decided'
+  | 'support_request'
+  | 'support_reply'
   | 'role_changed'
   | 'system_message';
 
