@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { ExternalLink, Star } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -192,7 +193,12 @@ export function LearnerPortfolio({ studentId }: { studentId: string }) {
                 .join(' · ')}
             </CardDescription>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/dashboard/portfolio/${learner.id}/summary`}>
+                Progress summary
+              </Link>
+            </Button>
             <Badge>{STAGE_LABELS[learner.stage]}</Badge>
             {!isSelf && (
               <Badge

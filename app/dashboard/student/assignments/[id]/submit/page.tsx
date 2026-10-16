@@ -6,6 +6,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import { formatBytes, normalizeLink, safeFileName } from '@/lib/materials';
 import { SUBMISSION_ACCEPT, submissionFileType } from '@/lib/submissions';
+import { uploadFile } from '@/lib/storage/resumable-upload';
+import { checkLink } from '@/lib/link-check';
 import { statusBadgeVariant, statusLabel } from '@/lib/submission-status';
 import { Button } from '@/components/ui/button';
 import {
@@ -71,6 +73,17 @@ export default function SubmitAssignmentPage() {
   const [textContent, setTextContent] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [linkUrl, setLinkUrl] = useState('');
+  const [linkWarning, setLinkWarning] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
+  // Warn (without blocking) when a video link can't be opened by others.
+  const checkLinkUrl = async () => {
+    const link = normalizeLink(linkUrl);
+    setLinkWarning(null);
+    if (!link) return;
+    const result = await checkLink(link);
+    setLinkWarning(result.message);
+  };
 
   const assignmentId = params?.id as string;
 
@@ -206,22 +219,33 @@ export default function SubmitAssignmentPage() {
           return;
         }
         // Storage keys can't hold every character a file name can.
-        const fileName = `${user.id}/${assignmentId}/${Date.now()}-${safeFileName(selectedFile.name)}`;
+        // Stable for the same file, so a retry after a dropped connection
+        // resumes instead of starting a new upload.
+        const fileName = `${user.id}/${assignmentId}/${selectedFile.lastModified}-${selectedFile.size}-${safeFileName(selectedFile.name)}`;
 
-        const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('submissions')
-          .upload(fileName, selectedFile, {
+        // Large files go up in resumable chunks, so a dropped connection
+        // carries on instead of starting over.
+        setUploadProgress(0);
+        try {
+          await uploadFile({
+            bucket: 'submissions',
+            path: fileName,
+            file: selectedFile,
             contentType: checked.contentType,
+            onProgress: setUploadProgress,
           });
-
-        if (uploadError) {
-          setError(`Failed to upload file: ${uploadError.message}`);
+        } catch (uploadError) {
+          setUploadProgress(null);
+          setError(
+            `Failed to upload file: ${uploadError instanceof Error ? uploadError.message : 'please try again'}. If your connection dropped, submit again: the upload continues where it stopped.`
+          );
           return;
         }
+        setUploadProgress(null);
 
         // Store the object path, not a URL: the bucket is private, so viewers
         // get a short-lived signed URL (see lib/storage/submission-files.ts).
-        fileUrl = uploadData.path;
+        fileUrl = fileName;
       }
 
       // Prepare submission data
@@ -520,6 +544,46 @@ export default function SubmitAssignmentPage() {
                         Current file uploaded. Select a new file to replace it.
                       </p>
                     )}
+                    {uploadProgress !== null && (
+                      <div className="mt-3" aria-live="polite">
+                        <div className="h-2 rounded bg-gray-100">
+                          <div
+                            className="h-2 rounded bg-blue-600 transition-all"
+                            style={{
+                              width: `${Math.round(uploadProgress * 100)}%`,
+                            }}
+                          />
+                        </div>
+                        <p className="mt-1 text-xs text-gray-500">
+                          Uploading… {Math.round(uploadProgress * 100)}%. On a
+                          weak connection this keeps going after short
+                          drop-outs.
+                        </p>
+                      </div>
+                    )}
+                    <details className="mt-3 text-sm text-gray-600">
+                      <summary className="cursor-pointer">
+                        Tips for smaller animation files
+                      </summary>
+                      <ul className="ml-5 mt-2 list-disc space-y-1">
+                        <li>
+                          Export video as MP4 (H.264) at 720p; that is plenty
+                          for review.
+                        </li>
+                        <li>
+                          Keep loops short and export as GIF or MP4 rather than
+                          image sequences.
+                        </li>
+                        <li>
+                          Zip frame sequences or project files before uploading.
+                        </li>
+                        <li>
+                          For long or high-quality pieces, upload to YouTube
+                          (Unlisted) or Google Drive and hand in the link
+                          instead.
+                        </li>
+                      </ul>
+                    </details>
                   </div>
                 </TabsContent>
 
@@ -532,9 +596,21 @@ export default function SubmitAssignmentPage() {
                       inputMode="url"
                       placeholder="https://youtu.be/... or a Google Drive link"
                       value={linkUrl}
-                      onChange={e => setLinkUrl(e.target.value)}
+                      onChange={e => {
+                        setLinkUrl(e.target.value);
+                        setLinkWarning(null);
+                      }}
+                      onBlur={checkLinkUrl}
                       className="mt-2"
                     />
+                    {linkWarning && (
+                      <p
+                        className="mt-2 rounded-md bg-amber-50 p-2 text-sm text-amber-800"
+                        role="alert"
+                      >
+                        {linkWarning}
+                      </p>
+                    )}
                     <p className="text-sm text-gray-500 mt-1">
                       Link to your work: a YouTube, Vimeo or Google Drive video,
                       a Google Doc, etc. Best for videos over 50 MB.

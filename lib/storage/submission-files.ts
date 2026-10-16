@@ -25,10 +25,10 @@ export function submissionFilePath(fileUrl: string): string {
   return fileUrl;
 }
 
-/** Display name without the "<timestamp>-" prefix added at upload time. */
+/** Display name without the "<timestamp>-" or "<modified>-<size>-" prefix added at upload time. */
 export function submissionFileName(fileUrl: string): string {
   const name = submissionFilePath(fileUrl).split('/').pop() || 'file';
-  return name.replace(/^\d{10,}-/, '');
+  return name.replace(/^\d{10,}-(\d+-)?/, '');
 }
 
 /**
