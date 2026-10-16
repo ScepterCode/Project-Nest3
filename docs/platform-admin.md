@@ -9,6 +9,8 @@ schools. It replaces the SQL-editor jobs.
 | Schools          | Every school with its admins, contact, people, classes and last activity; open one for its departments and classes, or suspend/reactivate it                                             |
 | Tutors           | Every tutor's delivery: sessions logged, attendance, marking time, work waiting review (and overdue), written feedback, missed deadlines, with flags for who needs attention             |
 | People           | Search anyone by name or email; change their role, move them to a school, send a password reset, disable or enable their account                                                         |
+| Support          | Complaints, problems, questions and safeguarding concerns from anyone signed in (safeguarding first); reply as "Programme team", mark resolved or close                                  |
+| Projects         | Every mentorship/fellowship production project with its team, milestones approved and work waiting for the mentor                                                                        |
 | Nominations      | Learners nominated by tutors or school admins for mentorship or the fellowship, with their work, grades, attendance and consent; approve (needs guardian consent) or decline with a note |
 | Rubric templates | Programme-wide marking guides: build one with the rubric builder and it is published to every tutor; withdraw or republish it; see how many assignments and schools use it               |
 | Admin invites    | Create one-time school-admin codes (with a note), copy a ready-made invitation message, see who used each code, cancel unused ones                                                       |
@@ -55,6 +57,27 @@ update public.users set role = 'student' where email = 'someone@example.com';
   Mentors can set a class's group type (Settings tab) to a mentorship or
   fellowship group; only learners at that stage can ask to join, from any
   school.
+
+## Support requests
+
+Everyone signed in has **Help & support** (life-buoy icon in the header):
+a complaint, "something isn’t working", a question, a safeguarding
+concern or something else, with an optional link to a screenshot. Only the
+sender and platform admins can read it. Platform admins are notified of
+every new request and reply (safeguarding as urgent) and answer from
+**Support**; replies are signed "Programme team". Resolved requests reopen
+if the sender replies; closed ones don’t take new messages.
+
+## Production projects
+
+For mentorship and fellowship groups. The group’s mentor starts a project
+at `/dashboard/projects`, picks the team from the group (with roles such as
+Director or Animator) and adds milestones (script, storyboard, animatic, …)
+with due dates. The files stay on Google Drive, YouTube or Vimeo: the team
+hands in each version as a link, and the mentor approves it or asks for
+changes with a note. Every version and decision is kept. The team, the
+mentor, team members’ tutors and school admins, and platform admins can see
+a project.
 
 ## Programme viewers
 
