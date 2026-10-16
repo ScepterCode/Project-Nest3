@@ -16,6 +16,8 @@ import { Label } from '@/components/ui/label';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { ResendConfirmation } from '@/components/auth/resend-confirmation';
+import { isEmailNotConfirmed } from '@/lib/auth/email-links';
 
 export function LoginForm({
   className,
@@ -25,6 +27,7 @@ export function LoginForm({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [unconfirmed, setUnconfirmed] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
@@ -33,6 +36,7 @@ export function LoginForm({
     const supabase = createClient();
     setIsLoading(true);
     setError(null);
+    setUnconfirmed(false);
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -41,7 +45,10 @@ export function LoginForm({
       });
 
       if (error) {
-        console.error('Login error:', error);
+        if (isEmailNotConfirmed(error)) {
+          setUnconfirmed(true);
+          return;
+        }
         throw error;
       }
 
@@ -124,6 +131,18 @@ export function LoginForm({
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
+              {unconfirmed && (
+                <div className="space-y-2 rounded-md bg-amber-50 p-3 text-sm text-amber-900">
+                  <p>
+                    You haven&apos;t confirmed your email yet. Open the link we
+                    sent you (check spam or junk too), or send a new one.
+                  </p>
+                  <ResendConfirmation
+                    defaultEmail={email}
+                    askForEmail={false}
+                  />
+                </div>
+              )}
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Logging in...' : 'Login'}
               </Button>

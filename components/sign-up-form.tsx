@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { createClient } from '@/lib/supabase/client';
+import { SIGNUP_EMAIL_KEY } from '@/lib/auth/email-links';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -88,6 +89,11 @@ export function SignUpForm({
         },
       });
       if (error) throw error;
+      try {
+        sessionStorage.setItem(SIGNUP_EMAIL_KEY, email);
+      } catch {
+        // Private mode: the success page asks for the email instead.
+      }
 
       // Redirect to success page for email confirmation
       if (data.user && !data.user.email_confirmed_at) {

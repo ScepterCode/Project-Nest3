@@ -9,7 +9,9 @@ export default async function Page({
   const notice =
     reason === 'idle'
       ? 'You were signed out after 30 minutes of inactivity.'
-      : undefined;
+      : reason === 'confirmed'
+        ? 'Your email is confirmed. Sign in to continue.'
+        : undefined;
 
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">

@@ -1,0 +1,10 @@
+<h2>Confirm your new email address</h2>
+<p>Hello,</p>
+<p>Tap the button to confirm {{ .NewEmail }} as the email for your ProjectNest account.</p>
+<p>
+  <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email_change"
+     style="display:inline-block;padding:10px 18px;background:#2563eb;color:#ffffff;border-radius:6px;text-decoration:none">
+    Confirm new email
+  </a>
+</p>
+<p>If you didn't ask for this, you can ignore this email.</p>
