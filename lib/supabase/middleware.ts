@@ -17,6 +17,8 @@ const SHARED_DASHBOARD_PAGES = [
   '/dashboard/profile',
   '/dashboard/notifications',
   '/dashboard/portfolio',
+  '/dashboard/support',
+  '/dashboard/projects',
 ];
 
 const PROFILE_COOKIE = 'pn_nav';
