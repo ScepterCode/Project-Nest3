@@ -27,6 +27,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import { ClassMaterials } from '@/components/classes/class-materials';
+import { MyAttendance } from '@/components/classes/class-sessions';
 import { confirmAction, errorMessage, toast } from '@/lib/toast';
 
 import { averagePercent } from '@/lib/grades';
@@ -620,6 +621,8 @@ export default function StudentClassDetailPage({
                     </div>
                   </div>
                 </div>
+
+                <MyAttendance classId={classId} />
 
                 <div>
                   <h4 className="font-medium mb-2">Progress</h4>

@@ -52,6 +52,7 @@ describe('middleware routing for signed-in, onboarded users', () => {
     ['student', '/auth/update-password'],
     ['system_admin', '/dashboard/platform/schools'],
     ['system_admin', '/dashboard/notifications'],
+    ['programme_viewer', '/dashboard/programme'],
   ])('lets a %s open %s', async (r, path) => {
     role = r;
     expect(await visit(path)).toBeNull();
@@ -70,6 +71,7 @@ describe('middleware routing for signed-in, onboarded users', () => {
     ['student', '/onboarding', '/dashboard/student'],
     ['system_admin', '/dashboard/teacher', '/dashboard/platform'],
     ['teacher', '/dashboard/platform', '/dashboard/teacher'],
+    ['programme_viewer', '/dashboard/platform/people', '/dashboard/programme'],
   ])('sends a %s from %s to %s', async (r, path, target) => {
     role = r;
     expect(await visit(path)).toBe(`https://app.test${target}`);

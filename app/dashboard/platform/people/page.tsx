@@ -265,6 +265,7 @@ function ManagePerson({
               <SelectItem value="student">Student</SelectItem>
               <SelectItem value="teacher">Teacher</SelectItem>
               <SelectItem value="institution_admin">School admin</SelectItem>
+              <SelectItem value="programme_viewer">Programme viewer</SelectItem>
             </SelectContent>
           </Select>
           <Button

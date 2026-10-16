@@ -29,6 +29,7 @@ import {
   UserMinus,
 } from 'lucide-react';
 import { ClassMaterials } from '@/components/classes/class-materials';
+import { ClassSessions } from '@/components/classes/class-sessions';
 import { formatClassCodeForDisplay } from '@/lib/utils/class-code-generator';
 import { confirmAction, errorMessage, toast } from '@/lib/toast';
 
@@ -69,7 +70,9 @@ export default function ManageClassPage() {
     const tab = new URLSearchParams(window.location.search).get('tab');
     if (
       tab &&
-      ['overview', 'students', 'materials', 'settings'].includes(tab)
+      ['overview', 'students', 'sessions', 'materials', 'settings'].includes(
+        tab
+      )
     ) {
       setActiveTab(tab);
     }
@@ -367,6 +370,7 @@ export default function ManageClassPage() {
                 </span>
               )}
             </TabsTrigger>
+            <TabsTrigger value="sessions">Sessions</TabsTrigger>
             <TabsTrigger value="materials">Materials</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
@@ -544,6 +548,10 @@ export default function ManageClassPage() {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="sessions" className="space-y-6">
+            <ClassSessions classId={classData.id} students={students} />
           </TabsContent>
 
           <TabsContent value="materials" className="space-y-6">
