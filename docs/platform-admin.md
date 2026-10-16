@@ -3,16 +3,17 @@
 `/dashboard/platform` is for the programme operator: everything across all
 schools. It replaces the SQL-editor jobs.
 
-| Tab              | What it does                                                                                                                                                                 |
-| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Overview         | Totals, active people (7/30 days), the last 8 weeks, quiet schools (no activity for 14 days), and schools compared by submission rate and average grade                      |
-| Schools          | Every school with its admins, contact, people, classes and last activity; open one for its departments and classes, or suspend/reactivate it                                 |
-| Tutors           | Every tutor's delivery: sessions logged, attendance, marking time, work waiting review (and overdue), written feedback, missed deadlines, with flags for who needs attention |
-| People           | Search anyone by name or email; change their role, move them to a school, send a password reset, disable or enable their account                                             |
-| Rubric templates | Programme-wide marking guides: build one with the rubric builder and it is published to every tutor; withdraw or republish it; see how many assignments and schools use it   |
-| Admin invites    | Create one-time school-admin codes (with a note), copy a ready-made invitation message, see who used each code, cancel unused ones                                           |
-| Announcements    | Send a notification to school admins, teachers, students or everyone, at one school or all; history of what was sent                                                         |
-| Health           | Database and file storage against the free plan's limits, the classes using the most storage, and the last daily backup                                                      |
+| Tab              | What it does                                                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview         | Totals, active people (7/30 days), the last 8 weeks, quiet schools (no activity for 14 days), and schools compared by submission rate and average grade                                  |
+| Schools          | Every school with its admins, contact, people, classes and last activity; open one for its departments and classes, or suspend/reactivate it                                             |
+| Tutors           | Every tutor's delivery: sessions logged, attendance, marking time, work waiting review (and overdue), written feedback, missed deadlines, with flags for who needs attention             |
+| People           | Search anyone by name or email; change their role, move them to a school, send a password reset, disable or enable their account                                                         |
+| Nominations      | Learners nominated by tutors or school admins for mentorship or the fellowship, with their work, grades, attendance and consent; approve (needs guardian consent) or decline with a note |
+| Rubric templates | Programme-wide marking guides: build one with the rubric builder and it is published to every tutor; withdraw or republish it; see how many assignments and schools use it               |
+| Admin invites    | Create one-time school-admin codes (with a note), copy a ready-made invitation message, see who used each code, cancel unused ones                                                       |
+| Announcements    | Send a notification to school admins, teachers, students or everyone, at one school or all; history of what was sent                                                                     |
+| Health           | Database and file storage against the free plan's limits, the classes using the most storage, and the last daily backup                                                                  |
 
 Suspending a school stops its student and teacher codes; its members keep
 their accounts and work. Announcements arrive as "general messages", so
@@ -37,6 +38,23 @@ To remove someone's platform access, set their role back:
 ```sql
 update public.users set role = 'student' where email = 'someone@example.com';
 ```
+
+## Learner journey
+
+- **Stages:** every learner is at Foundation, Mentorship, Art Fellowship or
+  Alumni. Approving a nomination moves them on.
+- **Guardian consent:** recorded on the learner's portfolio by their school
+  admin (Users → Portfolio & consent) or a platform admin. A learner can't
+  be approved for mentorship or the fellowship until consent is "granted".
+  Changes are kept in the activity log.
+- **Portfolios:** `/dashboard/portfolio/<learner>` shows all their work,
+  grades, feedback, revision rounds, attendance and nominations, to the
+  learner, their tutors, their school admin and platform admins. Tutors
+  mark work as **featured** for showcase consideration.
+- **Mentors and groups:** in People, make a tutor a **programme mentor**.
+  Mentors can set a class's group type (Settings tab) to a mentorship or
+  fellowship group; only learners at that stage can ask to join, from any
+  school.
 
 ## Programme viewers
 

@@ -3,6 +3,8 @@
 // submissions, files), checks every platform_* function and who may call it
 // (RLS on), then ROLLBACK. Nothing persists. Meant for a throwaway database
 // with the migrations replayed (npm run db:replay).
+// Later migrations change platform_search_people's columns, so replay with
+// REPLAY_UNTIL=20261018120000 to re-run this one.
 //
 // Usage: DATABASE_URL=postgres://... node scripts/db/dry-run-platform-admin.js
 const { Client } = require('pg');

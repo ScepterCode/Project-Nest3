@@ -30,6 +30,12 @@ export const studentsRolegate = [
     href: '/dashboard/student/peer-reviews',
     icon: <ClipboardCheck />,
   },
+  {
+    permission: 'grades.read',
+    text: 'Portfolio',
+    href: '/dashboard/portfolio',
+    icon: <Layers />,
+  },
 ];
 export const teachersRolegate = [
   {

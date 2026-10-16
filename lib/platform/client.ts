@@ -53,6 +53,8 @@ export interface PlatformPerson {
   email_confirmed: boolean;
   disabled: boolean;
   created_at: string;
+  is_programme_mentor?: boolean;
+  stage?: string | null;
 }
 
 export interface PlatformInvite {

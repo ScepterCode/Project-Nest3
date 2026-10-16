@@ -53,6 +53,8 @@ describe('middleware routing for signed-in, onboarded users', () => {
     ['system_admin', '/dashboard/platform/schools'],
     ['system_admin', '/dashboard/notifications'],
     ['programme_viewer', '/dashboard/programme'],
+    ['student', '/dashboard/portfolio'],
+    ['teacher', '/dashboard/portfolio/abc'],
   ])('lets a %s open %s', async (r, path) => {
     role = r;
     expect(await visit(path)).toBeNull();

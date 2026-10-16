@@ -16,6 +16,7 @@ import { dashboardFor, isWithin } from '../auth/dashboards';
 const SHARED_DASHBOARD_PAGES = [
   '/dashboard/profile',
   '/dashboard/notifications',
+  '/dashboard/portfolio',
 ];
 
 const PROFILE_COOKIE = 'pn_nav';
