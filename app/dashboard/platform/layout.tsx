@@ -9,6 +9,7 @@ import { isWithin } from '@/lib/auth/dashboards';
 const TABS = [
   { href: '/dashboard/platform', label: 'Overview', exact: true },
   { href: '/dashboard/platform/schools', label: 'Schools' },
+  { href: '/dashboard/platform/tutors', label: 'Tutors' },
   { href: '/dashboard/platform/people', label: 'People' },
   { href: '/dashboard/platform/rubrics', label: 'Rubric templates' },
   { href: '/dashboard/platform/invites', label: 'Admin invites' },

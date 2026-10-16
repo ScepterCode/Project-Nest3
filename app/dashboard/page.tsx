@@ -61,6 +61,9 @@ export default function Dashboard() {
             case 'system_admin':
               router.replace('/dashboard/platform');
               break;
+            case 'programme_viewer':
+              router.replace('/dashboard/programme');
+              break;
             default:
               console.error(
                 'SECURITY: Unknown role',

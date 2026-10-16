@@ -8,6 +8,7 @@ import { DatabaseStatusBanner } from '@/components/database-status-banner';
 import { RoleGate } from '@/components/ui/permission-gate';
 import { downloadCsv } from '@/lib/csv';
 import { errorMessage, toast } from '@/lib/toast';
+import { SchoolTutorsCard } from '@/components/delivery/school-tutors-card';
 
 interface InstitutionStats {
   totalUsers: number;
@@ -289,17 +290,7 @@ export default function InstitutionReportsPage() {
             </div>
           </div>
 
-          {/* Success Message */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <h2 className="text-lg font-semibold text-green-800 mb-2">
-              ✅ Reports Page Working!
-            </h2>
-            <p className="text-green-700">
-              The reports page is now loading successfully with real data from
-              the database. Check the debug info above to see the current state
-              and user information.
-            </p>
-          </div>
+          <SchoolTutorsCard />
         </div>
       </div>
     </RoleGate>

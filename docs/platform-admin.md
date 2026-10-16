@@ -3,14 +3,16 @@
 `/dashboard/platform` is for the programme operator: everything across all
 schools. It replaces the SQL-editor jobs.
 
-| Tab           | What it does                                                                                                                                            |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Overview      | Totals, active people (7/30 days), the last 8 weeks, quiet schools (no activity for 14 days), and schools compared by submission rate and average grade |
-| Schools       | Every school with its admins, contact, people, classes and last activity; open one for its departments and classes, or suspend/reactivate it            |
-| People        | Search anyone by name or email; change their role, move them to a school, send a password reset, disable or enable their account                        |
-| Admin invites | Create one-time school-admin codes (with a note), copy a ready-made invitation message, see who used each code, cancel unused ones                      |
-| Announcements | Send a notification to school admins, teachers, students or everyone, at one school or all; history of what was sent                                    |
-| Health        | Database and file storage against the free plan's limits, the classes using the most storage, and the last daily backup                                 |
+| Tab              | What it does                                                                                                                                                                 |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Overview         | Totals, active people (7/30 days), the last 8 weeks, quiet schools (no activity for 14 days), and schools compared by submission rate and average grade                      |
+| Schools          | Every school with its admins, contact, people, classes and last activity; open one for its departments and classes, or suspend/reactivate it                                 |
+| Tutors           | Every tutor's delivery: sessions logged, attendance, marking time, work waiting review (and overdue), written feedback, missed deadlines, with flags for who needs attention |
+| People           | Search anyone by name or email; change their role, move them to a school, send a password reset, disable or enable their account                                             |
+| Rubric templates | Programme-wide marking guides: build one with the rubric builder and it is published to every tutor; withdraw or republish it; see how many assignments and schools use it   |
+| Admin invites    | Create one-time school-admin codes (with a note), copy a ready-made invitation message, see who used each code, cancel unused ones                                           |
+| Announcements    | Send a notification to school admins, teachers, students or everyone, at one school or all; history of what was sent                                                         |
+| Health           | Database and file storage against the free plan's limits, the classes using the most storage, and the last daily backup                                                      |
 
 Suspending a school stops its student and teacher codes; its members keep
 their accounts and work. Announcements arrive as "general messages", so
@@ -35,6 +37,15 @@ To remove someone's platform access, set their role back:
 ```sql
 update public.users set role = 'student' where email = 'someone@example.com';
 ```
+
+## Programme viewers
+
+Programme staff (for example NueLuks programme managers) can be given the
+**programme viewer** role from **People → Manage → Role**. They sign in with
+two-factor like platform admins and see `/dashboard/programme`: programme
+totals, the last 8 weeks, and results and delivery per school (sessions,
+attendance, marking time, overdue reviews, missed deadlines, tutors flagged).
+They never see names, emails, the people search or any admin tools.
 
 ## Two-factor sign-in
 
