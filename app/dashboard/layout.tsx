@@ -17,7 +17,8 @@ import {
   studentsRolegate,
   teachersRolegate,
 } from './components/Permissiongate';
-import { LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { LifeBuoy, LogOut } from 'lucide-react';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading, onboardingStatus } = useAuth();
@@ -144,6 +145,23 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 {/* Search or other header elements */}
               </div>
               <div className="flex items-center gap-2">
+                <Button
+                  asChild
+                  variant="ghost"
+                  size="sm"
+                  title="Help & support"
+                >
+                  <Link
+                    href={
+                      userRole === 'system_admin'
+                        ? '/dashboard/platform/support'
+                        : '/dashboard/support'
+                    }
+                  >
+                    <LifeBuoy className="h-4 w-4" />
+                    <span className="sr-only">Help &amp; support</span>
+                  </Link>
+                </Button>
                 <NotificationBell />
                 <span className="text-sm font-semibold text-gray-600">
                   Role:{' '}
