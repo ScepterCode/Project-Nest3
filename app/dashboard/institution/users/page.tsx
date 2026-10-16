@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import {
@@ -282,6 +283,7 @@ export default function UserManagementPage() {
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Role</TableHead>
+                    <TableHead />
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -295,6 +297,16 @@ export default function UserManagementPage() {
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
                         {ROLE_LABELS[member.role] ?? member.role}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {member.role === 'student' && (
+                          <Link
+                            href={`/dashboard/portfolio/${member.id}`}
+                            className="text-sm text-blue-700 underline-offset-4 hover:underline"
+                          >
+                            Portfolio &amp; consent
+                          </Link>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}

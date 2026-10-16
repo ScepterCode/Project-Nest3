@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -117,10 +118,19 @@ export default function PlatformPeoplePage() {
                   </p>
                   <p className="text-sm text-muted-foreground">
                     {person.email} · {ROLE_LABELS[person.role] ?? person.role} ·{' '}
-                    {person.school_name ?? 'no school'} · last signed in{' '}
-                    {sinceText(person.last_sign_in_at)}
+                    {person.school_name ?? 'no school'}
+                    {person.stage ? ` · ${person.stage}` : ''}
+                    {person.is_programme_mentor ? ' · programme mentor' : ''} ·
+                    last signed in {sinceText(person.last_sign_in_at)}
                   </p>
                 </div>
+                {person.role === 'student' && (
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={`/dashboard/portfolio/${person.id}`}>
+                      Portfolio
+                    </Link>
+                  </Button>
+                )}
                 {person.role !== 'system_admin' && (
                   <Button
                     variant="outline"
@@ -211,6 +221,29 @@ function ManagePerson({
         school_name: target ? name : null,
       });
     });
+  };
+
+  const setMentor = async (mentor: boolean) => {
+    const ok = await confirmAction({
+      title: mentor
+        ? `Make ${who} a programme mentor?`
+        : `Stop ${who} being a programme mentor?`,
+      description: mentor
+        ? 'Mentors can turn their classes into mentorship or fellowship groups that selected learners from any school can join.'
+        : 'Their existing groups stay as they are.',
+      confirmLabel: mentor ? 'Make mentor' : 'Remove',
+    });
+    if (!ok) return;
+    await run(
+      mentor ? 'Now a programme mentor' : 'No longer a mentor',
+      async () => {
+        await platformRpc('platform_set_mentor', {
+          p_user: person.id,
+          p_mentor: mentor,
+        });
+        onChanged({ ...person, is_programme_mentor: mentor });
+      }
+    );
   };
 
   const account = async (action: 'disable' | 'enable' | 'reset_password') => {
@@ -313,6 +346,18 @@ function ManagePerson({
           >
             Send password reset
           </Button>
+          {person.role === 'teacher' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setMentor(!person.is_programme_mentor)}
+              disabled={busy}
+            >
+              {person.is_programme_mentor
+                ? 'Remove mentor'
+                : 'Make programme mentor'}
+            </Button>
+          )}
           {person.disabled ? (
             <Button
               size="sm"

@@ -106,6 +106,9 @@ export function NotificationDropdown({
         return '✖️';
       case 'revision_requested':
         return '✏️';
+      case 'nomination_submitted':
+      case 'nomination_decided':
+        return '🌟';
       case 'role_changed':
         return '👤';
       case 'system_message':

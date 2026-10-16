@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/auth-context';
@@ -42,6 +43,7 @@ interface ClassData {
   enrollment_count: number;
   created_at: string;
   teacher_id: string;
+  cohort_stage?: 'mentorship' | 'fellowship' | null;
 }
 
 interface Student {
@@ -80,6 +82,9 @@ export default function ManageClassPage() {
   const [editName, setEditName] = useState('');
   const [editDescription, setEditDescription] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
+  // Programme mentors can make a class a mentorship or fellowship group.
+  const [isMentor, setIsMentor] = useState(false);
+  const [editCohort, setEditCohort] = useState<string>('none');
 
   const classId = params?.id as string;
 
@@ -104,6 +109,13 @@ export default function ManageClassPage() {
         }
 
         setClassData(classInfo);
+        setEditCohort(classInfo.cohort_stage ?? 'none');
+        const { data: me } = await supabase
+          .from('users')
+          .select('is_programme_mentor')
+          .eq('id', user.id)
+          .single();
+        setIsMentor(!!me?.is_programme_mentor);
         setEditName(classInfo.name ?? '');
         setEditDescription(classInfo.description ?? '');
 
@@ -248,6 +260,9 @@ export default function ManageClassPage() {
         .update({
           name,
           description: editDescription.trim(),
+          ...(isMentor && {
+            cohort_stage: editCohort === 'none' ? null : editCohort,
+          }),
           updated_at: new Date().toISOString(),
         })
         .eq('id', classData.id)
@@ -258,6 +273,7 @@ export default function ManageClassPage() {
       setClassData(data);
       setEditName(data.name ?? '');
       setEditDescription(data.description ?? '');
+      setEditCohort(data.cohort_stage ?? 'none');
       toast.success('Class updated');
     } catch (err) {
       toast.error(errorMessage(err, 'Could not save the class'));
@@ -532,6 +548,11 @@ export default function ManageClassPage() {
                             Joined{' '}
                             {new Date(student.enrolled_at).toLocaleDateString()}
                           </div>
+                          <Button asChild variant="outline" size="sm">
+                            <Link href={`/dashboard/portfolio/${student.id}`}>
+                              Portfolio
+                            </Link>
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -589,6 +610,32 @@ export default function ManageClassPage() {
                   />
                 </div>
 
+                {isMentor && (
+                  <div className="space-y-2">
+                    <Label htmlFor="cohort">Group type</Label>
+                    <select
+                      id="cohort"
+                      value={editCohort}
+                      onChange={e => setEditCohort(e.target.value)}
+                      className="block w-full max-w-xs rounded-md border px-3 py-2 text-sm"
+                    >
+                      <option value="none">
+                        Normal class (anyone with the code can ask to join)
+                      </option>
+                      <option value="mentorship">
+                        Mentorship group (selected learners only)
+                      </option>
+                      <option value="fellowship">
+                        Art Fellowship group (fellows only)
+                      </option>
+                    </select>
+                    <p className="text-xs text-gray-500">
+                      Groups take learners from any school, once the programme
+                      team has moved them to that stage.
+                    </p>
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button
                     onClick={saveSettings}
@@ -597,7 +644,8 @@ export default function ManageClassPage() {
                       !editName.trim() ||
                       (editName.trim() === classData.name &&
                         editDescription.trim() ===
-                          (classData.description ?? ''))
+                          (classData.description ?? '') &&
+                        editCohort === (classData.cohort_stage ?? 'none'))
                     }
                   >
                     {savingSettings ? 'Saving...' : 'Save Changes'}
