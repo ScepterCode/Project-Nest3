@@ -82,81 +82,86 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white">
-      <Navbar
-        children1={
-          <>
-            <RoleGate userId={user.id} allowedRoles={['student']}>
-              {studentsRolegate.map((student, index) => (
-                <PermissionGate
-                  key={index}
-                  userId={user.id}
-                  permission={student.permission}
-                >
-                  <NavLinks className="" href={student.href}>
-                    <div className="flex items-center space-x-2">
-                      {student.icon}
-                      <span>{student.text}</span>
-                    </div>
-                  </NavLinks>
-                </PermissionGate>
-              ))}
-            </RoleGate>
-            {/* Teacher Navigation */}
-            <RoleGate userId={user.id} allowedRoles={['teacher']}>
-              {teachersRolegate.map((teacher, index) => (
-                <PermissionGate
-                  key={index}
-                  userId={user.id}
-                  permission={teacher.permission}
-                >
-                  <NavLinks href={teacher.href}>
-                    <div className="flex items-center space-x-2">
-                      {teacher.icon}
-                      <span>{teacher.text}</span>
-                    </div>
-                  </NavLinks>
-                </PermissionGate>
-              ))}
-            </RoleGate>
-            {/* Institution Admin Navigation */}
-            <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
-              {InstitutionRolegate.map((institution, index) => (
-                <PermissionGate
-                  key={index}
-                  userId={user.id}
-                  permission={institution.permission}
-                >
-                  <NavLinks href={institution.href}>
-                    <div className="flex items-center space-x-2">
-                      {institution.icon}
-                      <span>{institution.text}</span>
-                    </div>
-                  </NavLinks>
-                </PermissionGate>
-              ))}
-            </RoleGate>
-          </>
-        }
-        children2={
-          <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-            <div className="ml-auto flex-1 sm:flex-initial">
-              {/* Search or other header elements */}
+      <div className="print:hidden">
+        <Navbar
+          children1={
+            <>
+              <RoleGate userId={user.id} allowedRoles={['student']}>
+                {studentsRolegate.map((student, index) => (
+                  <PermissionGate
+                    key={index}
+                    userId={user.id}
+                    permission={student.permission}
+                  >
+                    <NavLinks className="" href={student.href}>
+                      <div className="flex items-center space-x-2">
+                        {student.icon}
+                        <span>{student.text}</span>
+                      </div>
+                    </NavLinks>
+                  </PermissionGate>
+                ))}
+              </RoleGate>
+              {/* Teacher Navigation */}
+              <RoleGate userId={user.id} allowedRoles={['teacher']}>
+                {teachersRolegate.map((teacher, index) => (
+                  <PermissionGate
+                    key={index}
+                    userId={user.id}
+                    permission={teacher.permission}
+                  >
+                    <NavLinks href={teacher.href}>
+                      <div className="flex items-center space-x-2">
+                        {teacher.icon}
+                        <span>{teacher.text}</span>
+                      </div>
+                    </NavLinks>
+                  </PermissionGate>
+                ))}
+              </RoleGate>
+              {/* Institution Admin Navigation */}
+              <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
+                {InstitutionRolegate.map((institution, index) => (
+                  <PermissionGate
+                    key={index}
+                    userId={user.id}
+                    permission={institution.permission}
+                  >
+                    <NavLinks href={institution.href}>
+                      <div className="flex items-center space-x-2">
+                        {institution.icon}
+                        <span>{institution.text}</span>
+                      </div>
+                    </NavLinks>
+                  </PermissionGate>
+                ))}
+              </RoleGate>
+            </>
+          }
+          children2={
+            <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
+              <div className="ml-auto flex-1 sm:flex-initial">
+                {/* Search or other header elements */}
+              </div>
+              <div className="flex items-center gap-2">
+                <NotificationBell />
+                <span className="text-sm font-semibold text-gray-600">
+                  Role:{' '}
+                  <span className="font-medium capitalize">{userRole}</span>
+                </span>
+                <Button variant="outline" size="sm" onClick={logout}>
+                  <LogOut className="h-2 w-2" />
+                </Button>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <NotificationBell />
-              <span className="text-sm font-semibold text-gray-600">
-                Role: <span className="font-medium capitalize">{userRole}</span>
-              </span>
-              <Button variant="outline" size="sm" onClick={logout}>
-                <LogOut className="h-2 w-2" />
-              </Button>
-            </div>
-          </div>
-        }
-      />
+          }
+        />
+      </div>
 
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6">
-        <DashboardOnboardingReminder />
+      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 print:p-0">
+        <div className="print:hidden">
+          <DashboardOnboardingReminder />
+        </div>
         {children}
       </main>
     </div>

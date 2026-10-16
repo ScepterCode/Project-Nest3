@@ -7,6 +7,7 @@ describe('dashboardFor', () => {
     ['institution_admin', '/dashboard/institution'],
     ['department_admin', '/dashboard/profile'],
     ['system_admin', '/dashboard/platform'],
+    ['programme_viewer', '/dashboard/programme'],
     [null, '/dashboard/student'],
     ['something-else', '/dashboard/student'],
   ])('%s → %s', (role, path) => {

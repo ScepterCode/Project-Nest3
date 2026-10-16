@@ -6,7 +6,7 @@
 // roles, auth.users + auth.uid()/auth.role()/auth.jwt(), and storage tables.
 // Never point this at a real database.
 //
-// Usage: REPLAY_DATABASE_URL=postgres://... node scripts/db/replay-migrations.js
+// Usage: REPLAY_DATABASE_URL=postgres://... [REPLAY_UNTIL=<timestamp>] node scripts/db/replay-migrations.js
 const { Client } = require('pg');
 const fs = require('fs');
 const path = require('path');
@@ -115,9 +115,14 @@ $$;
   }
 
   const dir = path.join(__dirname, '..', '..', 'supabase', 'migrations');
+  // REPLAY_UNTIL=20261016120000 stops before any later migration, so an
+  // older dry-run script (which re-applies its own migration) can be run
+  // against the schema as it was then.
+  const until = process.env.REPLAY_UNTIL;
   const files = fs
     .readdirSync(dir)
     .filter(f => f.endsWith('.sql'))
+    .filter(f => !until || f.slice(0, until.length) <= until)
     .sort();
   for (const file of files) {
     const started = Date.now();

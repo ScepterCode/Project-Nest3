@@ -5,6 +5,7 @@ export const ROLE_DASHBOARD: Record<string, string> = {
   institution_admin: '/dashboard/institution',
   department_admin: '/dashboard/profile',
   system_admin: '/dashboard/platform',
+  programme_viewer: '/dashboard/programme',
 };
 
 export function dashboardFor(role: string | null | undefined): string {

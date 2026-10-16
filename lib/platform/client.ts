@@ -53,6 +53,8 @@ export interface PlatformPerson {
   email_confirmed: boolean;
   disabled: boolean;
   created_at: string;
+  is_programme_mentor?: boolean;
+  stage?: string | null;
 }
 
 export interface PlatformInvite {
@@ -101,6 +103,7 @@ export const ROLE_LABELS: Record<string, string> = {
   institution_admin: 'School admin',
   department_admin: 'Department admin',
   system_admin: 'Platform admin',
+  programme_viewer: 'Programme viewer',
 };
 
 export function formatDate(value: string | null | undefined) {

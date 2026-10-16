@@ -22,6 +22,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { createClient } from '@/lib/supabase/client';
+import { uploadFile } from '@/lib/storage/resumable-upload';
+import { checkLink } from '@/lib/link-check';
 import { confirmAction, errorMessage, toast } from '@/lib/toast';
 import {
   ALLOWED_MATERIAL_TYPES,
@@ -283,6 +285,8 @@ function AddMaterialForm({
   const [link, setLink] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
+  const [progress, setProgress] = useState<number | null>(null);
+  const [linkWarning, setLinkWarning] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
 
   const chooseFile = (chosen: File | null) => {
@@ -336,10 +340,15 @@ function AddMaterialForm({
           return;
         }
         const path = materialPath(classId, file.name, crypto.randomUUID());
-        const upload = await supabase.storage
-          .from(MATERIALS_BUCKET)
-          .upload(path, file, { contentType: file.type, upsert: false });
-        if (upload.error) throw upload.error;
+        setProgress(0);
+        await uploadFile({
+          bucket: MATERIALS_BUCKET,
+          path,
+          file,
+          contentType: file.type,
+          onProgress: setProgress,
+        });
+        setProgress(null);
         const { data, error } = await supabase
           .from('class_materials')
           .insert({
@@ -363,6 +372,7 @@ function AddMaterialForm({
       }
       toast.success('Material added');
     } catch (error) {
+      setProgress(null);
       toast.error(errorMessage(error, 'Could not add the material'));
     } finally {
       setSaving(false);
@@ -428,8 +438,23 @@ function AddMaterialForm({
                 inputMode="url"
                 placeholder="https://www.youtube.com/watch?v=..."
                 value={link}
-                onChange={e => setLink(e.target.value)}
+                onChange={e => {
+                  setLink(e.target.value);
+                  setLinkWarning(null);
+                }}
+                onBlur={async () => {
+                  const url = normalizeLink(link);
+                  setLinkWarning(url ? (await checkLink(url)).message : null);
+                }}
               />
+              {linkWarning && (
+                <p
+                  className="rounded-md bg-amber-50 p-2 text-sm text-amber-800"
+                  role="alert"
+                >
+                  {linkWarning}
+                </p>
+              )}
             </div>
           )}
 
@@ -457,6 +482,20 @@ function AddMaterialForm({
               rows={3}
             />
           </div>
+
+          {progress !== null && (
+            <div aria-live="polite">
+              <div className="h-2 rounded bg-gray-100">
+                <div
+                  className="h-2 rounded bg-blue-600 transition-all"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Uploading… {Math.round(progress * 100)}%
+              </p>
+            </div>
+          )}
 
           <div className="flex gap-2">
             <Button type="submit" disabled={saving}>
