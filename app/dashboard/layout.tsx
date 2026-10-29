@@ -7,11 +7,14 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { DashboardOnboardingReminder } from '@/components/onboarding/onboarding-reminder';
-import { PermissionGate, RoleGate } from '@/components/ui/permission-gate';
 import { NotificationBell } from '@/components/notifications/notification-bell';
 
 import Navbar from '@/components/Header/Navbar';
-import NavLinks from '@/components/Header/Navlinks';
+import {
+  DashboardMobileNav,
+  DashboardNav,
+} from '@/components/Header/dashboard-nav';
+import { ROLE_LABELS } from '@/lib/platform/client';
 import {
   InstitutionRolegate,
   studentsRolegate,
@@ -80,97 +83,48 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
   }
 
   const userRole = roleData.role;
+  const navItems =
+    userRole === 'student'
+      ? studentsRolegate
+      : userRole === 'teacher'
+        ? teachersRolegate
+        : userRole === 'institution_admin'
+          ? InstitutionRolegate
+          : [];
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white">
       <div className="print:hidden">
         <Navbar
-          children1={
-            <>
-              <RoleGate userId={user.id} allowedRoles={['student']}>
-                {studentsRolegate.map((student, index) => (
-                  <PermissionGate
-                    key={index}
-                    userId={user.id}
-                    permission={student.permission}
-                  >
-                    <NavLinks className="" href={student.href}>
-                      <div className="flex items-center space-x-2">
-                        {student.icon}
-                        <span>{student.text}</span>
-                      </div>
-                    </NavLinks>
-                  </PermissionGate>
-                ))}
-              </RoleGate>
-              {/* Teacher Navigation */}
-              <RoleGate userId={user.id} allowedRoles={['teacher']}>
-                {teachersRolegate.map((teacher, index) => (
-                  <PermissionGate
-                    key={index}
-                    userId={user.id}
-                    permission={teacher.permission}
-                  >
-                    <NavLinks href={teacher.href}>
-                      <div className="flex items-center space-x-2">
-                        {teacher.icon}
-                        <span>{teacher.text}</span>
-                      </div>
-                    </NavLinks>
-                  </PermissionGate>
-                ))}
-              </RoleGate>
-              {/* Institution Admin Navigation */}
-              <RoleGate userId={user.id} allowedRoles={['institution_admin']}>
-                {InstitutionRolegate.map((institution, index) => (
-                  <PermissionGate
-                    key={index}
-                    userId={user.id}
-                    permission={institution.permission}
-                  >
-                    <NavLinks href={institution.href}>
-                      <div className="flex items-center space-x-2">
-                        {institution.icon}
-                        <span>{institution.text}</span>
-                      </div>
-                    </NavLinks>
-                  </PermissionGate>
-                ))}
-              </RoleGate>
-            </>
-          }
+          children1={<DashboardNav userId={user.id} items={navItems} />}
           children2={
-            <div className="flex w-full items-center gap-4 md:ml-auto md:gap-2 lg:gap-4">
-              <div className="ml-auto flex-1 sm:flex-initial">
-                {/* Search or other header elements */}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  asChild
-                  variant="ghost"
-                  size="sm"
-                  title="Help & support"
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Button asChild variant="ghost" size="sm" title="Help & support">
+                <Link
+                  href={
+                    userRole === 'system_admin'
+                      ? '/dashboard/platform/support'
+                      : '/dashboard/support'
+                  }
                 >
-                  <Link
-                    href={
-                      userRole === 'system_admin'
-                        ? '/dashboard/platform/support'
-                        : '/dashboard/support'
-                    }
-                  >
-                    <LifeBuoy className="h-4 w-4" />
-                    <span className="sr-only">Help &amp; support</span>
-                  </Link>
-                </Button>
-                <NotificationBell />
-                <span className="text-sm font-semibold text-gray-600">
-                  Role:{' '}
-                  <span className="font-medium capitalize">{userRole}</span>
-                </span>
-                <Button variant="outline" size="sm" onClick={logout}>
-                  <LogOut className="h-2 w-2" />
-                </Button>
-              </div>
+                  <LifeBuoy className="h-4 w-4" />
+                  <span className="sr-only">Help &amp; support</span>
+                </Link>
+              </Button>
+              <NotificationBell />
+              <span className="hidden whitespace-nowrap rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 sm:inline">
+                {ROLE_LABELS[userRole] ?? userRole}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={logout}
+                title="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="sr-only">Sign out</span>
+              </Button>
+              <DashboardMobileNav userId={user.id} items={navItems} />
             </div>
           }
         />

@@ -41,13 +41,19 @@ async function fetchMyInstitution(): Promise<MyInstitution | null> {
 
 /**
  * Institution admin dashboard frame: until the admin has an institution it
- * shows the setup form instead of `children`; afterwards the institution's
- * name and join code above them.
+ * shows the setup form instead of `children`. Afterwards, `children` as a
+ * function gets the institution to lay out itself; plain children are shown
+ * under the school's name and codes.
  */
 export function InstitutionAdminPanel({
   children,
 }: {
-  children: React.ReactNode;
+  children:
+    | React.ReactNode
+    | ((
+        institution: MyInstitution,
+        update: (institution: MyInstitution) => void
+      ) => React.ReactNode);
 }) {
   const [institution, setInstitution] = useState<MyInstitution | null>(null);
   const [loading, setLoading] = useState(true);
@@ -94,11 +100,52 @@ export function InstitutionAdminPanel({
     return <CreateInstitutionForm onCreated={() => load()} />;
   }
 
+  if (typeof children === 'function') {
+    return <>{children(institution, setInstitution)}</>;
+  }
   return (
     <>
       <JoinCodeCard institution={institution} onChange={setInstitution} />
       {children}
     </>
+  );
+}
+
+/** The student and teacher codes, compact, for the dashboard's side column. */
+export function SchoolCodesCard({
+  institution,
+  onChange,
+}: {
+  institution: MyInstitution;
+  onChange: (institution: MyInstitution) => void;
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Join codes</CardTitle>
+        <CardDescription>
+          Share each code only with the people it&apos;s for.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <CodeRow
+          label="Teacher code"
+          help="New teachers enter this when they sign up. Keep it to staff."
+          code={institution.staff_code ?? null}
+          kind="staff"
+          compact
+          onReplaced={code => onChange({ ...institution, staff_code: code })}
+        />
+        <CodeRow
+          label="Student code"
+          help="Optional. Students join automatically when a teacher accepts them into a class; existing accounts can also enter this on their profile."
+          code={institution.join_code}
+          kind="student"
+          compact
+          onReplaced={code => onChange({ ...institution, join_code: code })}
+        />
+      </CardContent>
+    </Card>
   );
 }
 
@@ -242,12 +289,14 @@ function CodeRow({
   code,
   kind,
   onReplaced,
+  compact = false,
 }: {
   label: string;
   help: string;
   code: string | null;
   kind: 'student' | 'staff';
   onReplaced: (code: string) => void;
+  compact?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
@@ -287,6 +336,46 @@ function CodeRow({
       setRegenerating(false);
     }
   };
+
+  if (compact) {
+    return (
+      <div className="space-y-1">
+        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
+        <div className="flex items-center gap-1">
+          <code className="mr-auto rounded bg-gray-100 px-2 py-1 font-mono text-base tracking-widest">
+            {code ?? '········'}
+          </code>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={copy}
+            disabled={!code}
+            title={`Copy ${label.toLowerCase()}`}
+          >
+            {copied ? (
+              <Check className="h-4 w-4 text-green-600" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
+            <span className="sr-only">Copy</span>
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={regenerate}
+            disabled={regenerating}
+            title={`Replace ${label.toLowerCase()}`}
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span className="sr-only">New code</span>
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">{help}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-2">
