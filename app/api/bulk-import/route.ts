@@ -9,6 +9,7 @@ import {
   ImportRowError,
   validateImportRow,
 } from '@/lib/bulk/csv';
+import { createSetupLink } from '@/lib/auth/setup-link';
 
 // Accounts created per batch in parallel. Supabase's admin API is rate
 // limited, so keep this modest.
@@ -30,9 +31,9 @@ interface ImportBatchRequest {
  * its id back.
  *
  * Each row becomes a real login account (email already confirmed, no
- * password; the user sets one via "Forgot password") in the admin's
- * institution. Existing accounts are never modified: they're reported as
- * skipped.
+ * password) in the admin's institution, with a set-up link the admin sends
+ * so the person can choose a password (no email needed). Existing accounts
+ * are never modified: they're reported as skipped.
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -108,7 +109,8 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createAdminClient();
-  const created: { line: number; email: string }[] = [];
+  const created: { line: number; email: string; setup_link: string | null }[] =
+    [];
   const skipped: ImportRowError[] = [];
   const failed: ImportRowError[] = [];
 
@@ -169,7 +171,18 @@ export async function POST(request: NextRequest) {
       });
       return;
     }
-    created.push({ line, email: row.email });
+    // The account works without it: the admin can make a new link later.
+    let setupLink: string | null = null;
+    try {
+      setupLink = await createSetupLink(
+        admin,
+        row.email,
+        request.nextUrl.origin
+      );
+    } catch (error) {
+      console.error('Set-up link failed for a new account:', error);
+    }
+    created.push({ line, email: row.email, setup_link: setupLink });
   };
 
   for (let i = 0; i < rawRows.length; i += CONCURRENCY) {

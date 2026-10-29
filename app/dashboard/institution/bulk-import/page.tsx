@@ -21,6 +21,8 @@ import {
   parseImportFile,
 } from '@/lib/bulk/csv';
 import { AlertCircle, CheckCircle2, Download, Upload } from 'lucide-react';
+import { downloadCsv } from '@/lib/csv';
+import { setupMessage } from '@/lib/auth/setup-link';
 
 interface ImportHistoryItem {
   id: string;
@@ -33,7 +35,7 @@ interface ImportHistoryItem {
 }
 
 interface ImportOutcome {
-  created: { line: number; email: string }[];
+  created: { line: number; email: string; setup_link: string | null }[];
   skipped: ImportRowError[];
   failed: ImportRowError[];
 }
@@ -166,10 +168,12 @@ export default function BulkImportPage() {
       <Alert>
         <AlertCircle className="h-4 w-4" />
         <AlertDescription>
-          Accounts are created without a password and no email is sent. Tell
-          your users to open the sign-in page and choose{' '}
-          <strong>Forgot password</strong> to set one. Emails that already have
-          an account are skipped and left unchanged.
+          Accounts are created without a password and no email is sent. When the
+          import finishes, download the <strong>set-up links</strong> and send
+          each person theirs (WhatsApp, SMS…) so they can choose a password.
+          Links expire (usually after an hour); you can make new ones from the
+          Users page. Emails that already have an account are skipped and left
+          unchanged.
         </AlertDescription>
       </Alert>
 
@@ -297,6 +301,49 @@ export default function BulkImportPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {outcome.created.length > 0 && (
+              <div className="space-y-2 rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">
+                <p className="font-medium">Send everyone their set-up link</p>
+                <p>
+                  The file lists each new account with its link and a message
+                  ready to paste into WhatsApp or SMS. Send them soon: links
+                  expire, usually after an hour. Anyone who missed theirs can
+                  get a new one from the Users page.
+                </p>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const names = new Map(
+                      rows.map(r => [r.email.toLowerCase(), r])
+                    );
+                    downloadCsv('set-up-links.csv', [
+                      [
+                        'first_name',
+                        'last_name',
+                        'email',
+                        'set_up_link',
+                        'message',
+                      ],
+                      ...outcome.created.map(c => {
+                        const r = names.get(c.email.toLowerCase());
+                        return [
+                          r?.first_name ?? '',
+                          r?.last_name ?? '',
+                          c.email,
+                          c.setup_link ?? 'Make one from the Users page',
+                          c.setup_link
+                            ? setupMessage(r?.first_name ?? null, c.setup_link)
+                            : '',
+                        ];
+                      }),
+                    ]);
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download set-up links
+                </Button>
+              </div>
+            )}
             {problems.length > 0 && (
               <ProblemList title="Not imported" problems={problems} />
             )}
