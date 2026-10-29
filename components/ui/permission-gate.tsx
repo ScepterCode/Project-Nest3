@@ -158,9 +158,14 @@ export function RoleGate({
   const [hasRole, setHasRole] = React.useState<boolean>(false);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  // Callers pass a new array literal on every render; key the check on its
+  // contents so typing in a form below doesn't re-run it (and remount the
+  // form while it reloads).
+  const rolesKey = allowedRoles.join('|');
 
   React.useEffect(() => {
-    if (!userId || !allowedRoles.length) {
+    const roles = rolesKey ? rolesKey.split('|') : [];
+    if (!userId || !roles.length) {
       setHasRole(false);
       setIsLoading(false);
       return;
@@ -189,7 +194,7 @@ export function RoleGate({
         }
 
         const userRole = userData?.role;
-        const hasAllowedRole = userRole && allowedRoles.includes(userRole);
+        const hasAllowedRole = !!userRole && roles.includes(userRole);
 
         if (isMounted) {
           setHasRole(hasAllowedRole);
@@ -200,7 +205,7 @@ export function RoleGate({
             err instanceof Error ? err.message : 'Role check failed';
           console.error('RoleGate error details:', {
             userId,
-            allowedRoles,
+            allowedRoles: roles,
             error: err,
             errorMessage,
           });
@@ -219,7 +224,7 @@ export function RoleGate({
     return () => {
       isMounted = false;
     };
-  }, [userId, allowedRoles]);
+  }, [userId, rolesKey]);
 
   if (isLoading) {
     return <>{loading}</>;
