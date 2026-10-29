@@ -92,3 +92,20 @@ sender instead:
 People who don't get an email can send it again from the "Check your
 email" page, from the sign-in form (when it says their email isn't
 confirmed), or from an expired link's page.
+
+## Accounts made by a school admin
+
+School admins can create accounts themselves (Users → Add a user, or Bulk
+import). These have no password yet, so the admin gets a **set-up link**
+for each person to send by WhatsApp, SMS or any message: opening it lets
+them choose a password, on any device, with no email needed. Bulk imports
+offer all the links as a spreadsheet with a ready-to-paste message.
+
+- A link works once and expires with Supabase’s password-reset links
+  (1 hour by default; up to 24 hours under Authentication → Emails →
+  "Email OTP Expiration").
+- Members who haven’t signed in yet are marked on the Users page with a
+  **Set-up link** button to make a new one. A new link replaces the old.
+- Links can only be made for students and teachers at the admin’s own
+  school who have never signed in, so an admin can’t use one to get into
+  an account someone is already using.

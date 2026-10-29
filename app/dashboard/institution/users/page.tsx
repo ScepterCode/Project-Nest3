@@ -32,6 +32,8 @@ import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import { RoleGate } from '@/components/ui/permission-gate';
 import { ROLE_LABELS } from '@/lib/bulk/roles';
+import { SetupLinkPanel } from '@/components/institution/setup-link-panel';
+import { KeyRound } from 'lucide-react';
 
 const PAGE_SIZE = 50;
 
@@ -62,6 +64,14 @@ export default function UserManagementPage() {
     kind: 'success' | 'error';
     text: string;
   } | null>(null);
+  // Set-up links: who hasn't signed in yet, and the link being shown.
+  const [pending, setPending] = useState<Set<string>>(new Set());
+  const [issuing, setIssuing] = useState<string | null>(null);
+  const [setup, setSetup] = useState<{
+    name: string;
+    firstName: string | null;
+    link: string;
+  } | null>(null);
 
   // One page at a time, filtered and counted by the database. RLS limits the
   // rows to members of the admin's own institution.
@@ -86,10 +96,50 @@ export default function UserManagementPage() {
         kind: 'error',
         text: `Could not load users: ${error.message}`,
       });
-    setMembers((data as Member[]) ?? []);
+    const rows = (data as Member[]) ?? [];
+    setMembers(rows);
     setTotal(count ?? 0);
     setLoadingList(false);
+
+    const ids = rows
+      .filter(m => m.role === 'student' || m.role === 'teacher')
+      .map(m => m.id);
+    if (ids.length) {
+      fetch(`/api/institution/setup-links?ids=${ids.join(',')}`)
+        .then(r => (r.ok ? r.json() : { pending: [] }))
+        .then(d => setPending(new Set<string>(d.pending ?? [])))
+        .catch(() => setPending(new Set()));
+    } else {
+      setPending(new Set());
+    }
   }, [page, roleFilter, search]);
+
+  const issueLink = async (member: Member) => {
+    setIssuing(member.id);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/institution/setup-links', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: member.id }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Could not make a link');
+      setSetup({
+        name: displayName(member),
+        firstName: member.first_name,
+        link: data.link,
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (error) {
+      setMessage({
+        kind: 'error',
+        text: error instanceof Error ? error.message : 'Could not make a link',
+      });
+    } finally {
+      setIssuing(null);
+    }
+  };
 
   useEffect(() => {
     if (!user) return undefined;
@@ -97,11 +147,12 @@ export default function UserManagementPage() {
     return () => clearTimeout(timer);
   }, [user, loadMembers]);
 
-  // Accounts are created on the server (see /api/bulk-import): no password
-  // is set and no email is sent; the person uses "Forgot password" to sign in.
+  // Accounts are created on the server (see /api/bulk-import) without a
+  // password; the admin sends the returned set-up link (no email needed).
   const handleInvite = async () => {
     setInviting(true);
     setMessage(null);
+    setSetup(null);
     try {
       const response = await fetch('/api/bulk-import', {
         method: 'POST',
@@ -128,10 +179,23 @@ export default function UserManagementPage() {
         );
       const problem = data.failed?.[0] ?? data.skipped?.[0];
       if (problem) throw new Error(problem.message);
-      setMessage({
-        kind: 'success',
-        text: `Account created for ${email}. Ask them to open the sign-in page and choose "Forgot password" to set a password.`,
-      });
+      const link: string | null = data.created?.[0]?.setup_link ?? null;
+      if (link) {
+        setSetup({
+          name: `${firstName} ${lastName}`.trim() || email,
+          firstName: firstName || null,
+          link,
+        });
+        setMessage({
+          kind: 'success',
+          text: `Account created for ${email}. Send them the set-up link below.`,
+        });
+      } else {
+        setMessage({
+          kind: 'success',
+          text: `Account created for ${email}. Make a set-up link for them from the members list below.`,
+        });
+      }
       setEmail('');
       setFirstName('');
       setLastName('');
@@ -166,12 +230,22 @@ export default function UserManagementPage() {
           </Alert>
         )}
 
+        {setup && (
+          <SetupLinkPanel
+            name={setup.name}
+            firstName={setup.firstName}
+            link={setup.link}
+            onClose={() => setSetup(null)}
+          />
+        )}
+
         <Card>
           <CardHeader>
             <CardTitle>Add a User</CardTitle>
             <CardDescription>
-              Create a teacher or student account in your institution. For many
-              people at once, use Bulk Import.
+              Create a teacher or student account in your institution.
+              You&apos;ll get a set-up link to send them, so they can choose
+              their own password. For many people at once, use Bulk Import.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -290,15 +364,29 @@ export default function UserManagementPage() {
                   {members.map(member => (
                     <TableRow key={member.id}>
                       <TableCell>
-                        {[member.first_name, member.last_name]
-                          .filter(Boolean)
-                          .join(' ') || '—'}
+                        {displayName(member)}
+                        {pending.has(member.id) && (
+                          <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">
+                            Not signed in yet
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
                         {ROLE_LABELS[member.role] ?? member.role}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="space-x-3 whitespace-nowrap text-right">
+                        {pending.has(member.id) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => issueLink(member)}
+                            disabled={issuing === member.id}
+                          >
+                            <KeyRound className="mr-2 h-4 w-4" />
+                            {issuing === member.id ? 'Making…' : 'Set-up link'}
+                          </Button>
+                        )}
                         {member.role === 'student' && (
                           <Link
                             href={`/dashboard/portfolio/${member.id}`}
@@ -341,5 +429,12 @@ export default function UserManagementPage() {
         </Card>
       </div>
     </RoleGate>
+  );
+}
+
+function displayName(member: Member) {
+  return (
+    [member.first_name, member.last_name].filter(Boolean).join(' ') ||
+    member.email
   );
 }
