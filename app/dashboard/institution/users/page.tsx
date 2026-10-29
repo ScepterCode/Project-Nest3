@@ -33,7 +33,15 @@ import { createClient } from '@/lib/supabase/client';
 import { RoleGate } from '@/components/ui/permission-gate';
 import { ROLE_LABELS } from '@/lib/bulk/roles';
 import { SetupLinkPanel } from '@/components/institution/setup-link-panel';
-import { KeyRound } from 'lucide-react';
+import { Ban, KeyRound, MoreHorizontal, RotateCcw, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { confirmAction } from '@/lib/toast';
 
 const PAGE_SIZE = 50;
 
@@ -64,9 +72,10 @@ export default function UserManagementPage() {
     kind: 'success' | 'error';
     text: string;
   } | null>(null);
-  // Set-up links: who hasn't signed in yet, and the link being shown.
-  const [pending, setPending] = useState<Set<string>>(new Set());
-  const [issuing, setIssuing] = useState<string | null>(null);
+  // Account status from the server: who hasn't signed in yet (set-up
+  // link) and who is suspended. Plus the set-up link being shown.
+  const [status, setStatus] = useState<Record<string, MemberStatus>>({});
+  const [busy, setBusy] = useState<string | null>(null);
   const [setup, setSetup] = useState<{
     name: string;
     firstName: string | null;
@@ -105,39 +114,47 @@ export default function UserManagementPage() {
       .filter(m => m.role === 'student' || m.role === 'teacher')
       .map(m => m.id);
     if (ids.length) {
-      fetch(`/api/institution/setup-links?ids=${ids.join(',')}`)
-        .then(r => (r.ok ? r.json() : { pending: [] }))
-        .then(d => setPending(new Set<string>(d.pending ?? [])))
-        .catch(() => setPending(new Set()));
+      fetch(`/api/institution/members?ids=${ids.join(',')}`)
+        .then(r => (r.ok ? r.json() : { members: [] }))
+        .then((d: { members?: MemberStatus[] }) =>
+          setStatus(Object.fromEntries((d.members ?? []).map(m => [m.id, m])))
+        )
+        .catch(() => setStatus({}));
     } else {
-      setPending(new Set());
+      setStatus({});
     }
   }, [page, roleFilter, search]);
 
-  const issueLink = async (member: Member) => {
-    setIssuing(member.id);
+  const act = async (member: Member, action: MemberAction) => {
+    const name = displayName(member);
+    if (action !== 'setup_link') {
+      const ok = await confirmAction(CONFIRM[action](name));
+      if (!ok) return;
+    }
+    setBusy(member.id);
     setMessage(null);
     try {
-      const response = await fetch('/api/institution/setup-links', {
+      const response = await fetch(`/api/institution/members/${member.id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: member.id }),
+        body: JSON.stringify({ action }),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || 'Could not make a link');
-      setSetup({
-        name: displayName(member),
-        firstName: member.first_name,
-        link: data.link,
-      });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      if (!response.ok) throw new Error(data.error || 'That did not work');
+      if (action === 'setup_link') {
+        setSetup({ name, firstName: member.first_name, link: data.link });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setMessage({ kind: 'success', text: DONE[action](name) });
+        loadMembers();
+      }
     } catch (error) {
       setMessage({
         kind: 'error',
-        text: error instanceof Error ? error.message : 'Could not make a link',
+        text: error instanceof Error ? error.message : 'That did not work',
       });
     } finally {
-      setIssuing(null);
+      setBusy(null);
     }
   };
 
@@ -311,7 +328,8 @@ export default function UserManagementPage() {
             <CardTitle>Members</CardTitle>
             <CardDescription>
               {total} {total === 1 ? 'person' : 'people'} in your institution.
-              Change roles in Bulk Roles.
+              Use the ⋯ menu to suspend or delete a teacher or student; change
+              roles in Bulk Roles.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -365,36 +383,82 @@ export default function UserManagementPage() {
                     <TableRow key={member.id}>
                       <TableCell>
                         {displayName(member)}
-                        {pending.has(member.id) && (
+                        {status[member.id]?.suspended ? (
+                          <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-xs text-red-700">
+                            Suspended
+                          </span>
+                        ) : status[member.id]?.neverSignedIn ? (
                           <span className="ml-2 rounded-full bg-amber-50 px-2 py-0.5 text-xs text-amber-800">
                             Not signed in yet
                           </span>
-                        )}
+                        ) : null}
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
                         {ROLE_LABELS[member.role] ?? member.role}
                       </TableCell>
-                      <TableCell className="space-x-3 whitespace-nowrap text-right">
-                        {pending.has(member.id) && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => issueLink(member)}
-                            disabled={issuing === member.id}
-                          >
-                            <KeyRound className="mr-2 h-4 w-4" />
-                            {issuing === member.id ? 'Making…' : 'Set-up link'}
-                          </Button>
-                        )}
-                        {member.role === 'student' && (
-                          <Link
-                            href={`/dashboard/portfolio/${member.id}`}
-                            className="text-sm text-blue-700 underline-offset-4 hover:underline"
-                          >
-                            Portfolio &amp; consent
-                          </Link>
-                        )}
+                      <TableCell className="whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-3">
+                          {status[member.id]?.neverSignedIn &&
+                            !status[member.id]?.suspended && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => act(member, 'setup_link')}
+                                disabled={busy === member.id}
+                              >
+                                <KeyRound className="mr-2 h-4 w-4" />
+                                Set-up link
+                              </Button>
+                            )}
+                          {member.role === 'student' && (
+                            <Link
+                              href={`/dashboard/portfolio/${member.id}`}
+                              className="text-sm text-blue-700 underline-offset-4 hover:underline"
+                            >
+                              Portfolio &amp; consent
+                            </Link>
+                          )}
+                          {status[member.id] && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  disabled={busy === member.id}
+                                  aria-label={`Actions for ${displayName(member)}`}
+                                >
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                {status[member.id]?.suspended ? (
+                                  <DropdownMenuItem
+                                    onSelect={() => act(member, 'reactivate')}
+                                  >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Reactivate
+                                  </DropdownMenuItem>
+                                ) : (
+                                  <DropdownMenuItem
+                                    onSelect={() => act(member, 'suspend')}
+                                  >
+                                    <Ban className="mr-2 h-4 w-4" />
+                                    Suspend
+                                  </DropdownMenuItem>
+                                )}
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  onSelect={() => act(member, 'delete')}
+                                  className="text-red-600 focus:text-red-700"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete account
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -438,3 +502,39 @@ function displayName(member: Member) {
     member.email
   );
 }
+
+interface MemberStatus {
+  id: string;
+  neverSignedIn: boolean;
+  suspended: boolean;
+}
+
+type MemberAction = 'setup_link' | 'suspend' | 'reactivate' | 'delete';
+
+const CONFIRM = {
+  suspend: (name: string) => ({
+    title: `Suspend ${name}?`,
+    description:
+      'They can no longer sign in. Their classes, work and grades are kept, and you can reactivate them at any time.',
+    confirmLabel: 'Suspend',
+    destructive: true,
+  }),
+  reactivate: (name: string) => ({
+    title: `Reactivate ${name}?`,
+    description: 'They can sign in again.',
+    confirmLabel: 'Reactivate',
+  }),
+  delete: (name: string) => ({
+    title: `Delete ${name}'s account?`,
+    description:
+      'This removes the account for good and cannot be undone. It is only possible for teachers with no classes and students who have handed nothing in; anyone else can be suspended.',
+    confirmLabel: 'Delete account',
+    destructive: true,
+  }),
+};
+
+const DONE = {
+  suspend: (name: string) => `${name} is suspended.`,
+  reactivate: (name: string) => `${name} can sign in again.`,
+  delete: (name: string) => `${name}'s account was deleted.`,
+};

@@ -109,3 +109,12 @@ offer all the links as a spreadsheet with a ready-to-paste message.
 - Links can only be made for students and teachers at the admin’s own
   school who have never signed in, so an admin can’t use one to get into
   an account someone is already using.
+
+## Suspending and deleting accounts
+
+On the Users page, the ⋯ menu next to a teacher or student lets a school admin:
+
+- **Suspend**: they can no longer sign in; classes, work and grades are kept. **Reactivate** undoes it.
+- **Delete account**: permanent, and only for accounts with nothing attached (a teacher with no classes, a student who has handed nothing in). Deleting a teacher would also delete their classes and their students' work, so for anyone else, suspend instead.
+
+School admins can't change other admins. Every suspend, reactivate and delete is recorded in the platform activity log.
