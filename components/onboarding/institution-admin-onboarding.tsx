@@ -53,6 +53,9 @@ interface InstitutionAdminOnboardingProps {
   userEmail?: string;
   /** True while the parent saves; disables the finish button. */
   saving?: boolean;
+  /** Name from sign-up, pre-filled so it isn't typed twice. */
+  defaultFirstName?: string;
+  defaultLastName?: string;
 }
 
 const INSTITUTION_TYPES = [
@@ -95,12 +98,14 @@ export function InstitutionAdminOnboarding({
   userName = 'there',
   userEmail = '',
   saving = false,
+  defaultFirstName = '',
+  defaultLastName = '',
 }: InstitutionAdminOnboardingProps) {
   const [step, setStep] = useState(0);
   const [customDepartment, setCustomDepartment] = useState('');
   const [data, setData] = useState<InstitutionAdminOnboardingData>({
-    firstName: '',
-    lastName: '',
+    firstName: defaultFirstName,
+    lastName: defaultLastName,
     jobTitle: '',
     institutionName: '',
     institutionType: '',

@@ -24,7 +24,7 @@ import Link from 'next/link';
 import { LifeBuoy, LogOut } from 'lucide-react';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
-  const { user, loading, onboardingStatus } = useAuth();
+  const { user, loading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole();
 
   useEffect(() => {
@@ -33,12 +33,15 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     }
   }, [user, loading]);
 
-  // Redirect to onboarding if user needs to complete it
+  // The server already sends people who haven't finished onboarding there.
+  // As a backstop, use the profile just read from the database (roleData),
+  // never the copy cached in memory since sign-in: right after onboarding
+  // that copy is stale and sent people back and forth in an endless loop.
   useEffect(() => {
-    if (!loading && user && onboardingStatus?.needsOnboarding) {
-      redirect(onboardingStatus.redirectPath || '/onboarding');
+    if (roleData && !roleData.onboardingCompleted) {
+      window.location.assign('/onboarding');
     }
-  }, [user, loading, onboardingStatus]);
+  }, [roleData]);
 
   if (loading || roleLoading) {
     return (

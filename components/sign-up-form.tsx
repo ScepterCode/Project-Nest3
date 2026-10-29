@@ -100,7 +100,7 @@ export function SignUpForm({
         router.push('/auth/sign-up-success');
       } else if (data.user) {
         // User is immediately confirmed, go to onboarding
-        router.push('/onboarding');
+        window.location.assign('/onboarding');
       } else {
         router.push('/auth/sign-up-success');
       }
