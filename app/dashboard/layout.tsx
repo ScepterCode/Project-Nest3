@@ -100,7 +100,11 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen w-full flex-col bg-white">
       <div className="print:hidden">
         <Navbar
-          children1={<DashboardNav userId={user.id} items={navItems} />}
+          children1={
+            navItems.length > 0 ? (
+              <DashboardNav userId={user.id} items={navItems} />
+            ) : null
+          }
           children2={
             <div className="flex items-center gap-1 sm:gap-2">
               <Button asChild variant="ghost" size="sm" title="Help & support">

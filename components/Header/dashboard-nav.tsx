@@ -53,7 +53,7 @@ export function DashboardNav({
   items: DashboardNavItem[];
 }) {
   return (
-    <nav aria-label="Main" className="flex items-center gap-1">
+    <nav aria-label="Main" className="flex flex-wrap items-center gap-1 py-1.5">
       {items.map(item => (
         <PermissionGate
           key={item.href}
@@ -82,7 +82,7 @@ export function DashboardMobileNav({
   if (items.length === 0) return null;
 
   return (
-    <div className="lg:hidden">
+    <div className="md:hidden">
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
@@ -96,7 +96,7 @@ export function DashboardMobileNav({
       {open && (
         <div
           id="dashboard-mobile-menu"
-          className="absolute left-0 right-0 top-16 border-b border-gray-200 bg-white px-4 py-2 shadow-sm"
+          className="absolute left-0 right-0 top-14 border-b border-gray-200 bg-white px-4 py-2 shadow-sm"
         >
           <nav aria-label="Main" className="flex flex-col">
             {items.map(item => (

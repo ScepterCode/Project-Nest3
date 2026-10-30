@@ -197,6 +197,23 @@ export default function PeerReviewManagementPage() {
     }
   };
 
+  // Reviewer/reviewee ids point at auth accounts, so names are read from
+  // users separately (RLS lets a teacher read their own students).
+  const namesFor = async (ids: (string | null)[]) => {
+    const unique = [...new Set(ids.filter((id): id is string => !!id))];
+    if (unique.length === 0) return new Map<string, string>();
+    const { data } = await supabase
+      .from('users')
+      .select('id, first_name, last_name, email')
+      .in('id', unique);
+    return new Map(
+      (data ?? []).map(u => [
+        u.id,
+        [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email,
+      ])
+    );
+  };
+
   const fetchReviews = async () => {
     try {
       const { data, error } = await supabase
@@ -210,8 +227,8 @@ export default function PeerReviewManagementPage() {
           time_spent,
           submitted_at,
           is_flagged,
-          reviewer:users!reviewer_id(first_name, last_name),
-          reviewee:users!reviewee_id(first_name, last_name)
+          reviewer_id,
+          reviewee_id
         `
         )
         .eq('peer_review_assignment_id', params.id)
@@ -219,15 +236,14 @@ export default function PeerReviewManagementPage() {
 
       if (error) throw error;
 
+      const names = await namesFor(
+        (data ?? []).flatMap(r => [r.reviewer_id, r.reviewee_id])
+      );
       const formattedReviews =
         data?.map(review => ({
           id: review.id,
-          reviewer_name:
-            `${(review.reviewer as any)?.first_name || ''} ${(review.reviewer as any)?.last_name || ''}`.trim() ||
-            'Unknown',
-          reviewee_name:
-            `${(review.reviewee as any)?.first_name || ''} ${(review.reviewee as any)?.last_name || ''}`.trim() ||
-            'Unknown',
+          reviewer_name: names.get(review.reviewer_id) ?? 'Unknown',
+          reviewee_name: names.get(review.reviewee_id) ?? 'Unknown',
           status: review.status,
           overall_rating: review.overall_rating || 0,
           feedback: review.feedback || {},
@@ -252,14 +268,16 @@ export default function PeerReviewManagementPage() {
           reviewer_id,
           reviewee_id,
           status,
-          overall_rating,
-          reviewer:users!reviewer_id(first_name, last_name),
-          reviewee:users!reviewee_id(first_name, last_name)
+          overall_rating
         `
         )
         .eq('peer_review_assignment_id', params.id);
 
       if (error) throw error;
+
+      const names = await namesFor(
+        (reviewData ?? []).flatMap(r => [r.reviewer_id, r.reviewee_id])
+      );
 
       // Process student progress
       const studentMap = new Map<string, StudentProgress>();
@@ -267,12 +285,8 @@ export default function PeerReviewManagementPage() {
       reviewData?.forEach(review => {
         const reviewerId = review.reviewer_id;
         const revieweeId = review.reviewee_id;
-        const reviewerName =
-          `${(review.reviewer as any)?.first_name || ''} ${(review.reviewer as any)?.last_name || ''}`.trim() ||
-          'Unknown';
-        const revieweeName =
-          `${(review.reviewee as any)?.first_name || ''} ${(review.reviewee as any)?.last_name || ''}`.trim() ||
-          'Unknown';
+        const reviewerName = names.get(reviewerId) ?? 'Unknown';
+        const revieweeName = names.get(revieweeId) ?? 'Unknown';
 
         // Initialize reviewer if not exists
         if (!studentMap.has(reviewerId)) {
