@@ -48,8 +48,8 @@ interface ClassData {
 
 interface Student {
   id: string;
-  first_name: string;
-  last_name: string;
+  first_name: string | null;
+  last_name: string | null;
   email: string;
   enrolled_at: string;
 }
@@ -62,6 +62,7 @@ export default function ManageClassPage() {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [studentsError, setStudentsError] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
   const [pending, setPending] = useState<Student[]>([]);
@@ -119,60 +120,53 @@ export default function ManageClassPage() {
         setEditName(classInfo.name ?? '');
         setEditDescription(classInfo.description ?? '');
 
-        // Fetch enrolled students
-        const { data: enrolledStudents, error: studentsError } = await supabase
+        // Students and join requests. Enrollments point at auth accounts,
+        // so names can't be embedded in one query: read the enrollments,
+        // then those students' profiles (RLS lets a teacher read the people
+        // enrolled, or asking to enrol, in their classes). A problem here
+        // only affects the Students tab, never the rest of the page.
+        const { data: enrollments, error: enrollmentsError } = await supabase
           .from('enrollments')
-          .select(
-            `
-            id,
-            enrolled_at,
-            users!inner(
-              id,
-              first_name,
-              last_name,
-              email
-            )
-          `
-          )
+          .select('student_id, enrolled_at, status')
           .eq('class_id', classId)
-          // Joining by class code creates 'enrolled' rows; older ones are 'active'.
-          .in('status', ['enrolled', 'active']);
-
-        if (studentsError) {
-          console.error('Error fetching students:', studentsError.message);
-          setError('Could not load the students in this class');
-          return;
-        }
-
-        if (enrolledStudents) {
-          const formattedStudents = enrolledStudents.map((enrollment: any) => ({
-            id: enrollment.users.id,
-            first_name: enrollment.users.first_name,
-            last_name: enrollment.users.last_name,
-            email: enrollment.users.email,
-            enrolled_at: enrollment.enrolled_at,
-          }));
-          setStudents(formattedStudents);
-        }
-
-        // Students waiting for the teacher to accept them.
-        const { data: requests, error: requestsError } = await supabase
-          .from('enrollments')
-          .select('enrolled_at, users!inner(id, first_name, last_name, email)')
-          .eq('class_id', classId)
-          .eq('status', 'pending')
+          .in('status', ['enrolled', 'active', 'pending'])
           .order('enrolled_at', { ascending: true });
-        if (requestsError) {
-          console.error('Error fetching join requests:', requestsError.message);
-        } else {
+
+        if (enrollmentsError) {
+          console.error('Error fetching students:', enrollmentsError.message);
+          setStudentsError('Could not load the students in this class.');
+        } else if (enrollments && enrollments.length > 0) {
+          const { data: people, error: peopleError } = await supabase
+            .from('users')
+            .select('id, first_name, last_name, email')
+            .in(
+              'id',
+              enrollments.map(e => e.student_id)
+            );
+          if (peopleError) {
+            console.error('Error fetching student names:', peopleError.message);
+          }
+          const byId = new Map(
+            (people ?? []).map(person => [person.id, person])
+          );
+          const toStudent = (e: {
+            student_id: string;
+            enrolled_at: string;
+          }): Student => {
+            const person = byId.get(e.student_id);
+            return {
+              id: e.student_id,
+              first_name: person?.first_name ?? null,
+              last_name: person?.last_name ?? null,
+              email: person?.email ?? '',
+              enrolled_at: e.enrolled_at,
+            };
+          };
+          setStudents(
+            enrollments.filter(e => e.status !== 'pending').map(toStudent)
+          );
           setPending(
-            (requests ?? []).map((r: any) => ({
-              id: r.users.id,
-              first_name: r.users.first_name,
-              last_name: r.users.last_name,
-              email: r.users.email,
-              enrolled_at: r.enrolled_at,
-            }))
+            enrollments.filter(e => e.status === 'pending').map(toStudent)
           );
         }
       } catch (err) {
@@ -504,6 +498,11 @@ export default function ManageClassPage() {
               </Button>
             </div>
 
+            {studentsError && (
+              <p className="rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {studentsError} Refresh the page to try again.
+              </p>
+            )}
             {students.length === 0 ? (
               <Card>
                 <CardContent className="p-6 text-center">
