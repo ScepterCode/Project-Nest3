@@ -2,6 +2,7 @@
 
 import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   ArrowLeft,
   CheckCircle2,
@@ -70,7 +71,7 @@ interface Detail {
     title: string;
     brief: string | null;
     assets_url: string | null;
-    status: 'active' | 'completed' | 'archived';
+    status: 'active' | 'suspended' | 'completed' | 'archived';
     class_name: string;
     cohort_stage: string;
     mentor_name: string | null;
@@ -745,6 +746,25 @@ function ProjectSettings({
   const [assets, setAssets] = useState(project.assets_url ?? '');
   const [status, setStatus] = useState(project.status);
   const [saving, setSaving] = useState(false);
+  const router = useRouter();
+
+  const remove = async () => {
+    const ok = await confirmAction({
+      title: `Delete “${project.title}”?`,
+      description:
+        'This deletes the project, its milestones and every version handed in (the files stay wherever the team kept them). The team is told. This cannot be undone.',
+      confirmLabel: 'Delete project',
+      destructive: true,
+    });
+    if (!ok) return;
+    try {
+      await rpc('delete_production_project', { p_project: project.id });
+      toast.success('Project deleted');
+      router.push('/dashboard/projects');
+    } catch (err) {
+      toast.error(errorMessage(err, 'Could not delete the project'));
+    }
+  };
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -815,14 +835,28 @@ function ProjectSettings({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="completed">Completed</SelectItem>
+                <SelectItem value="suspended">
+                  Suspended (no handing in for now)
+                </SelectItem>
+                <SelectItem value="completed">Ended (completed)</SelectItem>
                 <SelectItem value="archived">Archived</SelectItem>
               </SelectContent>
             </Select>
           </div>
-          <Button type="submit" size="sm" disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Button type="submit" size="sm" disabled={saving}>
+              {saving ? 'Saving…' : 'Save'}
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="text-red-600"
+              onClick={remove}
+            >
+              Delete project
+            </Button>
+          </div>
         </form>
       </CardContent>
     </Card>
