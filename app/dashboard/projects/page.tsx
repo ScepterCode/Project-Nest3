@@ -49,7 +49,8 @@ export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
-  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
+  const [groups, setGroups] = useState<ProjectGroup[]>([]);
+  const [access, setAccess] = useState<ProjectAccess | null>(null);
   const [groupId, setGroupId] = useState('');
   const [title, setTitle] = useState('');
   const [brief, setBrief] = useState('');
@@ -77,16 +78,17 @@ export default function ProjectsPage() {
     load();
   }, [load]);
 
-  // Mentorship/fellowship groups this person runs: they can start projects.
+  // Groups this person can start projects in (their own as a mentor; every
+  // group for platform admins), and what to say when there is nothing.
   useEffect(() => {
     if (!user) return;
-    createClient()
-      .from('classes')
-      .select('id, name')
-      .eq('teacher_id', user.id)
-      .not('cohort_stage', 'is', null)
-      .order('name')
-      .then(({ data }) => setGroups(data ?? []));
+    const supabase = createClient();
+    supabase
+      .rpc('project_groups')
+      .then(({ data }) => setGroups((data as ProjectGroup[]) ?? []));
+    supabase
+      .rpc('my_project_access')
+      .then(({ data }) => setAccess((data as ProjectAccess) ?? null));
   }, [user]);
 
   const create = async (e: React.FormEvent) => {
@@ -133,8 +135,10 @@ export default function ProjectsPage() {
           <CardHeader>
             <CardTitle className="text-base">Start a project</CardTitle>
             <CardDescription>
-              For one of your mentorship or fellowship groups. You&apos;ll add
-              the team and milestones next.
+              {access?.platform_admin
+                ? 'For any mentorship or fellowship group; its mentor runs it with you.'
+                : 'For one of your mentorship or fellowship groups.'}{' '}
+              You&apos;ll add the team and milestones next.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -149,6 +153,10 @@ export default function ProjectsPage() {
                     {groups.map(g => (
                       <SelectItem key={g.id} value={g.id}>
                         {g.name}
+                        {access?.platform_admin && g.mentor_name
+                          ? ` (mentor ${g.mentor_name})`
+                          : ''}{' '}
+                        · {Number(g.students)} learners
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -205,9 +213,7 @@ export default function ProjectsPage() {
           {!projects ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : projects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No projects yet. Team projects start in the mentorship stage.
-            </p>
+            <EmptyProjects access={access} groups={groups.length} />
           ) : (
             <ul className="divide-y">
               {projects.map(p => (
@@ -254,4 +260,52 @@ export default function ProjectsPage() {
       </Card>
     </div>
   );
+}
+
+interface ProjectGroup {
+  id: string;
+  name: string;
+  cohort_stage: string;
+  mentor_name: string | null;
+  students: number;
+}
+
+interface ProjectAccess {
+  role: string;
+  is_mentor: boolean;
+  platform_admin: boolean;
+  stage: string | null;
+  groups: number;
+}
+
+/** Says why there is nothing here yet, and what would change that. */
+function EmptyProjects({
+  access,
+  groups,
+}: {
+  access: ProjectAccess | null;
+  groups: number;
+}) {
+  let text = 'No projects yet.';
+  if (access?.platform_admin) {
+    text =
+      groups > 0
+        ? 'No projects yet. Start one above for any mentorship or fellowship group.'
+        : 'No mentorship or fellowship groups yet. Make a tutor a programme mentor (People), then they set one of their classes to a mentorship or fellowship group in its Settings → Group type. Projects are started in those groups.';
+  } else if (access?.role === 'institution_admin') {
+    text =
+      'Projects your learners are on appear here. Programme mentors run them in mentorship and fellowship groups, so they start once your learners are selected for those stages.';
+  } else if (access?.role === 'teacher') {
+    text = !access.is_mentor
+      ? 'Production projects are run by programme mentors in mentorship and fellowship groups. If you should be mentoring, ask the programme team to make you a mentor.'
+      : groups > 0
+        ? 'No projects yet. Start one above.'
+        : "You're a programme mentor, but none of your classes is a mentorship or fellowship group yet. Open a class, go to Settings and set its Group type; then start a project here.";
+  } else if (access?.role === 'student') {
+    text =
+      access.stage === 'foundation' || !access.stage
+        ? 'Team projects start in the mentorship stage. Keep going: your tutor can nominate you.'
+        : "No projects yet. When your mentor adds you to a project's team, it appears here.";
+  }
+  return <p className="text-sm text-muted-foreground">{text}</p>;
 }
