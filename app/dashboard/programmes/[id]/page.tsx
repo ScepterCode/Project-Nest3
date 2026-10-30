@@ -16,9 +16,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { MemberPicker } from '@/components/institution/member-picker';
 import {
-  AnyTeacherPicker,
   CopyCode,
   ProgrammeStage,
   ProgrammeStatus,
@@ -36,6 +34,8 @@ interface ClassRow {
   tutor_id: string;
   tutor_name: string | null;
   tutor_school: string | null;
+  school_id: string | null;
+  school_name: string | null;
   learners: number;
   pending: number;
   sessions: number;
@@ -93,6 +93,25 @@ interface Detail {
     created_at: string;
   };
   can_manage: boolean;
+  can_delete: boolean;
+  is_platform_admin: boolean;
+  managers:
+    | {
+        user_id: string;
+        name: string | null;
+        role: string;
+        school: string | null;
+      }[]
+    | null;
+  my_school: {
+    school: string;
+    learners: number;
+    attendance_rate: number | null;
+    projects: number;
+    milestones: number;
+    milestones_approved: number;
+    milestones_overdue: number;
+  } | null;
   schools: { id: string; name: string }[];
   classes: ClassRow[];
   totals: Totals | null;
@@ -267,15 +286,17 @@ export default function ProgrammePage({
                 End
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="ghost"
-              className="text-red-600"
-              onClick={remove}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </Button>
+            {detail.can_delete && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-red-600"
+                onClick={remove}
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -290,7 +311,11 @@ export default function ProgrammePage({
         />
       )}
 
+      {detail.my_school && !canManage && <MySchool detail={detail} />}
+
       {detail.totals && <Analytics detail={detail} />}
+
+      {detail.managers && <Managers detail={detail} onChanged={load} />}
 
       <Classes detail={detail} platformAdmin={platformAdmin} onChanged={load} />
     </div>
@@ -378,7 +403,11 @@ function EditProgramme({
                   <option value="all">All schools</option>
                 </select>
                 {!allSchools && (
-                  <SchoolsPicker value={schools} onChange={setSchools} />
+                  <SchoolsPicker
+                    value={schools}
+                    onChange={setSchools}
+                    programmeId={p.id}
+                  />
                 )}
               </div>
               <div className="space-y-1">
@@ -564,30 +593,269 @@ function Analytics({ detail }: { detail: Detail }) {
 
 function TutorPicker({
   detail,
-  platformAdmin,
   value,
   onChange,
   id,
 }: {
   detail: Detail;
-  platformAdmin: boolean;
+  platformAdmin?: boolean;
   value: string | null;
   onChange: (id: string | null) => void;
   id: string;
 }) {
-  const p = detail.programme;
-  if (platformAdmin) {
-    return (
-      <AnyTeacherPicker
-        id={id}
-        value={value}
-        onChange={onChange}
-        schoolName={p.scope === 'school' ? p.school_name : null}
-      />
-    );
-  }
+  const [tutors, setTutors] = useState<
+    | {
+        id: string;
+        name: string | null;
+        email: string;
+        school_name: string | null;
+      }[]
+    | null
+  >(null);
+  const [filter, setFilter] = useState('');
+  const programmeId = detail.programme.id;
+
+  useEffect(() => {
+    createClient()
+      .rpc('programme_tutor_candidates', { p_programme: programmeId })
+      .then(({ data }) => setTutors((data as typeof tutors) ?? []));
+  }, [programmeId]);
+
+  if (!tutors)
+    return <p className="text-sm text-muted-foreground">Loading teachers…</p>;
+  const term = filter.trim().toLowerCase();
+  const shown = tutors.filter(
+    t =>
+      !term ||
+      t.id === value ||
+      `${t.name ?? ''} ${t.email} ${t.school_name ?? ''}`
+        .toLowerCase()
+        .includes(term)
+  );
   return (
-    <MemberPicker id={id} role="teacher" value={value} onChange={onChange} />
+    <div className="space-y-2">
+      {tutors.length > 15 && (
+        <Input
+          placeholder={`Filter ${tutors.length} teachers`}
+          value={filter}
+          onChange={e => setFilter(e.target.value)}
+          aria-label="Filter teachers"
+        />
+      )}
+      <select
+        id={id}
+        value={value ?? ''}
+        onChange={e => onChange(e.target.value || null)}
+        className="w-full rounded border bg-white p-2 text-sm"
+      >
+        <option value="">-- Choose a tutor ({shown.length}) --</option>
+        {shown.map(t => (
+          <option key={t.id} value={t.id}>
+            {t.name ?? t.email}
+            {t.school_name ? ` · ${t.school_name}` : ''}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+/** Schools a class can serve (the programme's schools). */
+function useSchoolOptions(programmeId: string, enabled: boolean) {
+  const [options, setOptions] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    if (!enabled) return;
+    createClient()
+      .rpc('programme_school_options', { p_programme: programmeId })
+      .then(({ data }) =>
+        setOptions((data as { id: string; name: string }[]) ?? [])
+      );
+  }, [programmeId, enabled]);
+  return options;
+}
+
+function Managers({
+  detail,
+  onChanged,
+}: {
+  detail: Detail;
+  onChanged: () => void;
+}) {
+  const managers = detail.managers ?? [];
+  const p = detail.programme;
+  const [people, setPeople] = useState<
+    | {
+        id: string;
+        name: string | null;
+        email: string;
+        role: string;
+        school_name: string | null;
+      }[]
+    | null
+  >(null);
+  const [filter, setFilter] = useState('');
+  const [chosen, setChosen] = useState('');
+  const canEdit = detail.is_platform_admin;
+
+  useEffect(() => {
+    if (!canEdit) return;
+    createClient()
+      .rpc('programme_manager_candidates')
+      .then(({ data }) => setPeople((data as typeof people) ?? []));
+  }, [canEdit]);
+
+  const change = async (fnName: string, userId: string, done: string) => {
+    try {
+      await rpc(fnName, { p_programme: p.id, p_user: userId });
+      toast.success(done);
+      setChosen('');
+      onChanged();
+    } catch (e) {
+      toast.error(errorMessage(e, 'That did not work'));
+    }
+  };
+
+  const term = filter.trim().toLowerCase();
+  const shown = (people ?? []).filter(
+    x =>
+      !managers.some(m => m.user_id === x.id) &&
+      (!term ||
+        `${x.name ?? ''} ${x.email} ${x.school_name ?? ''}`
+          .toLowerCase()
+          .includes(term))
+  );
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">Programme managers</CardTitle>
+        <CardDescription>
+          People who run this programme with their own login: they can edit it,
+          add or remove classes and tutors, suspend or end it, and see its
+          analytics, but nothing else on the platform.
+          {p.scope === 'school' && ' The school’s admin manages it too.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {managers.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No extra managers.</p>
+        ) : (
+          <ul className="divide-y rounded border text-sm">
+            {managers.map(m => (
+              <li
+                key={m.user_id}
+                className="flex items-center justify-between gap-2 p-2"
+              >
+                <span>
+                  {m.name ?? 'Someone'}{' '}
+                  <span className="text-xs text-muted-foreground">
+                    ({m.role === 'institution_admin' ? 'school admin' : m.role}
+                    {m.school ? `, ${m.school}` : ''})
+                  </span>
+                </span>
+                {canEdit && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-red-600"
+                    onClick={() =>
+                      change(
+                        'remove_programme_manager',
+                        m.user_id,
+                        'Manager removed'
+                      )
+                    }
+                  >
+                    Remove
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+        {canEdit && (
+          <div className="space-y-2 rounded border p-3">
+            <p className="text-sm font-medium">Add a manager</p>
+            {!people ? (
+              <p className="text-sm text-muted-foreground">Loading people…</p>
+            ) : (
+              <>
+                {people.length > 15 && (
+                  <Input
+                    placeholder="Filter by name, email or school"
+                    value={filter}
+                    onChange={e => setFilter(e.target.value)}
+                    aria-label="Filter people"
+                  />
+                )}
+                <select
+                  value={chosen}
+                  onChange={e => setChosen(e.target.value)}
+                  className="w-full rounded border bg-white p-2 text-sm"
+                  aria-label="Person to add as manager"
+                >
+                  <option value="">
+                    -- Choose a school admin or teacher ({shown.length}) --
+                  </option>
+                  {shown.map(x => (
+                    <option key={x.id} value={x.id}>
+                      {x.name ?? x.email} ·{' '}
+                      {x.role === 'institution_admin'
+                        ? 'school admin'
+                        : 'teacher'}
+                      {x.school_name ? ` · ${x.school_name}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  size="sm"
+                  disabled={!chosen}
+                  onClick={() =>
+                    change(
+                      'add_programme_manager',
+                      chosen,
+                      'Manager added; they have been told'
+                    )
+                  }
+                >
+                  Add manager
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MySchool({ detail }: { detail: Detail }) {
+  const m = detail.my_school!;
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base">
+          {m.school} in this programme
+        </CardTitle>
+        <CardDescription>Your school’s learners only.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <Tile label="Your learners" value={m.learners} />
+          <Tile label="Attendance" value={pct(m.attendance_rate)} />
+          <Tile label="Their projects" value={m.projects} />
+          <Tile
+            label="Milestones"
+            value={`${m.milestones_approved}/${m.milestones}`}
+            hint={
+              m.milestones_overdue
+                ? `${m.milestones_overdue} overdue`
+                : 'approved'
+            }
+          />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -618,6 +886,9 @@ function Classes({
   const [changing, setChanging] = useState<string | null>(null);
   const [changeTo, setChangeTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [newSchool, setNewSchool] = useState('');
+  const multiSchool = p.scope === 'programme';
+  const schoolOptions = useSchoolOptions(p.id, canManage && multiSchool);
 
   const loadAvailable = useCallback(() => {
     if (!canManage) return;
@@ -678,7 +949,38 @@ function Classes({
               <tbody>
                 {detail.classes.map(c => (
                   <tr key={c.id} className="border-b align-top last:border-0">
-                    <td className="py-2 pr-3 font-medium">{c.name}</td>
+                    <td className="py-2 pr-3">
+                      <span className="font-medium">{c.name}</span>
+                      {multiSchool &&
+                        (canManage ? (
+                          <select
+                            value={c.school_id ?? ''}
+                            onChange={e =>
+                              run('School updated', () =>
+                                rpc('set_programme_class_school', {
+                                  p_class: c.id,
+                                  p_school: e.target.value || null,
+                                })
+                              )
+                            }
+                            className="mt-1 block w-full max-w-[12rem] rounded border bg-white p-1 text-xs"
+                            aria-label={`School for ${c.name}`}
+                          >
+                            <option value="">Any school taking part</option>
+                            {schoolOptions.map(o => (
+                              <option key={o.id} value={o.id}>
+                                For {o.name} only
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <span className="block text-xs text-muted-foreground">
+                            {c.school_name
+                              ? `For ${c.school_name} learners`
+                              : 'Any school taking part'}
+                          </span>
+                        ))}
+                    </td>
                     <td className="py-2 pr-3">
                       {changing === c.id ? (
                         <div className="min-w-[14rem] space-y-2">
@@ -813,9 +1115,11 @@ function Classes({
                     p_programme: p.id,
                     p_name: newName.trim(),
                     p_tutor: newTutor,
+                    p_school: multiSchool ? newSchool || null : null,
                   });
                   setNewName('');
                   setNewTutor(null);
+                  setNewSchool('');
                 });
               }}
             >
@@ -829,6 +1133,21 @@ function Classes({
                 maxLength={150}
                 aria-label="New class name"
               />
+              {multiSchool && (
+                <select
+                  value={newSchool}
+                  onChange={e => setNewSchool(e.target.value)}
+                  className="w-full rounded border bg-white p-2 text-sm"
+                  aria-label="School this class serves"
+                >
+                  <option value="">For any school taking part</option>
+                  {schoolOptions.map(o => (
+                    <option key={o.id} value={o.id}>
+                      For {o.name} learners only
+                    </option>
+                  ))}
+                </select>
+              )}
               <TutorPicker
                 id="new-class-tutor"
                 detail={detail}
