@@ -119,4 +119,10 @@ export const InstitutionRolegate = [
     href: '/dashboard/institution/reports',
     icon: <FileText />,
   },
+  {
+    permission: 'reports.read',
+    text: 'Programmes',
+    href: '/dashboard/projects',
+    icon: <Clapperboard />,
+  },
 ];

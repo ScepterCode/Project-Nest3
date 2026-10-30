@@ -211,7 +211,6 @@ export default function ProjectPage({
         <div className="space-y-4">
           <TeamCard
             projectId={project.id}
-            classId={project.class_id}
             team={team}
             canEdit={i_mentor && active}
             onChanged={load}
@@ -583,13 +582,11 @@ function MilestoneForm({
 
 function TeamCard({
   projectId,
-  classId,
   team,
   canEdit,
   onChanged,
 }: {
   projectId: string;
-  classId: string;
   team: Detail['team'];
   canEdit: boolean;
   onChanged: () => void;
@@ -603,35 +600,26 @@ function TeamCard({
     setChosen(
       Object.fromEntries(team.map(t => [t.student_id, t.role_title ?? '']))
     );
-    const { data, error } = await createClient()
-      .from('enrollments')
-      .select('student_id, users:student_id (first_name, last_name, email)')
-      .eq('class_id', classId)
-      .in('status', ['enrolled', 'active']);
+    // Learners in the project's group (mentor or platform admin only).
+    const { data, error } = await createClient().rpc(
+      'project_team_candidates',
+      { p_project: projectId }
+    );
     if (error) {
       toast.error(error.message);
       return;
     }
-    type Row = {
-      student_id: string;
-      users: {
-        first_name: string | null;
-        last_name: string | null;
-        email: string;
-      } | null;
-    };
     setRoster(
-      ((data as unknown as Row[]) ?? [])
-        .map(r => ({
-          id: r.student_id,
-          name:
-            [r.users?.first_name, r.users?.last_name]
-              .filter(Boolean)
-              .join(' ') ||
-            r.users?.email ||
-            'Learner',
-        }))
-        .sort((a, b) => a.name.localeCompare(b.name))
+      (
+        (data as {
+          id: string;
+          name: string | null;
+          school_name: string | null;
+        }[]) ?? []
+      ).map(r => ({
+        id: r.id,
+        name: `${r.name ?? 'Learner'}${r.school_name ? ` (${r.school_name})` : ''}`,
+      }))
     );
     setEditing(true);
   };

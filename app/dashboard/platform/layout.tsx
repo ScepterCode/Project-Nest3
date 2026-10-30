@@ -12,7 +12,7 @@ const TABS = [
   { href: '/dashboard/platform/tutors', label: 'Tutors' },
   { href: '/dashboard/platform/people', label: 'People' },
   { href: '/dashboard/platform/support', label: 'Support' },
-  { href: '/dashboard/platform/projects', label: 'Projects' },
+  { href: '/dashboard/platform/projects', label: 'Programmes' },
   { href: '/dashboard/platform/nominations', label: 'Nominations' },
   { href: '/dashboard/platform/rubrics', label: 'Rubric templates' },
   { href: '/dashboard/platform/invites', label: 'Admin invites' },

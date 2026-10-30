@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   CheckCircle2,
+  Clapperboard,
   ClipboardCheck,
   GraduationCap,
   Layers,
@@ -204,6 +205,11 @@ const QUICK_LINKS = [
     href: '/dashboard/institution/reports',
     label: 'Reports and exports',
     icon: BarChart3,
+  },
+  {
+    href: '/dashboard/projects',
+    label: 'Programmes & projects',
+    icon: Clapperboard,
   },
   { href: '/dashboard/support', label: 'Help & support', icon: LifeBuoy },
 ];

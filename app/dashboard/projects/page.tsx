@@ -26,6 +26,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import { errorMessage, toast } from '@/lib/toast';
+import {
+  ProgrammeGroup,
+  ProgrammesCard,
+  SCOPE_LABELS,
+} from '@/components/projects/programmes-card';
 
 interface ProjectRow {
   id: string;
@@ -49,7 +54,8 @@ export default function ProjectsPage() {
   const { user } = useAuth();
   const router = useRouter();
   const [projects, setProjects] = useState<ProjectRow[] | null>(null);
-  const [groups, setGroups] = useState<{ id: string; name: string }[]>([]);
+  const [groups, setGroups] = useState<ProgrammeGroup[]>([]);
+  const [access, setAccess] = useState<ProjectAccess | null>(null);
   const [groupId, setGroupId] = useState('');
   const [title, setTitle] = useState('');
   const [brief, setBrief] = useState('');
@@ -77,17 +83,25 @@ export default function ProjectsPage() {
     load();
   }, [load]);
 
-  // Mentorship/fellowship groups this person runs: they can start projects.
+  // Programmes this person can run projects in (their own as a mentor,
+  // their school's for school admins, all for platform admins), and what to
+  // say when there is nothing.
+  const loadGroups = useCallback(() => {
+    const supabase = createClient();
+    supabase
+      .rpc('project_groups')
+      .then(({ data }) => setGroups((data as ProgrammeGroup[]) ?? []));
+    supabase
+      .rpc('my_project_access')
+      .then(({ data }) => setAccess((data as ProjectAccess) ?? null));
+  }, []);
+
   useEffect(() => {
-    if (!user) return;
-    createClient()
-      .from('classes')
-      .select('id, name')
-      .eq('teacher_id', user.id)
-      .not('cohort_stage', 'is', null)
-      .order('name')
-      .then(({ data }) => setGroups(data ?? []));
-  }, [user]);
+    if (user) loadGroups();
+  }, [user, loadGroups]);
+
+  const canStartProgrammes =
+    !!access?.platform_admin || access?.role === 'institution_admin';
 
   const create = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,22 +133,31 @@ export default function ProjectsPage() {
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold">
           <Clapperboard className="h-6 w-6" />
-          Production projects
+          {canStartProgrammes ? 'Programmes & projects' : 'Production projects'}
         </h1>
         <p className="text-sm text-muted-foreground">
-          Team projects for the mentorship and fellowship stages. Keep the files
-          on Google Drive, YouTube or Vimeo; hand in each version here as a
-          link, and the mentor approves it or asks for changes.
+          Team projects run in programmes. Keep the files on Google Drive,
+          YouTube or Vimeo; hand in each version here as a link, and the mentor
+          approves it or asks for changes.
         </p>
       </div>
+
+      <ProgrammesCard
+        groups={canStartProgrammes ? groups : []}
+        canStart={canStartProgrammes}
+        platformAdmin={!!access?.platform_admin}
+        onCreated={loadGroups}
+      />
 
       {groups.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Start a project</CardTitle>
             <CardDescription>
-              For one of your mentorship or fellowship groups. You&apos;ll add
-              the team and milestones next.
+              {canStartProgrammes
+                ? 'In one of the programmes above; its mentor runs it with you.'
+                : 'In one of the programmes you mentor.'}{' '}
+              You&apos;ll add the team and milestones next.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -148,7 +171,11 @@ export default function ProjectsPage() {
                   <SelectContent>
                     {groups.map(g => (
                       <SelectItem key={g.id} value={g.id}>
-                        {g.name}
+                        {g.name} · {SCOPE_LABELS[g.scope]}
+                        {canStartProgrammes && g.mentor_name
+                          ? ` · mentor ${g.mentor_name}`
+                          : ''}{' '}
+                        · {Number(g.students)} learners
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -205,9 +232,7 @@ export default function ProjectsPage() {
           {!projects ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : projects.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No projects yet. Team projects start in the mentorship stage.
-            </p>
+            <EmptyProjects access={access} groups={groups.length} />
           ) : (
             <ul className="divide-y">
               {projects.map(p => (
@@ -254,4 +279,47 @@ export default function ProjectsPage() {
       </Card>
     </div>
   );
+}
+
+interface ProjectAccess {
+  role: string;
+  is_mentor: boolean;
+  school_mentor: boolean;
+  platform_admin: boolean;
+  stage: string | null;
+  groups: number;
+}
+
+/** Says why there is nothing here yet, and what would change that. */
+function EmptyProjects({
+  access,
+  groups,
+}: {
+  access: ProjectAccess | null;
+  groups: number;
+}) {
+  let text = 'No projects yet.';
+  if (access?.platform_admin) {
+    text =
+      groups > 0
+        ? 'No projects yet. Start one above in any programme.'
+        : 'No programmes yet. Start one above: a school programme, or a mentorship or fellowship programme for every school.';
+  } else if (access?.role === 'institution_admin') {
+    text =
+      groups > 0
+        ? "No projects yet. Start one above in one of your school's programmes. Projects your learners join in cross-school programmes also appear here."
+        : "No programmes yet. Start one above and pick the teacher who'll run it; learners join with its code.";
+  } else if (access?.role === 'teacher') {
+    text = !access.is_mentor
+      ? 'Production projects run in programmes. Your school admin can start a programme with you as its mentor, or make you a mentor from the Users page.'
+      : groups > 0
+        ? 'No projects yet. Start one above.'
+        : "You're a mentor, but you don't run a programme yet. Your school admin can start one with you as its mentor.";
+  } else if (access?.role === 'student') {
+    text =
+      access.stage === 'foundation' || !access.stage
+        ? 'Team projects start in the mentorship stage. Keep going: your tutor can nominate you.'
+        : "No projects yet. When your mentor adds you to a project's team, it appears here.";
+  }
+  return <p className="text-sm text-muted-foreground">{text}</p>;
 }
