@@ -131,3 +131,16 @@ Production projects run inside programmes. There are two kinds:
   from every school join once they reach that stage.
 
 The mentor gets a notification with the join code to share.
+
+### Choosing schools, and how learners get in
+
+When a platform admin starts a programme they choose the **schools taking
+part** (the mentor's school, **selected schools** from a drop-down of every
+school, or all schools) and **which learners** (anyone, or only those
+selected for mentorship or the fellowship).
+
+Every programme has a **join code**. The mentor and the admins of each
+school taking part are notified with it, and school admins see the
+programmes their school is in, with the code, on their Programmes page.
+Learners enter the code under **Join a class** and the mentor accepts them;
+learners from other schools, or below the stage, are turned away.
