@@ -3,7 +3,8 @@
 import { redirect } from 'next/navigation';
 import { useAuth, logout } from '@/contexts/auth-context';
 import { useUserRole } from '@/lib/hooks/useUserRole';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 import { Button } from '@/components/ui/button';
 import { DashboardOnboardingReminder } from '@/components/onboarding/onboarding-reminder';
@@ -22,11 +23,26 @@ import {
   teachersRolegate,
 } from './components/Permissiongate';
 import Link from 'next/link';
-import { LifeBuoy, LogOut } from 'lucide-react';
+import { Layers, LifeBuoy, LogOut } from 'lucide-react';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const { roleData, loading: roleLoading, error: roleError } = useUserRole();
+  // Teachers made programme managers get the Programmes page in their menu.
+  const [managesProgrammes, setManagesProgrammes] = useState(false);
+  useEffect(() => {
+    if (roleData?.role !== 'teacher') return;
+    createClient()
+      .rpc('my_project_access')
+      .then(({ data }) =>
+        setManagesProgrammes(
+          Number(
+            (data as { managed_programmes?: number } | null)
+              ?.managed_programmes ?? 0
+          ) > 0
+        )
+      );
+  }, [roleData?.role]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -91,7 +107,17 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
     userRole === 'student'
       ? studentsRolegate
       : userRole === 'teacher'
-        ? teachersRolegate
+        ? managesProgrammes
+          ? [
+              ...teachersRolegate,
+              {
+                permission: 'classes.manage',
+                text: 'Programmes',
+                href: '/dashboard/programmes',
+                icon: <Layers />,
+              },
+            ]
+          : teachersRolegate
         : userRole === 'institution_admin'
           ? InstitutionRolegate
           : [];

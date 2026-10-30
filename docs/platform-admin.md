@@ -170,3 +170,37 @@ On **Programmes** (school admins: their school's; platform admins: all):
   part, and tutors, can open a programme to see its classes and codes.
 
 Projects can also be **suspended** and **deleted** from their settings.
+
+## Programme managers, and partner-run programmes
+
+A platform admin can make existing people (school admins or teachers)
+**managers of a programme** from the programme's page (**Programme managers
+→ Add a manager**). They keep their own login; their dashboard gains the
+programme (teachers get a **Programmes** link; school admins see it under
+Programmes). For that programme they can edit it, add or remove classes and
+tutors, set which school each class serves, suspend or end it, and see its
+analytics, and nothing else on the platform. Deleting a programme and
+adding managers stay with platform admins.
+
+**Classes in a multi-school programme can serve one school**: choose the
+school when adding the class (or change it in the class list). Only that
+school's learners can join it.
+
+**Schools taking part** see their own figures on the programme's page:
+their learners, attendance and project progress.
+
+### Setting up a partner's programme (e.g. instructors teaching at 10 schools)
+
+1. **The partner's organisation** gets its own institution: send its lead an
+   admin invite (Admin invites). They become its school admin.
+2. **Their instructors** sign up with the organisation's teacher code (or the
+   lead adds them on Users and sends set-up links). They belong to the
+   organisation, not to the schools.
+3. **Each school** is its own institution with its own admin; its learners
+   belong to it.
+4. **You** start a platform programme for those schools (Programmes → Start
+   a programme → Selected schools) and add the partner's lead as a
+   **programme manager**.
+5. **The lead** adds one class per school ("For School A learners only"),
+   each run by one of their instructors (one instructor can run classes at
+   several schools), and shares each code with that school.

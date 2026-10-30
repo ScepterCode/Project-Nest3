@@ -87,26 +87,31 @@ export function SchoolsPicker({
   id,
   value,
   onChange,
+  programmeId,
 }: {
   id?: string;
   value: string[];
   onChange: (ids: string[]) => void;
+  /** Read through this programme (for its managers who aren't platform admins). */
+  programmeId?: string;
 }) {
   const [schools, setSchools] = useState<
     { id: string; name: string; status: string }[] | null
   >(null);
 
   useEffect(() => {
-    createClient()
-      .rpc('platform_schools')
-      .then(({ data }) =>
-        setSchools(
-          ((data as { id: string; name: string; status: string }[]) ?? []).sort(
-            (a, b) => a.name.localeCompare(b.name)
-          )
+    const supabase = createClient();
+    (programmeId
+      ? supabase.rpc('programme_all_schools', { p_programme: programmeId })
+      : supabase.rpc('platform_schools')
+    ).then(({ data }) =>
+      setSchools(
+        ((data as { id: string; name: string; status: string }[]) ?? []).sort(
+          (a, b) => a.name.localeCompare(b.name)
         )
-      );
-  }, []);
+      )
+    );
+  }, [programmeId]);
 
   const names = (schools ?? [])
     .filter(s => value.includes(s.id))
