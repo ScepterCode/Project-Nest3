@@ -207,8 +207,13 @@ const QUICK_LINKS = [
     icon: BarChart3,
   },
   {
+    href: '/dashboard/programmes',
+    label: 'Programmes and their analytics',
+    icon: Layers,
+  },
+  {
     href: '/dashboard/projects',
-    label: 'Programmes & projects',
+    label: 'Production projects',
     icon: Clapperboard,
   },
   { href: '/dashboard/support', label: 'Help & support', icon: LifeBuoy },

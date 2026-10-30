@@ -144,3 +144,29 @@ school taking part are notified with it, and school admins see the
 programmes their school is in, with the code, on their Programmes page.
 Learners enter the code under **Join a class** and the mentor accepts them;
 learners from other schools, or below the stage, are turned away.
+
+## Programmes hold classes (from November 2026)
+
+A programme is now a container: its own name, description, the schools taking
+part, an optional stage and a status. It holds any number of **classes**,
+each run by its own **tutor** with its own join code; production projects run
+in those classes. Existing programmes were moved over automatically (one
+class each).
+
+On **Programmes** (school admins: their school's; platform admins: all):
+
+- **Start a programme**, optionally with its first class and tutor.
+- Open one to **edit** it (name, description; for platform programmes the
+  schools and stage), **add a new class** with a tutor, **add an existing
+  class**, **change a class's tutor** or **remove a class** (it stays as an
+  ordinary class; its projects are suspended).
+- **Suspend** (no joining or handing in until resumed), **end** (closed for
+  good, projects marked complete, everything kept) or **delete** (removes the
+  programme and its projects; classes, learners and grades are kept).
+- **Analytics** for managers: learners, tutors, schools, attendance,
+  projects, milestones approved / waiting / overdue, review time, learners
+  by school, and every project's progress. Platform admins see every
+  programme; school admins see the ones they run. Admins of schools taking
+  part, and tutors, can open a programme to see its classes and codes.
+
+Projects can also be **suspended** and **deleted** from their settings.

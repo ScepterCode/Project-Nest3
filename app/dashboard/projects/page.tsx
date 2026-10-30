@@ -26,11 +26,24 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/contexts/auth-context';
 import { createClient } from '@/lib/supabase/client';
 import { errorMessage, toast } from '@/lib/toast';
-import {
-  ProgrammeGroup,
-  ProgrammesCard,
-  programmeLabel,
-} from '@/components/projects/programmes-card';
+import { ProgrammeStage, whoTakesPart } from '@/components/programmes/pickers';
+
+// A class in a programme the caller can start projects in (project_groups).
+interface ProgrammeGroup {
+  id: string;
+  name: string;
+  programme_id: string | null;
+  programme_name: string | null;
+  scope: string;
+  stage: ProgrammeStage;
+  school_name: string | null;
+  schools: string | null;
+  code: string;
+  mentor_name: string | null;
+  students: number;
+  projects: number;
+  can_run: boolean;
+}
 
 interface ProjectRow {
   id: string;
@@ -145,12 +158,19 @@ export default function ProjectsPage() {
         </p>
       </div>
 
-      <ProgrammesCard
-        groups={canStartProgrammes ? groups : []}
-        canStart={canStartProgrammes}
-        platformAdmin={!!access?.platform_admin}
-        onCreated={loadGroups}
-      />
+      {canStartProgrammes && (
+        <Card>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+            <p className="text-sm text-muted-foreground">
+              Start, edit, suspend or end programmes, add classes and tutors,
+              and see each programme&apos;s analytics.
+            </p>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/programmes">Manage programmes</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {runnable.length > 0 && (
         <Card>
@@ -174,7 +194,8 @@ export default function ProjectsPage() {
                   <SelectContent>
                     {runnable.map(g => (
                       <SelectItem key={g.id} value={g.id}>
-                        {g.name} · {programmeLabel(g)}
+                        {g.programme_name ? `${g.programme_name} › ` : ''}
+                        {g.name} · {whoTakesPart(g)}
                         {canStartProgrammes && g.mentor_name
                           ? ` · mentor ${g.mentor_name}`
                           : ''}{' '}
