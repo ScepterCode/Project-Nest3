@@ -3,7 +3,7 @@
 // embedded relationships (a foreign key PostgREST can follow) and rpc names.
 //
 // Usage: node scripts/db/check-queries.js . postgres://postgres@127.0.0.1:54347/replay
-//
+const fs = require('fs');
 const path = require('path');
 const { Client } = require('pg');
 
