@@ -208,7 +208,7 @@ const QUICK_LINKS = [
   },
   {
     href: '/dashboard/projects',
-    label: "Learners' production projects",
+    label: 'Programmes & projects',
     icon: Clapperboard,
   },
   { href: '/dashboard/support', label: 'Help & support', icon: LifeBuoy },

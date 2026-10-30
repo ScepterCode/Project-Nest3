@@ -115,3 +115,19 @@ left join public.users u on u.id = a.actor_id
 order by a.created_at desc
 limit 100;
 ```
+
+## Programmes
+
+Production projects run inside programmes. There are two kinds:
+
+- **School programmes**, started by a school admin (or a platform admin) on
+  the **Programmes** page: a name and one of the school's teachers as its
+  mentor (they become a _school mentor_). Only that school's learners can
+  join, with the programme's join code. The school admin can start and
+  staff its projects. School admins can also make or remove mentors among
+  their teachers from **Users → ⋯ → Make school mentor**.
+- **Mentorship and fellowship programmes**, started by a platform admin with
+  a mentor from any school (they become a _programme mentor_). Learners
+  from every school join once they reach that stage.
+
+The mentor gets a notification with the join code to share.

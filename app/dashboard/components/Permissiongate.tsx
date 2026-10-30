@@ -121,7 +121,7 @@ export const InstitutionRolegate = [
   },
   {
     permission: 'reports.read',
-    text: 'Projects',
+    text: 'Programmes',
     href: '/dashboard/projects',
     icon: <Clapperboard />,
   },

@@ -33,7 +33,14 @@ import { createClient } from '@/lib/supabase/client';
 import { RoleGate } from '@/components/ui/permission-gate';
 import { ROLE_LABELS } from '@/lib/bulk/roles';
 import { SetupLinkPanel } from '@/components/institution/setup-link-panel';
-import { Ban, KeyRound, MoreHorizontal, RotateCcw, Trash2 } from 'lucide-react';
+import {
+  Ban,
+  GraduationCap,
+  KeyRound,
+  MoreHorizontal,
+  RotateCcw,
+  Trash2,
+} from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -51,6 +58,7 @@ interface Member {
   first_name: string | null;
   last_name: string | null;
   role: string;
+  school_mentor: boolean | null;
 }
 
 export default function UserManagementPage() {
@@ -88,7 +96,9 @@ export default function UserManagementPage() {
     setLoadingList(true);
     let query = createClient()
       .from('users')
-      .select('id, email, first_name, last_name, role', { count: 'exact' })
+      .select('id, email, first_name, last_name, role, school_mentor', {
+        count: 'exact',
+      })
       .not('institution_id', 'is', null)
       .order('last_name', { ascending: true, nullsFirst: false })
       .range(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE - 1);
@@ -124,6 +134,28 @@ export default function UserManagementPage() {
       setStatus({});
     }
   }, [page, roleFilter, search]);
+
+  // School mentors run the school's programmes (see Programmes).
+  const setMentor = async (member: Member, on: boolean) => {
+    setBusy(member.id);
+    setMessage(null);
+    const { error } = await createClient().rpc('set_school_mentor', {
+      p_user: member.id,
+      p_on: on,
+    });
+    setBusy(null);
+    if (error) {
+      setMessage({ kind: 'error', text: error.message });
+      return;
+    }
+    setMessage({
+      kind: 'success',
+      text: on
+        ? `${displayName(member)} is now a school mentor and can run your programmes.`
+        : `${displayName(member)} is no longer a school mentor.`,
+    });
+    loadMembers();
+  };
 
   const act = async (member: Member, action: MemberAction) => {
     const name = displayName(member);
@@ -392,6 +424,11 @@ export default function UserManagementPage() {
                             Not signed in yet
                           </span>
                         ) : null}
+                        {member.school_mentor && (
+                          <span className="ml-2 rounded-full bg-blue-50 px-2 py-0.5 text-xs text-blue-700">
+                            Mentor
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell>{member.email}</TableCell>
                       <TableCell>
@@ -445,6 +482,18 @@ export default function UserManagementPage() {
                                   >
                                     <Ban className="mr-2 h-4 w-4" />
                                     Suspend
+                                  </DropdownMenuItem>
+                                )}
+                                {member.role === 'teacher' && (
+                                  <DropdownMenuItem
+                                    onSelect={() =>
+                                      setMentor(member, !member.school_mentor)
+                                    }
+                                  >
+                                    <GraduationCap className="mr-2 h-4 w-4" />
+                                    {member.school_mentor
+                                      ? 'Remove as mentor'
+                                      : 'Make school mentor'}
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
