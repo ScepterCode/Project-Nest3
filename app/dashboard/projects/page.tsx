@@ -29,7 +29,7 @@ import { errorMessage, toast } from '@/lib/toast';
 import {
   ProgrammeGroup,
   ProgrammesCard,
-  SCOPE_LABELS,
+  programmeLabel,
 } from '@/components/projects/programmes-card';
 
 interface ProjectRow {
@@ -100,6 +100,9 @@ export default function ProjectsPage() {
     if (user) loadGroups();
   }, [user, loadGroups]);
 
+  // Programmes this person can start projects in (school admins also see,
+  // read-only, platform programmes their school takes part in).
+  const runnable = groups.filter(g => g.can_run);
   const canStartProgrammes =
     !!access?.platform_admin || access?.role === 'institution_admin';
 
@@ -149,7 +152,7 @@ export default function ProjectsPage() {
         onCreated={loadGroups}
       />
 
-      {groups.length > 0 && (
+      {runnable.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Start a project</CardTitle>
@@ -169,9 +172,9 @@ export default function ProjectsPage() {
                     <SelectValue placeholder="Choose a group" />
                   </SelectTrigger>
                   <SelectContent>
-                    {groups.map(g => (
+                    {runnable.map(g => (
                       <SelectItem key={g.id} value={g.id}>
-                        {g.name} · {SCOPE_LABELS[g.scope]}
+                        {g.name} · {programmeLabel(g)}
                         {canStartProgrammes && g.mentor_name
                           ? ` · mentor ${g.mentor_name}`
                           : ''}{' '}
@@ -232,7 +235,7 @@ export default function ProjectsPage() {
           {!projects ? (
             <p className="text-sm text-muted-foreground">Loading…</p>
           ) : projects.length === 0 ? (
-            <EmptyProjects access={access} groups={groups.length} />
+            <EmptyProjects access={access} groups={runnable.length} />
           ) : (
             <ul className="divide-y">
               {projects.map(p => (

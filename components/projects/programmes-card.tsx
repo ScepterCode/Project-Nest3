@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Check, Copy } from 'lucide-react';
+import { Check, ChevronDown, Copy } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -14,32 +14,121 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { MemberPicker } from '@/components/institution/member-picker';
 import { createClient } from '@/lib/supabase/client';
 import { errorMessage, toast } from '@/lib/toast';
 
-// Programmes (supabase/migrations/20261031120000_school_programmes.sql):
-// school admins start them for their school; platform admins also start
-// cross-school mentorship and fellowship programmes.
+// Programmes (supabase/migrations/20261031120000_school_programmes.sql and
+// 20261101120000_programme_schools.sql): school admins start them for their
+// school; platform admins also start them for selected schools or every
+// school, optionally only for learners at a stage.
 
 export interface ProgrammeGroup {
   id: string;
   name: string;
-  scope: 'school' | 'mentorship' | 'fellowship';
+  /** 'school': one school's programme; 'programme': a platform programme. */
+  scope: 'school' | 'programme';
+  stage: 'mentorship' | 'fellowship' | null;
   school_name: string | null;
+  /** The chosen schools, or null for every school. */
+  schools: string | null;
   code: string;
   mentor_name: string | null;
   students: number;
   projects: number;
+  /** False for programmes the caller's school only takes part in. */
+  can_run: boolean;
 }
 
-export const SCOPE_LABELS: Record<ProgrammeGroup['scope'], string> = {
-  school: 'School programme',
-  mentorship: 'Mentorship (all schools)',
-  fellowship: 'Art Fellowship (all schools)',
-};
+const STAGE_LABELS = { mentorship: 'Mentorship', fellowship: 'Art Fellowship' };
 
-type Scope = ProgrammeGroup['scope'];
+/** Who can take part, in a few words. */
+export function programmeLabel(g: ProgrammeGroup) {
+  if (g.scope === 'school') return 'School programme';
+  const who = g.schools ?? 'All schools';
+  return g.stage ? `${STAGE_LABELS[g.stage]} · ${who}` : who;
+}
+
+type Scope = 'school' | 'all' | 'selected';
+
+/** Every school, as a drop-down of check boxes (platform admins). */
+function SchoolsPicker({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (ids: string[]) => void;
+}) {
+  const [schools, setSchools] = useState<
+    { id: string; name: string; status: string }[] | null
+  >(null);
+
+  useEffect(() => {
+    createClient()
+      .rpc('platform_schools')
+      .then(({ data }) =>
+        setSchools(
+          ((data as { id: string; name: string; status: string }[]) ?? []).sort(
+            (a, b) => a.name.localeCompare(b.name)
+          )
+        )
+      );
+  }, []);
+
+  const names = (schools ?? [])
+    .filter(s => value.includes(s.id))
+    .map(s => s.name);
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full justify-between font-normal"
+          id="programme-schools"
+        >
+          <span className="truncate">
+            {names.length === 0
+              ? 'Choose schools'
+              : names.length <= 2
+                ? names.join(', ')
+                : `${names.length} schools chosen`}
+          </span>
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="max-h-72 w-72 overflow-y-auto">
+        <DropdownMenuLabel>
+          {schools ? `${schools.length} schools` : 'Loading schools…'}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        {(schools ?? []).map(s => (
+          <DropdownMenuCheckboxItem
+            key={s.id}
+            checked={value.includes(s.id)}
+            // Keep the menu open while ticking several schools.
+            onSelect={e => e.preventDefault()}
+            onCheckedChange={on =>
+              onChange(on ? [...value, s.id] : value.filter(id => id !== s.id))
+            }
+          >
+            {s.name}
+            {s.status !== 'active' ? ' (suspended)' : ''}
+          </DropdownMenuCheckboxItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 function CopyCode({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
@@ -153,6 +242,8 @@ export function ProgrammesCard({
 }) {
   const [name, setName] = useState('');
   const [scope, setScope] = useState<Scope>('school');
+  const [chosenSchools, setChosenSchools] = useState<string[]>([]);
+  const [stage, setStage] = useState<'' | 'mentorship' | 'fellowship'>('');
   const [mentor, setMentor] = useState<string | null>(null);
   const [description, setDescription] = useState('');
   const [saving, setSaving] = useState(false);
@@ -163,6 +254,10 @@ export function ProgrammesCard({
       toast.error('Choose the teacher who will run it');
       return;
     }
+    if (scope === 'selected' && chosenSchools.length === 0) {
+      toast.error('Choose at least one school');
+      return;
+    }
     setSaving(true);
     try {
       const { data, error } = await createClient().rpc(
@@ -170,8 +265,10 @@ export function ProgrammesCard({
         {
           p_name: name.trim(),
           p_mentor: mentor,
-          p_scope: scope,
+          p_scope: scope === 'school' ? 'school' : 'schools',
           p_description: description.trim() || null,
+          p_schools: scope === 'selected' ? chosenSchools : null,
+          p_stage: scope === 'school' ? null : stage || null,
         }
       );
       if (error) throw error;
@@ -180,6 +277,8 @@ export function ProgrammesCard({
       );
       setName('');
       setMentor(null);
+      setChosenSchools([]);
+      setStage('');
       setDescription('');
       onCreated();
     } catch (err) {
@@ -197,7 +296,7 @@ export function ProgrammesCard({
         <CardTitle className="text-base">Programmes</CardTitle>
         <CardDescription>
           {platformAdmin
-            ? 'School programmes take one school’s learners; mentorship and fellowship programmes take learners from every school who have reached that stage.'
+            ? 'Choose who can take part: one school, selected schools or every school, and optionally only learners who have reached a stage.'
             : 'A programme is a group for production work, run by one of your teachers as its mentor. Learners join with its code; only your school’s learners can join.'}
         </CardDescription>
       </CardHeader>
@@ -223,8 +322,13 @@ export function ProgrammesCard({
                   <Badge
                     variant={g.scope === 'school' ? 'secondary' : 'default'}
                   >
-                    {SCOPE_LABELS[g.scope]}
+                    {programmeLabel(g)}
                   </Badge>
+                  {!g.can_run && (
+                    <span className="text-xs text-muted-foreground">
+                      Your school takes part
+                    </span>
+                  )}
                   <CopyCode code={g.code} />
                 </div>
               </li>
@@ -252,20 +356,16 @@ export function ProgrammesCard({
             </div>
             {platformAdmin ? (
               <div className="space-y-1">
-                <Label htmlFor="programme-scope">Who can take part</Label>
+                <Label htmlFor="programme-scope">Schools taking part</Label>
                 <select
                   id="programme-scope"
                   value={scope}
                   onChange={e => setScope(e.target.value as Scope)}
                   className="w-full rounded border bg-white p-2 text-sm"
                 >
-                  <option value="school">One school (the mentor’s)</option>
-                  <option value="mentorship">
-                    Mentorship learners from every school
-                  </option>
-                  <option value="fellowship">
-                    Fellowship learners from every school
-                  </option>
+                  <option value="school">The mentor’s school only</option>
+                  <option value="selected">Selected schools</option>
+                  <option value="all">All schools</option>
                 </select>
               </div>
             ) : (
@@ -274,6 +374,34 @@ export function ProgrammesCard({
                 <p className="rounded border bg-gray-50 p-2 text-sm text-muted-foreground">
                   Your school’s learners
                 </p>
+              </div>
+            )}
+            {platformAdmin && scope === 'selected' && (
+              <div className="space-y-1">
+                <Label htmlFor="programme-schools">Which schools</Label>
+                <SchoolsPicker
+                  value={chosenSchools}
+                  onChange={setChosenSchools}
+                />
+              </div>
+            )}
+            {platformAdmin && scope !== 'school' && (
+              <div className="space-y-1">
+                <Label htmlFor="programme-stage">Which learners</Label>
+                <select
+                  id="programme-stage"
+                  value={stage}
+                  onChange={e => setStage(e.target.value as typeof stage)}
+                  className="w-full rounded border bg-white p-2 text-sm"
+                >
+                  <option value="">Any learner at those schools</option>
+                  <option value="mentorship">
+                    Only learners selected for mentorship
+                  </option>
+                  <option value="fellowship">
+                    Only learners selected for the fellowship
+                  </option>
+                </select>
               </div>
             )}
             <div className="space-y-1 md:col-span-2">
