@@ -167,7 +167,7 @@ export default function RubricDetailPage() {
 
       setCriteria(formattedCriteria);
     } catch (error) {
-      console.error('Error fetching rubric data:', error);
+      console.error('Error fetching marking guide data:', error);
       router.push('/dashboard/teacher/rubrics');
     } finally {
       setLoading(false);
@@ -243,11 +243,11 @@ export default function RubricDetailPage() {
         }
       }
 
-      toast.success('Rubric duplicated successfully!');
+      toast.success('Marking guide duplicated successfully!');
       router.push(`/dashboard/teacher/rubrics/${newRubric.id}/edit`);
     } catch (error) {
-      console.error('Error duplicating rubric:', error);
-      toast.error('Failed to duplicate rubric');
+      console.error('Error duplicating marking guide:', error);
+      toast.error('Failed to duplicate marking guide');
     }
   };
 
@@ -256,14 +256,14 @@ export default function RubricDetailPage() {
 
     if (rubric.usage_count > 0) {
       toast.error(
-        'Cannot delete a rubric that has been used in assignments. Archive it instead.'
+        'Cannot delete a marking guide that has been used in assignments. Archive it instead.'
       );
       return;
     }
 
     if (
       !(await confirmAction({
-        title: 'Delete this rubric?',
+        title: 'Delete this marking guide?',
         description: 'This cannot be undone.',
         confirmLabel: 'Delete',
         destructive: true,
@@ -280,11 +280,11 @@ export default function RubricDetailPage() {
 
       if (error) throw error;
 
-      toast.success('Rubric deleted successfully!');
+      toast.success('Marking guide deleted successfully!');
       router.push('/dashboard/teacher/rubrics');
     } catch (error) {
-      console.error('Error deleting rubric:', error);
-      toast.error('Failed to delete rubric');
+      console.error('Error deleting marking guide:', error);
+      toast.error('Failed to delete marking guide');
     }
   };
 
@@ -299,13 +299,13 @@ export default function RubricDetailPage() {
   if (!rubric) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-xl font-semibold mb-4">Rubric Not Found</h2>
+        <h2 className="text-xl font-semibold mb-4">Marking Guide Not Found</h2>
         <p className="text-gray-600 mb-4">
           The rubric you&apos;re looking for doesn&apos;t exist or you
           don&apos;t have access to it.
         </p>
         <Link href="/dashboard/teacher/rubrics">
-          <Button>Back to Rubrics</Button>
+          <Button>Back to Marking guides</Button>
         </Link>
       </div>
     );
@@ -483,9 +483,9 @@ export default function RubricDetailPage() {
         <TabsContent value="preview" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Rubric Preview</CardTitle>
+              <CardTitle>Marking Guide Preview</CardTitle>
               <CardDescription>
-                How this rubric will appear to students
+                How this marking guide will appear to learners
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -568,14 +568,18 @@ export default function RubricDetailPage() {
           <Card>
             <CardHeader>
               <CardTitle>Usage Statistics</CardTitle>
-              <CardDescription>How this rubric has been used</CardDescription>
+              <CardDescription>
+                How this marking guide has been used
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="text-center py-12">
                 <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">Rubric Usage</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  Marking Guide Usage
+                </h3>
                 <p className="text-gray-600">
-                  This rubric can be used across multiple assignments and
+                  This marking guide can be used across multiple assignments and
                   classes.
                 </p>
               </div>

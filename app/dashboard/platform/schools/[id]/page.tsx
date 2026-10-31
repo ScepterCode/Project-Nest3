@@ -62,13 +62,13 @@ export default function PlatformSchoolPage({
       active
         ? {
             title: `Reactivate ${detail.school.name}?`,
-            description: 'Its student and teacher codes work again.',
+            description: 'Its learner and tutor codes work again.',
             confirmLabel: 'Reactivate',
           }
         : {
             title: `Suspend ${detail.school.name}?`,
             description:
-              'Its student and teacher codes stop working, so nobody new can join. Existing members keep their accounts, classes and work.',
+              'Its learner and tutor codes stop working, so nobody new can join. Existing members keep their accounts, classes and work.',
             confirmLabel: 'Suspend',
             destructive: true,
           }
@@ -184,8 +184,8 @@ export default function PlatformSchoolPage({
               <thead className="text-left text-muted-foreground">
                 <tr>
                   <th className="py-2 font-normal">Class</th>
-                  <th className="py-2 font-normal">Teacher</th>
-                  <th className="py-2 font-normal">Students</th>
+                  <th className="py-2 font-normal">Tutor</th>
+                  <th className="py-2 font-normal">Learners</th>
                   <th className="py-2 font-normal">Assignments</th>
                   <th className="py-2 font-normal">Work handed in (7 days)</th>
                   <th className="py-2 font-normal">Created</th>

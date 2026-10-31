@@ -105,9 +105,8 @@ export default function RoleRequestsPage() {
       approve &&
       request.requested_role === 'institution_admin' &&
       !(await confirmAction({
-        title: `Make ${name} an institution admin?`,
-        description:
-          'They will be able to manage everyone in your institution.',
+        title: `Make ${name} a school admin?`,
+        description: 'They will be able to manage everyone in your school.',
         confirmLabel: 'Make admin',
         destructive: true,
       }))
@@ -140,7 +139,7 @@ export default function RoleRequestsPage() {
       <div>
         <h1 className="text-3xl font-bold">Role Requests</h1>
         <p className="text-muted-foreground">
-          People in your institution who asked for a different role.
+          People in your school who asked for a different role.
         </p>
       </div>
 

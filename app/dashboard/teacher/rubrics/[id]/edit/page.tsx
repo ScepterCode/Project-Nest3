@@ -181,7 +181,7 @@ export default function EditRubricPage() {
 
       setCriteria(formattedCriteria);
     } catch (error) {
-      console.error('Error fetching rubric data:', error);
+      console.error('Error fetching marking guide data:', error);
       router.push('/dashboard/teacher/rubrics');
     } finally {
       setLoading(false);
@@ -329,7 +329,7 @@ export default function EditRubricPage() {
 
   const validateRubric = () => {
     if (!rubricData.name.trim()) {
-      toast.error('Please enter a rubric name');
+      toast.error('Please enter a marking guide name');
       return false;
     }
     if (criteria.length === 0) {
@@ -435,11 +435,11 @@ export default function EditRubricPage() {
         }
       }
 
-      toast.success('Rubric updated successfully!');
+      toast.success('Marking guide updated successfully!');
       router.push(`/dashboard/teacher/rubrics/${params.id}`);
     } catch (error) {
-      console.error('Error updating rubric:', error);
-      toast.error('Failed to update rubric. Please try again.');
+      console.error('Error updating marking guide:', error);
+      toast.error('Failed to update marking guide. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -463,8 +463,8 @@ export default function EditRubricPage() {
             Back
           </Button>
           <div>
-            <h1 className="text-3xl font-bold">Edit Rubric</h1>
-            <p className="text-gray-600">Modify your grading rubric</p>
+            <h1 className="text-3xl font-bold">Edit Marking Guide</h1>
+            <p className="text-gray-600">Modify your marking guide</p>
           </div>
         </div>
         <div className="flex gap-2">
@@ -492,16 +492,16 @@ export default function EditRubricPage() {
         <CardHeader>
           <CardTitle>Basic Information</CardTitle>
           <CardDescription>
-            Update the basic details for your rubric
+            Update the basic details for your marking guide
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Rubric Name *</Label>
+              <Label htmlFor="name">Marking Guide Name *</Label>
               <Input
                 id="name"
-                placeholder="e.g., Essay Writing Rubric"
+                placeholder="e.g., Essay Writing Marking Guide"
                 value={rubricData.name}
                 onChange={e =>
                   setRubricData(prev => ({ ...prev, name: e.target.value }))
@@ -538,7 +538,7 @@ export default function EditRubricPage() {
             <Label htmlFor="description">Description</Label>
             <Textarea
               id="description"
-              placeholder="Describe what this rubric evaluates..."
+              placeholder="Describe what this marking guide evaluates..."
               value={rubricData.description}
               onChange={e =>
                 setRubricData(prev => ({
@@ -600,7 +600,7 @@ export default function EditRubricPage() {
                 <div className="space-y-4">
                   <div className="text-center">
                     <h3 className="text-xl font-bold">
-                      {rubricData.name || 'Untitled Rubric'}
+                      {rubricData.name || 'Untitled Marking Guide'}
                     </h3>
                     {rubricData.description && (
                       <p className="text-gray-600 mt-2">

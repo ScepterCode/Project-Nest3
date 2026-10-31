@@ -107,10 +107,10 @@ export function UserRoleProfileSection({
 
   const getRoleDisplayName = (role: UserRole): string => {
     const roleNames = {
-      [UserRole.STUDENT]: 'Student',
-      [UserRole.TEACHER]: 'Teacher',
+      [UserRole.STUDENT]: 'Learner',
+      [UserRole.TEACHER]: 'Tutor',
       [UserRole.DEPARTMENT_ADMIN]: 'Department Admin',
-      [UserRole.INSTITUTION_ADMIN]: 'Institution Admin',
+      [UserRole.INSTITUTION_ADMIN]: 'School Admin',
       [UserRole.SYSTEM_ADMIN]: 'System Admin',
     };
     return roleNames[role] || role;

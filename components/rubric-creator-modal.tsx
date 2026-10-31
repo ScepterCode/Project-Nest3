@@ -129,7 +129,9 @@ export function RubricCreatorModal({
 
   const createRubric = async () => {
     if (!rubricName.trim() || criteria.length === 0) {
-      toast.error('Please provide a rubric name and at least one criterion');
+      toast.error(
+        'Please provide a marking guide name and at least one criterion'
+      );
       return;
     }
 
@@ -169,7 +171,7 @@ export function RubricCreatorModal({
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create rubric');
+        throw new Error('Failed to create marking guide');
       }
 
       onRubricCreated(rubric);
@@ -180,10 +182,12 @@ export function RubricCreatorModal({
       setRubricDescription('');
       setCriteria([]);
 
-      toast.success('Rubric created and added to assignment successfully!');
+      toast.success(
+        'Marking guide created and added to assignment successfully!'
+      );
     } catch (error) {
-      console.error('Error creating rubric:', error);
-      toast.error('Failed to create rubric. Please try again.');
+      console.error('Error creating marking guide:', error);
+      toast.error('Failed to create marking guide. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -191,8 +195,8 @@ export function RubricCreatorModal({
 
   const loadTemplate = (templateName: string) => {
     if (templateName === 'essay') {
-      setRubricName('Essay Rubric');
-      setRubricDescription('Rubric for evaluating essays');
+      setRubricName('Essay Marking Guide');
+      setRubricDescription('Marking guide for evaluating essays');
       setCriteria([
         {
           id: 'content',
@@ -300,15 +304,15 @@ export function RubricCreatorModal({
         {trigger || (
           <Button variant="outline" size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            Add Rubric
+            Add Marking Guide
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create Rubric</DialogTitle>
+          <DialogTitle>Create Marking Guide</DialogTitle>
           <DialogDescription>
-            Create a rubric for structured grading with detailed criteria
+            Create a marking guide for structured grading with detailed criteria
           </DialogDescription>
         </DialogHeader>
 
@@ -316,12 +320,12 @@ export function RubricCreatorModal({
           {/* Basic Info */}
           <div className="space-y-4">
             <div>
-              <Label htmlFor="rubric-name">Rubric Name</Label>
+              <Label htmlFor="rubric-name">Marking Guide Name</Label>
               <Input
                 id="rubric-name"
                 value={rubricName}
                 onChange={e => setRubricName(e.target.value)}
-                placeholder="e.g., Essay Writing Rubric"
+                placeholder="e.g., Essay Writing Marking Guide"
               />
             </div>
             <div>
@@ -330,7 +334,7 @@ export function RubricCreatorModal({
                 id="rubric-description"
                 value={rubricDescription}
                 onChange={e => setRubricDescription(e.target.value)}
-                placeholder="Describe what this rubric evaluates..."
+                placeholder="Describe what this marking guide evaluates..."
                 rows={2}
               />
             </div>
@@ -497,7 +501,7 @@ export function RubricCreatorModal({
               ) : (
                 <>
                   <Save className="h-4 w-4 mr-2" />
-                  Create Rubric
+                  Create Marking Guide
                 </>
               )}
             </Button>

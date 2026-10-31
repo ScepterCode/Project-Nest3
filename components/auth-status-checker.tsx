@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -14,10 +14,10 @@ interface AuthStatusCheckerProps {
   allowedRoles?: string[];
 }
 
-export function AuthStatusChecker({ 
-  children, 
-  requireAuth = true, 
-  allowedRoles = [] 
+export function AuthStatusChecker({
+  children,
+  requireAuth = true,
+  allowedRoles = [],
 }: AuthStatusCheckerProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -49,19 +49,21 @@ export function AuthStatusChecker({
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
               <strong>Authentication Required</strong>
-              <p className="mt-2">You need to be logged in to access this page.</p>
+              <p className="mt-2">
+                You need to be logged in to access this page.
+              </p>
             </AlertDescription>
           </Alert>
-          
+
           <div className="mt-6 flex gap-3">
-            <Button 
+            <Button
               onClick={() => router.push('/auth/login')}
               className="flex-1"
             >
               <LogIn className="h-4 w-4 mr-2" />
-              Login
+              Sign in
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => router.push('/auth/sign-up')}
               className="flex-1"
@@ -69,13 +71,9 @@ export function AuthStatusChecker({
               Sign Up
             </Button>
           </div>
-          
+
           <div className="mt-4 text-center">
-            <Button 
-              variant="ghost" 
-              size="sm"
-              onClick={() => router.push('/')}
-            >
+            <Button variant="ghost" size="sm" onClick={() => router.push('/')}>
               ← Back to Home
             </Button>
           </div>

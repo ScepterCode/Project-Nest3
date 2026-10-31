@@ -3,7 +3,7 @@
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import DashboardHeader from '../components/dashboardheader';
+import { PageHeading } from '@/components/ui/page-heading';
 
 export default function TeacherDashboard() {
   const { user, loading, getUserDisplayName } = useAuth();
@@ -17,7 +17,7 @@ export default function TeacherDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -28,10 +28,10 @@ export default function TeacherDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <DashboardHeader text="Teacher" />
+    <div className="space-y-6">
+      <PageHeading title="Home" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">
             Welcome, {getUserDisplayName()}!
@@ -68,7 +68,7 @@ export default function TeacherDashboard() {
                 <h3 className="font-semibold text-lg">Create Class</h3>
               </div>
               <p className="text-gray-600 text-sm">
-                Start a new class for your students
+                Start a new class for your learners
               </p>
             </button>
 
@@ -110,10 +110,10 @@ export default function TeacherDashboard() {
                 <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
                   <span className="text-xl">📏</span>
                 </div>
-                <h3 className="font-semibold text-lg">Rubrics</h3>
+                <h3 className="font-semibold text-lg">Marking guides</h3>
               </div>
               <p className="text-gray-600 text-sm">
-                Create and manage grading rubrics
+                Create and manage marking guides
               </p>
             </button>
 

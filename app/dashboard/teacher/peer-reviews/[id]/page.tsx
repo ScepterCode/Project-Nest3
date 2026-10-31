@@ -96,7 +96,7 @@ export default function PeerReviewManagementPage() {
       ['Reviews'],
       [
         'Reviewer',
-        'Reviewed student',
+        'Reviewed learner',
         'Status',
         'Rating (out of 5)',
         'Minutes spent',
@@ -119,9 +119,9 @@ export default function PeerReviewManagementPage() {
         list(r.feedback?.improvements),
       ]),
       [],
-      ['Students'],
+      ['Learners'],
       [
-        'Student',
+        'Learner',
         'Reviews assigned',
         'Reviews completed',
         'Reviews received',
@@ -365,7 +365,7 @@ export default function PeerReviewManagementPage() {
 
       setStudentProgress(Array.from(studentMap.values()));
     } catch (error) {
-      console.error('Error fetching student progress:', error);
+      console.error('Error fetching learner progress:', error);
     }
   };
 
@@ -413,7 +413,7 @@ export default function PeerReviewManagementPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="w-full">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -425,7 +425,7 @@ export default function PeerReviewManagementPage() {
 
   if (!peerReviewAssignment) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="w-full">
         <div className="max-w-7xl mx-auto">
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold mb-4">
@@ -456,7 +456,7 @@ export default function PeerReviewManagementPage() {
       : 0;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="w-full">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -519,7 +519,7 @@ export default function PeerReviewManagementPage() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-gray-500">Reviews per student</dt>
+                  <dt className="text-gray-500">Reviews per learner</dt>
                   <dd>
                     {peerReviewAssignment.reviews_per_student ?? 'Not set'}
                   </dd>
@@ -661,7 +661,7 @@ export default function PeerReviewManagementPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium">
-                      Reviews per Student
+                      Reviews per Learner
                     </Label>
                     <p className="text-sm text-gray-600">
                       {peerReviewAssignment.reviews_per_student}
@@ -828,7 +828,7 @@ export default function PeerReviewManagementPage() {
                     <MessageSquare className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium mb-2">No reviews yet</h3>
                     <p className="text-gray-600">
-                      Reviews will appear here once students start submitting
+                      Reviews will appear here once learners start submitting
                       them.
                     </p>
                   </CardContent>
@@ -910,10 +910,10 @@ export default function PeerReviewManagementPage() {
                   <CardContent className="py-12 text-center">
                     <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium mb-2">
-                      No student data
+                      No learner data
                     </h3>
                     <p className="text-gray-600">
-                      Student progress will appear here once reviews are
+                      Learner progress will appear here once reviews are
                       assigned.
                     </p>
                   </CardContent>

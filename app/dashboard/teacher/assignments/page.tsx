@@ -151,7 +151,7 @@ export default function TeacherAssignmentsPage() {
             <FileText className="h-12 w-12 text-gray-400 mb-4" />
             <h3 className="text-lg font-semibold mb-2">No assignments yet</h3>
             <p className="text-gray-600 text-center mb-4">
-              Create your first assignment to start collecting student work.
+              Create your first assignment to start collecting learner work.
             </p>
             <Link href="/dashboard/teacher/assignments/create">
               <Button>

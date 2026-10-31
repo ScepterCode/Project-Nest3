@@ -41,11 +41,13 @@ export default function TeacherRubricsPage() {
         const response = await fetch('/api/rubrics');
         const result = await response.json();
         if (!response.ok)
-          throw new Error(result.error || 'Failed to load rubrics');
+          throw new Error(result.error || 'Failed to load marking guides');
         setRubrics(result.rubrics || []);
       } catch (error) {
-        console.error('Error fetching rubrics:', error);
-        toast.error(`Couldn't load your rubrics: ${errorMessage(error)}`);
+        console.error('Error fetching marking guides:', error);
+        toast.error(
+          `Couldn't load your marking guides: ${errorMessage(error)}`
+        );
         setRubrics([]);
       } finally {
         setLoading(false);
@@ -74,15 +76,15 @@ export default function TeacherRubricsPage() {
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || 'Failed to delete rubric');
+        throw new Error(result.error || 'Failed to delete marking guide');
       }
 
       // Remove from local state
       setRubrics(prev => prev.filter(r => r.id !== rubricId));
-      toast.success('Rubric deleted successfully!');
+      toast.success('Marking guide deleted successfully!');
     } catch (error) {
-      console.error('Error deleting rubric:', error);
-      toast.error(`Couldn't delete the rubric: ${errorMessage(error)}`);
+      console.error('Error deleting marking guide:', error);
+      toast.error(`Couldn't delete the marking guide: ${errorMessage(error)}`);
     } finally {
       setDeleting(null);
     }
@@ -115,15 +117,15 @@ export default function TeacherRubricsPage() {
 
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Rubrics</h1>
+          <h1 className="text-3xl font-bold">Marking guides</h1>
           <p className="text-gray-600">
-            Create and manage grading rubrics for your assignments
+            Create and manage marking guides for your assignments
           </p>
         </div>
         <Link href="/dashboard/teacher/rubrics/create">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Create Rubric
+            Create Marking Guide
           </Button>
         </Link>
       </div>
@@ -132,15 +134,17 @@ export default function TeacherRubricsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <FileCheck className="h-12 w-12 text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No rubrics yet</h3>
+            <h3 className="text-lg font-semibold mb-2">
+              No marking guides yet
+            </h3>
             <p className="text-gray-600 text-center mb-4">
-              Create your first rubric to standardize grading across
+              Create your first marking guide to standardize grading across
               assignments.
             </p>
             <Link href="/dashboard/teacher/rubrics/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
-                Create Your First Rubric
+                Create Your First Marking Guide
               </Button>
             </Link>
           </CardContent>
@@ -220,15 +224,17 @@ export default function TeacherRubricsPage() {
           <CardContent>
             <ul className="space-y-2 text-sm text-gray-600">
               <li>
-                • Create reusable rubrics to maintain consistent grading
+                • Create reusable marking guides to maintain consistent grading
                 standards
               </li>
               <li>
-                • Include clear criteria descriptions to help students
+                • Include clear criteria descriptions to help learners
                 understand expectations
               </li>
               <li>• Use point scales that align with your grading system</li>
-              <li>• Share rubrics with students before assignments are due</li>
+              <li>
+                • Share marking guides with learners before assignments are due
+              </li>
             </ul>
           </CardContent>
         </Card>

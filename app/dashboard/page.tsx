@@ -33,7 +33,7 @@ export default function Dashboard() {
 
           if (error || !profile) {
             console.error(
-              'SECURITY: Cannot determine user role, forcing logout'
+              'SECURITY: Cannot determine user role, forcing sign out'
             );
             await logout();
             return;
@@ -68,13 +68,13 @@ export default function Dashboard() {
               console.error(
                 'SECURITY: Unknown role',
                 profile.role,
-                'forcing logout'
+                'forcing sign out'
               );
               await logout();
           }
         } catch (error) {
           console.error(
-            'SECURITY: Error determining user role, forcing logout:',
+            'SECURITY: Error determining user role, forcing sign out:',
             error
           );
           await logout();
@@ -87,7 +87,7 @@ export default function Dashboard() {
 
   if (loading || redirecting) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
         <span className="ml-2">Redirecting to your dashboard...</span>
       </div>
@@ -99,11 +99,13 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+    <div className="space-y-6">
+      <div>
+        <div>
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
+            <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">
+              Dashboard
+            </h1>
             <button
               onClick={async () => {
                 const { logout } = await import('@/contexts/auth-context');
@@ -112,13 +114,13 @@ export default function Dashboard() {
               }}
               className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
             >
-              Logout
+              Sign out
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold mb-4">
             Welcome, {getUserDisplayName()}!
@@ -135,7 +137,7 @@ export default function Dashboard() {
               <div className="flex items-center">
                 <div className="text-3xl mr-4">👨‍🎓</div>
                 <div>
-                  <h3 className="font-semibold">Student Dashboard</h3>
+                  <h3 className="font-semibold">Learner Dashboard</h3>
                   <p className="text-gray-600 text-sm">
                     Access classes, assignments, and grades
                   </p>
@@ -150,7 +152,7 @@ export default function Dashboard() {
               <div className="flex items-center">
                 <div className="text-3xl mr-4">👨‍🏫</div>
                 <div>
-                  <h3 className="font-semibold">Teacher Dashboard</h3>
+                  <h3 className="font-semibold">Tutor Dashboard</h3>
                   <p className="text-gray-600 text-sm">
                     Manage classes, create assignments
                   </p>

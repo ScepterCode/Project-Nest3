@@ -5,6 +5,7 @@ import {
   Clapperboard,
   FileText,
   GraduationCap,
+  House,
   Layers,
   LineChart,
   Upload,
@@ -14,8 +15,21 @@ import {
 
 export const studentsRolegate = [
   {
+    permission: 'classes.read',
+    text: 'Home',
+    href: '/dashboard/student',
+    icon: <House />,
+    exact: true,
+  },
+  {
+    permission: 'classes.read',
+    text: 'Classes',
+    href: '/dashboard/student/classes',
+    icon: <GraduationCap />,
+  },
+  {
     permission: 'assignments.read',
-    text: 'Assignment',
+    text: 'Work',
     href: '/dashboard/student/assignments',
     icon: <FileText />,
   },
@@ -27,7 +41,7 @@ export const studentsRolegate = [
   },
   {
     permission: 'peer_reviews.read',
-    text: 'Peer Reviews',
+    text: 'Peer reviews',
     href: '/dashboard/student/peer-reviews',
     icon: <ClipboardCheck />,
   },
@@ -59,7 +73,7 @@ export const teachersRolegate = [
   },
   {
     permission: 'peer_reviews.manage',
-    text: 'Peer Reviews',
+    text: 'Peer reviews',
     href: '/dashboard/teacher/peer-reviews',
     icon: <ClipboardCheck />,
   },
@@ -71,7 +85,7 @@ export const teachersRolegate = [
   },
   {
     permission: 'rubrics.manage',
-    text: 'Rubrics',
+    text: 'Marking guides',
     href: '/dashboard/teacher/rubrics',
     icon: <ClipboardList />,
   },
@@ -85,25 +99,25 @@ export const teachersRolegate = [
 export const InstitutionRolegate = [
   {
     permission: 'users.manage',
-    text: 'Users',
+    text: 'People',
     href: '/dashboard/institution/users',
     icon: <User />,
   },
   {
     permission: 'users.manage',
-    text: 'Role Requests',
+    text: 'Role requests',
     href: '/dashboard/institution/role-requests',
     icon: <ClipboardCheck />,
   },
   {
     permission: 'users.manage',
-    text: 'Bulk Import',
+    text: 'Bulk import',
     href: '/dashboard/institution/bulk-import',
     icon: <Upload />,
   },
   {
     permission: 'users.manage',
-    text: 'Bulk Roles',
+    text: 'Bulk roles',
     href: '/dashboard/institution/bulk-role-assignment',
     icon: <UserCog />,
   },

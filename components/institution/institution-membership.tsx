@@ -65,7 +65,7 @@ export function InstitutionAdminPanel({
     try {
       setInstitution(await fetchMyInstitution());
     } catch (error) {
-      setLoadError(errorMessage(error, 'Could not load your institution'));
+      setLoadError(errorMessage(error, 'Could not load your school'));
     } finally {
       setLoading(false);
     }
@@ -129,16 +129,16 @@ export function SchoolCodesCard({
       </CardHeader>
       <CardContent className="space-y-4">
         <CodeRow
-          label="Teacher code"
-          help="New teachers enter this when they sign up. Keep it to staff."
+          label="Tutor code"
+          help="New tutors enter this when they sign up. Keep it to staff."
           code={institution.staff_code ?? null}
           kind="staff"
           compact
           onReplaced={code => onChange({ ...institution, staff_code: code })}
         />
         <CodeRow
-          label="Student code"
-          help="Optional. Students join automatically when a teacher accepts them into a class; existing accounts can also enter this on their profile."
+          label="Learner code"
+          help="Optional. Learners join automatically when a tutor accepts them into a class; existing accounts can also enter this on their profile."
           code={institution.join_code}
           kind="student"
           compact
@@ -166,10 +166,10 @@ function CreateInstitutionForm({
         { p_name: name }
       );
       if (error) throw error;
-      toast.success('Institution created');
+      toast.success('School created');
       onCreated(data as MyInstitution);
     } catch (error) {
-      toast.error(errorMessage(error, 'Could not create the institution'));
+      toast.error(errorMessage(error, 'Could not create the school'));
     } finally {
       setSaving(false);
     }
@@ -180,7 +180,7 @@ function CreateInstitutionForm({
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Building2 className="h-5 w-5" />
-          Set up your institution
+          Set up your school
         </CardTitle>
         <CardDescription>
           Teachers and students join it with a code you&apos;ll get next.
@@ -191,7 +191,7 @@ function CreateInstitutionForm({
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="institution-name">Institution name</Label>
+            <Label htmlFor="institution-name">School name</Label>
             <Input
               id="institution-name"
               value={name}
@@ -202,7 +202,7 @@ function CreateInstitutionForm({
             />
           </div>
           <Button type="submit" disabled={saving || name.trim().length < 2}>
-            {saving ? 'Creating...' : 'Create institution'}
+            {saving ? 'Creating...' : 'Create school'}
           </Button>
         </form>
       </CardContent>
@@ -232,15 +232,15 @@ function JoinCodeCard({
       </CardHeader>
       <CardContent className="space-y-5">
         <CodeRow
-          label="Student code"
-          help="Students (and existing teachers) enter this on their profile page to join your school."
+          label="Learner code"
+          help="Learners (and existing tutors) enter this on their profile page to join your school."
           code={institution.join_code}
           kind="student"
           onReplaced={code => onChange({ ...institution, join_code: code })}
         />
         <CodeRow
-          label="Teacher code"
-          help="New teachers enter this when they sign up. It makes them a teacher at your school, so keep it to staff."
+          label="Tutor code"
+          help="New tutors enter this when they sign up. It makes them a tutor at your school, so keep it to staff."
           code={institution.staff_code ?? null}
           kind="staff"
           onReplaced={code => onChange({ ...institution, staff_code: code })}
@@ -422,7 +422,7 @@ export function JoinInstitutionCard({
     fetchMyInstitution()
       .then(setInstitution)
       .catch(error =>
-        toast.error(errorMessage(error, 'Could not load your institution'))
+        toast.error(errorMessage(error, 'Could not load your school'))
       )
       .finally(() => setLoading(false));
   }, []);
@@ -441,7 +441,7 @@ export function JoinInstitutionCard({
       onJoined?.(joined);
       toast.success(`You joined ${joined.name}`);
     } catch (error) {
-      toast.error(errorMessage(error, 'Could not join the institution'));
+      toast.error(errorMessage(error, 'Could not join the school'));
     } finally {
       setJoining(false);
     }
@@ -454,12 +454,12 @@ export function JoinInstitutionCard({
       <CardHeader>
         <CardTitle className="flex items-center">
           <Building2 className="h-5 w-5 mr-2" />
-          Institution
+          School
         </CardTitle>
         <CardDescription>
           {institution
             ? 'Your school or organisation on ProjectNest.'
-            : 'Enter the join code from your institution’s administrator.'}
+            : 'Enter the join code from your school’s administrator.'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -468,7 +468,7 @@ export function JoinInstitutionCard({
         ) : (
           <form onSubmit={handleJoin} className="flex max-w-md gap-2">
             <Input
-              aria-label="Institution join code"
+              aria-label="School join code"
               placeholder="e.g. ABCD2345"
               value={code}
               onChange={e => setCode(e.target.value)}

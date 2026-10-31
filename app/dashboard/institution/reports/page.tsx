@@ -77,7 +77,7 @@ export default function InstitutionReportsPage() {
         assignments,
       ].find(r => r.error);
       if (failed) {
-        console.error('Error loading institution counts:', failed.error);
+        console.error('Error loading school counts:', failed.error);
         setError('Failed to load reports data');
       }
 
@@ -134,12 +134,12 @@ export default function InstitutionReportsPage() {
       const date = (d: string | null) => (d ? d.slice(0, 10) : '');
       const today = new Date().toISOString().slice(0, 10);
       downloadCsv(`institution-report-${today}.csv`, [
-        ['Institution report', today],
+        ['School report', today],
         [],
         ['Totals'],
         ['Members', institutionStats.totalUsers],
-        ['Teachers', institutionStats.totalTeachers],
-        ['Students', institutionStats.totalStudents],
+        ['Tutors', institutionStats.totalTeachers],
+        ['Learners', institutionStats.totalStudents],
         ['Admins', institutionStats.totalAdmins],
         ['Classes', institutionStats.totalClasses],
         ['Assignments', institutionStats.totalAssignments],
@@ -155,7 +155,7 @@ export default function InstitutionReportsPage() {
         ]),
         [],
         ['Classes'],
-        ['Class', 'Code', 'Teacher', 'Students', 'Status', 'Created'],
+        ['Class', 'Code', 'Tutor', 'Learners', 'Status', 'Created'],
         ...(classes.data ?? []).map(c => [
           c.name,
           c.code,
@@ -181,7 +181,7 @@ export default function InstitutionReportsPage() {
   if (loading) {
     return (
       <RoleGate userId={user?.id ?? ''} allowedRoles={['institution_admin']}>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="w-full">
           <DatabaseStatusBanner />
           <div className="max-w-7xl mx-auto">
             <div className="flex items-center justify-center min-h-[400px]">
@@ -196,7 +196,7 @@ export default function InstitutionReportsPage() {
   if (error) {
     return (
       <RoleGate userId={user?.id ?? ''} allowedRoles={['institution_admin']}>
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+        <div className="w-full">
           <DatabaseStatusBanner />
           <div className="max-w-7xl mx-auto">
             <div className="bg-red-50 border border-red-200 rounded-lg p-6">
@@ -216,15 +216,15 @@ export default function InstitutionReportsPage() {
 
   return (
     <RoleGate userId={user?.id ?? ''} allowedRoles={['institution_admin']}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="w-full">
         <DatabaseStatusBanner />
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold">Institution Reports</h1>
+              <h1 className="text-3xl font-bold">School Reports</h1>
               <p className="text-gray-600 dark:text-gray-400">
-                Comprehensive analytics and insights for your institution
+                Comprehensive analytics and insights for your school
               </p>
             </div>
             <div className="flex items-center space-x-4">
@@ -259,7 +259,7 @@ export default function InstitutionReportsPage() {
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Teachers</p>
+                  <p className="text-sm font-medium text-gray-600">Tutors</p>
                   <p className="text-2xl font-bold">
                     {institutionStats.totalTeachers}
                   </p>
@@ -270,7 +270,7 @@ export default function InstitutionReportsPage() {
             <div className="bg-white p-6 rounded-lg shadow">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-600">Students</p>
+                  <p className="text-sm font-medium text-gray-600">Learners</p>
                   <p className="text-2xl font-bold">
                     {institutionStats.totalStudents}
                   </p>

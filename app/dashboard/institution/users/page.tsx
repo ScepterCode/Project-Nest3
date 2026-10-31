@@ -336,8 +336,8 @@ export default function UserManagementPage() {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="teacher">Teacher</SelectItem>
-                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="teacher">Tutor</SelectItem>
+                  <SelectItem value="student">Learner</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -576,7 +576,7 @@ const CONFIRM = {
   delete: (name: string) => ({
     title: `Delete ${name}'s account?`,
     description:
-      'This removes the account for good and cannot be undone. It is only possible for teachers with no classes and students who have handed nothing in; anyone else can be suspended.',
+      'This removes the account for good and cannot be undone. It is only possible for tutors with no classes and learners who have handed nothing in; anyone else can be suspended.',
     confirmLabel: 'Delete account',
     destructive: true,
   }),

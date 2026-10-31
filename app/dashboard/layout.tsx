@@ -1,7 +1,7 @@
 'use client';
 
 import { redirect } from 'next/navigation';
-import { useAuth, logout } from '@/contexts/auth-context';
+import { useAuth } from '@/contexts/auth-context';
 import { useUserRole } from '@/lib/hooks/useUserRole';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -15,15 +15,16 @@ import {
   DashboardMobileNav,
   DashboardNav,
 } from '@/components/Header/dashboard-nav';
-import { ROLE_LABELS } from '@/lib/platform/client';
 import { DashboardHomeLink } from '@/components/Header/dashboard-home-link';
+import { AccountMenu } from '@/components/Header/account-menu';
+import { LearnerTabBar } from '@/components/Header/learner-tab-bar';
 import {
   InstitutionRolegate,
   studentsRolegate,
   teachersRolegate,
 } from './components/Permissiongate';
 import Link from 'next/link';
-import { Layers, LifeBuoy, LogOut } from 'lucide-react';
+import { Layers, LifeBuoy } from 'lucide-react';
 
 function DashboardContent({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -123,7 +124,7 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
           : [];
 
   return (
-    <div className="flex min-h-screen w-full flex-col bg-white">
+    <div className="flex min-h-screen w-full flex-col bg-background">
       <div className="print:hidden">
         <Navbar
           children1={
@@ -146,33 +147,31 @@ function DashboardContent({ children }: { children: React.ReactNode }) {
                 </Link>
               </Button>
               <NotificationBell />
-              <span className="hidden whitespace-nowrap rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-700 sm:inline">
-                {ROLE_LABELS[userRole] ?? userRole}
-              </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={logout}
-                title="Sign out"
-              >
-                <LogOut className="h-4 w-4" />
-                <span className="sr-only">Sign out</span>
-              </Button>
+              <AccountMenu
+                role={userRole}
+                institutionId={roleData.institutionId}
+              />
               <DashboardMobileNav userId={user.id} items={navItems} />
             </div>
           }
         />
       </div>
 
-      <main className="flex flex-1 flex-col gap-4 p-4 md:gap-8 md:p-6 print:p-0">
+      {/* The layout owns width, background and padding: pages render content only. */}
+      <main
+        className={`mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 pt-4 md:px-6 md:pt-6 print:max-w-none print:p-0 ${
+          userRole === 'student' ? 'pb-24 md:pb-10' : 'pb-10'
+        }`}
+      >
         <div className="print:hidden">
           <DashboardOnboardingReminder />
         </div>
-        <div className="-mb-2 md:-mb-6">
+        <div className="-mb-2">
           <DashboardHomeLink role={userRole} />
         </div>
         {children}
       </main>
+      {userRole === 'student' && <LearnerTabBar />}
     </div>
   );
 }

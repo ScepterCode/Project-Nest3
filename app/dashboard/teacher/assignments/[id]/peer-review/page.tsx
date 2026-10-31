@@ -196,7 +196,7 @@ export default function CreatePeerReviewPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="w-full">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -208,7 +208,7 @@ export default function CreatePeerReviewPage() {
 
   if (!assignment) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="w-full">
         <div className="max-w-4xl mx-auto">
           <div className="text-center py-12">
             <h2 className="text-xl font-semibold mb-4">Assignment Not Found</h2>
@@ -226,7 +226,7 @@ export default function CreatePeerReviewPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="w-full">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -310,13 +310,13 @@ export default function CreatePeerReviewPage() {
                       description: e.target.value,
                     }))
                   }
-                  placeholder="Describe what students should focus on during the review"
+                  placeholder="Describe what learners should focus on during the review"
                   rows={3}
                 />
               </div>
 
               <div>
-                <Label htmlFor="instructions">Instructions for Students</Label>
+                <Label htmlFor="instructions">Instructions for Learners</Label>
                 <Textarea
                   id="instructions"
                   value={settings.instructions}
@@ -326,7 +326,7 @@ export default function CreatePeerReviewPage() {
                       instructions: e.target.value,
                     }))
                   }
-                  placeholder="Provide detailed instructions for students"
+                  placeholder="Provide detailed instructions for learners"
                   rows={4}
                 />
               </div>
@@ -370,7 +370,7 @@ export default function CreatePeerReviewPage() {
 
                 <div>
                   <Label htmlFor="reviews_per_student">
-                    Reviews per Student
+                    Reviews per Learner
                   </Label>
                   <Select
                     value={settings.reviews_per_student.toString()}
@@ -439,7 +439,7 @@ export default function CreatePeerReviewPage() {
                   <div>
                     <Label htmlFor="require_rating">Require Rating</Label>
                     <p className="text-sm text-gray-600">
-                      Students must provide a numerical rating
+                      Learners must provide a numerical rating
                     </p>
                   </div>
                   <Switch

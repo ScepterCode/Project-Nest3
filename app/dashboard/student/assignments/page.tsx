@@ -63,7 +63,7 @@ export default function StudentAssignmentsPage() {
         return;
       }
 
-      console.log('Loading assignments for student:', user.id);
+      console.log('Loading assignments for learner:', user.id);
 
       // Check if required tables exist
       const { data: testEnrollments, error: enrollmentTestError } =
@@ -112,7 +112,7 @@ export default function StudentAssignmentsPage() {
       }
 
       const classIds = enrollments?.map(e => e.class_id) || [];
-      console.log('Student enrolled in classes:', classIds.length);
+      console.log('Learner enrolled in classes:', classIds.length);
 
       if (classIds.length === 0) {
         setAssignments([]);
@@ -265,7 +265,7 @@ export default function StudentAssignmentsPage() {
 
   if (loading || loadingAssignments) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -276,12 +276,12 @@ export default function StudentAssignmentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+    <div className="space-y-6">
+      <div>
+        <div>
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">
                 My Assignments
               </h1>
               <p className="text-gray-600">
@@ -298,7 +298,7 @@ export default function StudentAssignmentsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>

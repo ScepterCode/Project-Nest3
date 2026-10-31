@@ -31,7 +31,7 @@ export function SchoolTutorsCard() {
         <h2 className="text-lg font-semibold">Tutors</h2>
         <p className="text-sm text-gray-600">
           Sessions and attendance tutors have logged, how quickly work is
-          marked, and deadlines students missed.
+          marked, and deadlines learners missed.
         </p>
       </div>
       {error ? (

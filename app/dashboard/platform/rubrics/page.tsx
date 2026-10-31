@@ -57,7 +57,7 @@ export default function PlatformRubricsPage() {
         ? {
             title: `Publish "${template.name}"?`,
             description:
-              'Every tutor at every school will see it in their rubric list.',
+              'Every tutor at every school will see it in their marking guide list.',
             confirmLabel: 'Publish',
           }
         : {
@@ -90,7 +90,7 @@ export default function PlatformRubricsPage() {
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="text-base">
-              Programme rubric templates
+              Programme marking guide templates
             </CardTitle>
             <CardDescription>
               Shared marking guides for the whole programme, such as foundation

@@ -29,7 +29,7 @@ const CATEGORIES: { key: Preference; label: string; help: string }[] = [
   {
     key: 'assignment_notifications',
     label: 'Assignments',
-    help: 'New assignments, due-date reminders, and (for teachers) work handed in.',
+    help: 'New assignments, due-date reminders, and (for tutors) work handed in.',
   },
   {
     key: 'grade_notifications',

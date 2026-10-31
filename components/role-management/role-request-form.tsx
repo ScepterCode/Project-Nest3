@@ -28,13 +28,13 @@ import { ROLE_LABELS } from '@/lib/bulk/roles';
 const REQUESTABLE_ROLES = [
   {
     value: 'teacher',
-    label: 'Teacher',
+    label: 'Tutor',
     description: 'Create and manage classes, grade assignments',
   },
   {
     value: 'institution_admin',
-    label: 'Institution Admin',
-    description: 'Manage users, departments and settings for your institution',
+    label: 'School Admin',
+    description: 'Manage users, departments and settings for your school',
   },
 ] as const;
 
@@ -161,7 +161,7 @@ export function RoleRequestForm({
           Request Role Change
         </CardTitle>
         <CardDescription>
-          Ask an administrator of your institution for a different role.
+          Ask an administrator of your school for a different role.
         </CardDescription>
       </CardHeader>
       <CardContent>

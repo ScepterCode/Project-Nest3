@@ -98,7 +98,7 @@ export function RoleChangeHistory({
         oldRole: entry.old_role as UserRole,
         newRole: entry.new_role as UserRole,
         changedBy: entry.changed_by,
-        changedByName: entry.changed_by ? 'Institution admin' : 'System',
+        changedByName: entry.changed_by ? 'School admin' : 'System',
         reason: entry.reason,
         timestamp: new Date(entry.timestamp),
         status: 'completed',
@@ -121,8 +121,7 @@ export function RoleChangeHistory({
             request.status === 'denied' && request.reviewed_by
               ? request.reviewed_by
               : request.user_id,
-          changedByName:
-            request.status === 'denied' ? 'Institution admin' : 'You',
+          changedByName: request.status === 'denied' ? 'School admin' : 'You',
           reason:
             request.status === 'denied'
               ? request.review_notes

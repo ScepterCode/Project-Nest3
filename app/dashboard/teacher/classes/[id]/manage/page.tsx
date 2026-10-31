@@ -133,8 +133,8 @@ export default function ManageClassPage() {
           .order('enrolled_at', { ascending: true });
 
         if (enrollmentsError) {
-          console.error('Error fetching students:', enrollmentsError.message);
-          setStudentsError('Could not load the students in this class.');
+          console.error('Error fetching learners:', enrollmentsError.message);
+          setStudentsError('Could not load the learners in this class.');
         } else if (enrollments && enrollments.length > 0) {
           const { data: people, error: peopleError } = await supabase
             .from('users')
@@ -144,7 +144,7 @@ export default function ManageClassPage() {
               enrollments.map(e => e.student_id)
             );
           if (peopleError) {
-            console.error('Error fetching student names:', peopleError.message);
+            console.error('Error fetching learner names:', peopleError.message);
           }
           const byId = new Map(
             (people ?? []).map(person => [person.id, person])
@@ -228,7 +228,7 @@ export default function ManageClassPage() {
       .eq('student_id', student.id)
       .in('status', ['enrolled', 'active']);
     if (error) {
-      toast.error(errorMessage(error, 'Could not remove the student'));
+      toast.error(errorMessage(error, 'Could not remove the learner'));
       return;
     }
     setStudents(current => current.filter(s => s.id !== student.id));
@@ -338,7 +338,7 @@ export default function ManageClassPage() {
               Class Code
             </CardTitle>
             <CardDescription>
-              Share this code with students so they can join your class
+              Share this code with learners so they can join your class
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -390,7 +390,7 @@ export default function ManageClassPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Total Students
+                    Total Learners
                   </CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
@@ -478,23 +478,23 @@ export default function ManageClassPage() {
             )}
 
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Enrolled Students</h3>
+              <h3 className="text-lg font-semibold">Enrolled Learners</h3>
               <Button
                 onClick={async () => {
                   try {
                     await navigator.clipboard.writeText(classData.code);
                     toast.success(
-                      `Class code ${classData.code} copied. Share it with your students; you accept each request here.`
+                      `Class code ${classData.code} copied. Share it with your learners; you accept each request here.`
                     );
                   } catch {
                     toast.info(
-                      `Share the class code ${classData.code} with your students; you accept each request here.`
+                      `Share the class code ${classData.code} with your learners; you accept each request here.`
                     );
                   }
                 }}
               >
                 <UserPlus className="h-4 w-4 mr-2" />
-                Invite Students
+                Invite Learners
               </Button>
             </div>
 
@@ -508,10 +508,10 @@ export default function ManageClassPage() {
                 <CardContent className="p-6 text-center">
                   <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold mb-2">
-                    No students enrolled yet
+                    No learners enrolled yet
                   </h3>
                   <p className="text-gray-600 mb-4">
-                    Share your class code with students so they can join your
+                    Share your class code with learners so they can join your
                     class.
                   </p>
                   <Button onClick={copyClassCode}>

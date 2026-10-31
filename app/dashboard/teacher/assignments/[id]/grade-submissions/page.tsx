@@ -167,18 +167,23 @@ export default function GradeSubmissionsPage({
       });
 
       // Check if assignment has a rubric
-      console.log('Assignment rubric field:', assignmentData.rubric);
-      console.log('Rubric type:', typeof assignmentData.rubric);
+      console.log('Assignment marking guide field:', assignmentData.rubric);
+      console.log('Marking guide type:', typeof assignmentData.rubric);
 
       if (assignmentData.rubric && typeof assignmentData.rubric === 'object') {
         setAssignmentRubric(assignmentData.rubric);
-        console.log('✅ Assignment has rubric:', assignmentData.rubric.name);
         console.log(
-          'Rubric criteria count:',
+          '✅ Assignment has marking guide:',
+          assignmentData.rubric.name
+        );
+        console.log(
+          'Marking guide criteria count:',
           assignmentData.rubric.criteria?.length || 0
         );
       } else {
-        console.log('❌ Assignment has no rubric - using simple grading only');
+        console.log(
+          '❌ Assignment has no marking guide - using simple grading only'
+        );
         setAssignmentRubric(null);
       }
 
@@ -221,7 +226,7 @@ export default function GradeSubmissionsPage({
           }
 
           if (studentsError) {
-            console.error('Students query error:', studentsError);
+            console.error('Learners query error:', studentsError);
           }
 
           console.log(`Found ${studentsData?.length || 0} students`);
@@ -235,13 +240,13 @@ export default function GradeSubmissionsPage({
               student_name: student
                 ? `${student.first_name || ''} ${student.last_name || ''}`.trim() ||
                   student.email
-                : 'Unknown Student',
+                : 'Unknown Learner',
               student_email: student?.email || 'unknown@email.com',
             };
           });
 
           setSubmissions(submissionsWithStudents);
-          console.log('Submissions with students loaded successfully');
+          console.log('Submissions with learners loaded successfully');
         } else {
           setSubmissions([]);
         }
@@ -301,10 +306,10 @@ export default function GradeSubmissionsPage({
     if (!assignment || !assignmentRubric || removingRubric) return;
 
     const confirmDelete = await confirmAction({
-      title: `Remove the rubric "${assignmentRubric.name}"?`,
+      title: `Remove the marking guide "${assignmentRubric.name}"?`,
       description:
-        'Future grading on this assignment will use simple mode. Grades already given with the rubric are kept.',
-      confirmLabel: 'Remove rubric',
+        'Future grading on this assignment will use simple mode. Grades already given with the marking guide are kept.',
+      confirmLabel: 'Remove marking guide',
       destructive: true,
     });
 
@@ -315,7 +320,7 @@ export default function GradeSubmissionsPage({
     try {
       const supabase = createClient();
 
-      console.log('Removing rubric from assignment:', assignment.id);
+      console.log('Removing marking guide from assignment:', assignment.id);
 
       // Remove rubric from assignment by setting rubric field to null
       const { error } = await supabase
@@ -325,12 +330,12 @@ export default function GradeSubmissionsPage({
         .eq('teacher_id', user?.id);
 
       if (error) {
-        console.error('Error removing rubric:', error);
-        toast.error('Error removing rubric: ' + error.message);
+        console.error('Error removing marking guide:', error);
+        toast.error('Error removing marking guide: ' + error.message);
         return;
       }
 
-      console.log('✅ Rubric removed from database');
+      console.log('✅ Marking guide removed from database');
 
       // Update local state
       setAssignmentRubric(null);
@@ -338,11 +343,11 @@ export default function GradeSubmissionsPage({
       setRubricScores({});
 
       toast.success(
-        'Rubric removed successfully! All future grading will use simple mode.'
+        'Marking guide removed successfully! All future grading will use simple mode.'
       );
     } catch (error) {
-      console.error('Error removing rubric:', error);
-      toast.error('Error removing rubric');
+      console.error('Error removing marking guide:', error);
+      toast.error('Error removing marking guide');
     } finally {
       setRemovingRubric(false);
     }
@@ -354,7 +359,7 @@ export default function GradeSubmissionsPage({
     if (!selectedSubmission) return;
     const note = feedback.trim();
     if (!note) {
-      toast.error('Write what the student should change in the feedback box');
+      toast.error('Write what the learner should change in the feedback box');
       return;
     }
     setSaving(true);
@@ -376,7 +381,7 @@ export default function GradeSubmissionsPage({
       setRubricScores({});
       setGradingPanelOpen(false);
       setSelectedSubmission(null);
-      toast.success('Changes requested. The student has been notified.');
+      toast.success('Changes requested. The learner has been notified.');
     } catch (err) {
       toast.error(errorMessage(err, 'Could not request changes'));
     } finally {
@@ -411,7 +416,7 @@ export default function GradeSubmissionsPage({
             : false;
 
         if (!hasAllScores) {
-          toast.error('Please provide scores for all rubric criteria');
+          toast.error('Please provide scores for all marking guide criteria');
           setSaving(false);
           return;
         }
@@ -572,7 +577,7 @@ export default function GradeSubmissionsPage({
               <div className="text-center">
                 <Users className="h-8 w-8 mx-auto mb-2 text-blue-500" />
                 <div className="text-2xl font-bold">{stats.total_students}</div>
-                <div className="text-sm text-gray-500">Total Students</div>
+                <div className="text-sm text-gray-500">Total Learners</div>
               </div>
             </CardContent>
           </Card>
@@ -766,7 +771,9 @@ export default function GradeSubmissionsPage({
                             onClick={handleRemoveRubric}
                             disabled={removingRubric}
                           >
-                            {removingRubric ? 'Removing...' : 'Remove Rubric'}
+                            {removingRubric
+                              ? 'Removing...'
+                              : 'Remove Marking Guide'}
                           </Button>
                         </div>
                         <div className="flex gap-2">
@@ -786,7 +793,7 @@ export default function GradeSubmissionsPage({
                             size="sm"
                             onClick={() => setGradingModeType('rubric')}
                           >
-                            Use Rubric
+                            Use Marking Guide
                           </Button>
                         </div>
                       </div>
@@ -799,8 +806,8 @@ export default function GradeSubmissionsPage({
                           This assignment uses simple grading only
                         </div>
                         <div className="text-xs text-gray-500 mb-3">
-                          Add a rubric for structured, consistent grading with
-                          detailed criteria
+                          Add a marking guide for structured, consistent grading
+                          with detailed criteria
                         </div>
                         <RubricSelectorModal
                           assignmentId={assignment.id}
@@ -934,7 +941,7 @@ export default function GradeSubmissionsPage({
                         id="feedback"
                         value={feedback}
                         onChange={e => setFeedback(e.target.value)}
-                        placeholder="Provide feedback to the student..."
+                        placeholder="Provide feedback to the learner..."
                         rows={4}
                       />
                     </div>
@@ -953,7 +960,7 @@ export default function GradeSubmissionsPage({
                         variant="outline"
                         onClick={handleRequestRevision}
                         disabled={saving}
-                        title="Send the work back with your feedback; the student can resubmit"
+                        title="Send the work back with your feedback; the learner can resubmit"
                       >
                         Request changes
                       </Button>

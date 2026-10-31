@@ -63,8 +63,8 @@ export default function PlatformSchoolsPage() {
               <tr>
                 <th className="p-3 font-normal">School</th>
                 <th className="p-3 font-normal">Admins / contact</th>
-                <th className="p-3 font-normal">Teachers</th>
-                <th className="p-3 font-normal">Students</th>
+                <th className="p-3 font-normal">Tutors</th>
+                <th className="p-3 font-normal">Learners</th>
                 <th className="p-3 font-normal">Classes</th>
                 <th className="p-3 font-normal">Last activity</th>
               </tr>

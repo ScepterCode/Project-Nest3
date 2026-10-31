@@ -331,7 +331,7 @@ export default function TeacherAnalyticsPage() {
 
           if (profileError) {
             console.error(
-              'Error loading student profiles:',
+              'Error loading learner profiles:',
               profileError.message
             );
           }
@@ -367,7 +367,7 @@ export default function TeacherAnalyticsPage() {
               name:
                 (profile &&
                   `${profile.first_name ?? ''} ${profile.last_name ?? ''}`.trim()) ||
-                `Student ${studentId.slice(-4)}`,
+                `Learner ${studentId.slice(-4)}`,
               email: profile?.email || '',
               total_assignments: totalAssignments,
               completed_assignments: completedAssignments,
@@ -412,7 +412,7 @@ export default function TeacherAnalyticsPage() {
             ),
           });
         } catch (profileError) {
-          console.error('Error processing student profiles:', profileError);
+          console.error('Error processing learner profiles:', profileError);
           // Create fallback student data
           const fallbackData = uniqueStudentIds.map((studentId, index) => {
             const studentEnrollments = enrollmentsData.filter(
@@ -441,7 +441,7 @@ export default function TeacherAnalyticsPage() {
 
             return {
               id: studentId,
-              name: `Student ${index + 1}`,
+              name: `Learner ${index + 1}`,
               email: '',
               total_assignments: totalAssignments,
               completed_assignments: completedAssignments,
@@ -594,7 +594,7 @@ export default function TeacherAnalyticsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Total Students
+                  Total Learners
                 </p>
                 <p className="text-2xl font-bold">{analytics.totalStudents}</p>
               </div>
@@ -636,7 +636,7 @@ export default function TeacherAnalyticsPage() {
       <Tabs defaultValue="classes" className="space-y-6">
         <TabsList>
           <TabsTrigger value="classes">Class Analytics</TabsTrigger>
-          <TabsTrigger value="students">Student Performance</TabsTrigger>
+          <TabsTrigger value="students">Learner Performance</TabsTrigger>
           <TabsTrigger value="performance-overview">
             Performance Overview
           </TabsTrigger>
@@ -679,7 +679,7 @@ export default function TeacherAnalyticsPage() {
 
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                          <p className="text-sm text-gray-600">Students</p>
+                          <p className="text-sm text-gray-600">Learners</p>
                           <p className="font-semibold">{cls.student_count}</p>
                         </div>
                         <div>
@@ -718,18 +718,18 @@ export default function TeacherAnalyticsPage() {
         <TabsContent value="students">
           <Card>
             <CardHeader>
-              <CardTitle>Student Performance</CardTitle>
+              <CardTitle>Learner Performance</CardTitle>
               <CardDescription>
-                Individual student performance across all your classes
+                Individual learner performance across all your classes
               </CardDescription>
             </CardHeader>
             <CardContent>
               {studentPerformances.length === 0 ? (
                 <div className="text-center py-8">
                   <Users className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                  <p className="text-gray-500">No students found</p>
+                  <p className="text-gray-500">No learners found</p>
                   <p className="text-sm text-gray-400 mt-2">
-                    Students will appear here once they enroll in your classes
+                    Learners will appear here once they enroll in your classes
                   </p>
                 </div>
               ) : (
@@ -805,7 +805,7 @@ export default function TeacherAnalyticsPage() {
                   {performanceOverview.excellent_students.length})
                 </CardTitle>
                 <CardDescription>
-                  Students with ≥90% grade and ≥90% completion rate - Ready for
+                  Learners with ≥90% grade and ≥90% completion rate - Ready for
                   commendation
                 </CardDescription>
               </CardHeader>
@@ -814,7 +814,7 @@ export default function TeacherAnalyticsPage() {
                   <div className="text-center py-4">
                     <Star className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p className="text-gray-500 text-sm">
-                      No excellent students yet
+                      No excellent learners yet
                     </p>
                   </div>
                 ) : (
@@ -875,7 +875,7 @@ export default function TeacherAnalyticsPage() {
                   Good Students ({performanceOverview.good_students.length})
                 </CardTitle>
                 <CardDescription>
-                  Students with 75-89% grade and ≥75% completion rate -
+                  Learners with 75-89% grade and ≥75% completion rate -
                   Performing well
                 </CardDescription>
               </CardHeader>
@@ -884,7 +884,7 @@ export default function TeacherAnalyticsPage() {
                   <div className="text-center py-4">
                     <ThumbsUp className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p className="text-gray-500 text-sm">
-                      No good students yet
+                      No good learners yet
                     </p>
                   </div>
                 ) : (
@@ -945,7 +945,7 @@ export default function TeacherAnalyticsPage() {
                   Needs Help ({performanceOverview.needs_help_students.length})
                 </CardTitle>
                 <CardDescription>
-                  Students with 60-74% grade or 50-74% completion - Need
+                  Learners with 60-74% grade or 50-74% completion - Need
                   additional support
                 </CardDescription>
               </CardHeader>
@@ -954,7 +954,7 @@ export default function TeacherAnalyticsPage() {
                   <div className="text-center py-4">
                     <HelpCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
                     <p className="text-gray-500 text-sm">
-                      No students need help
+                      No learners need help
                     </p>
                   </div>
                 ) : (
@@ -1023,7 +1023,7 @@ export default function TeacherAnalyticsPage() {
                 {performanceOverview.at_risk_students.length === 0 ? (
                   <div className="text-center py-4">
                     <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-gray-500 text-sm">No at-risk students</p>
+                    <p className="text-gray-500 text-sm">No at-risk learners</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -1125,7 +1125,7 @@ export default function TeacherAnalyticsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center">
                       <Users className="h-4 w-4 mr-2 text-blue-500" />
-                      <span>Students</span>
+                      <span>Learners</span>
                     </div>
                     <span className="font-semibold">
                       {analytics.totalStudents}

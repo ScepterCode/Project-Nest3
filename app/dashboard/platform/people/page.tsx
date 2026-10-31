@@ -295,8 +295,8 @@ function ManagePerson({
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="student">Student</SelectItem>
-              <SelectItem value="teacher">Teacher</SelectItem>
+              <SelectItem value="student">Learner</SelectItem>
+              <SelectItem value="teacher">Tutor</SelectItem>
               <SelectItem value="institution_admin">School admin</SelectItem>
               <SelectItem value="programme_viewer">Programme viewer</SelectItem>
             </SelectContent>

@@ -70,10 +70,10 @@ const INSTITUTION_TYPES = [
 ];
 
 const INSTITUTION_SIZES = [
-  'Up to 100 students',
-  '101–500 students',
-  '501–2,000 students',
-  'More than 2,000 students',
+  'Up to 100 learners',
+  '101–500 learners',
+  '501–2,000 learners',
+  'More than 2,000 learners',
 ];
 
 // Suggestions only; admins can add their own and change them later.
@@ -217,8 +217,8 @@ export function InstitutionAdminOnboarding({
                 Your school
               </CardTitle>
               <CardDescription>
-                This creates your school on ProjectNest. Teachers and students
-                you invite will join it.
+                This creates your school on ProjectNest. Tutors and learners you
+                invite will join it.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -251,7 +251,7 @@ export function InstitutionAdminOnboarding({
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Number of students</Label>
+                  <Label>Number of learners</Label>
                   <Select
                     value={data.institutionSize}
                     onValueChange={value => update({ institutionSize: value })}
@@ -423,8 +423,8 @@ export function InstitutionAdminOnboarding({
                 </div>
               </dl>
               <p className="mt-4 text-sm text-muted-foreground">
-                Next, your dashboard shows a teacher code for your staff and a
-                student code for your students.
+                Next, your dashboard shows a tutor code for your staff and a
+                learner code for your learners.
               </p>
             </CardContent>
           </Card>

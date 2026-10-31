@@ -145,7 +145,7 @@ export default function AssignmentSubmissionsPage({
             ...submission,
             student_name: student
               ? `${student.first_name} ${student.last_name}`
-              : 'Unknown Student',
+              : 'Unknown Learner',
           };
         });
 
@@ -440,7 +440,7 @@ function GradingForm({
           <Textarea
             value={feedback}
             onChange={e => setFeedback(e.target.value)}
-            placeholder="Provide feedback to the student..."
+            placeholder="Provide feedback to the learner..."
             rows={3}
           />
         </div>

@@ -180,7 +180,7 @@ export function SchoolDashboard({
 
   const tutorName = (id: string) => {
     const t = data?.tutors.find(x => x.teacher_id === id);
-    return t ? (t.teacher_name ?? t.teacher_email) : 'Teacher';
+    return t ? (t.teacher_name ?? t.teacher_email) : 'Tutor';
   };
 
   const flagged = data?.tutors.filter(t => t.flags.length > 0) ?? [];
@@ -312,12 +312,12 @@ export function SchoolDashboard({
       {/* Numbers */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6">
         <Stat
-          label="Students"
+          label="Learners"
           value={data?.students ?? '…'}
           hint={data ? `${data.consentGranted} with consent` : undefined}
           icon={<GraduationCap />}
         />
-        <Stat label="Teachers" value={data?.teachers ?? '…'} icon={<Users />} />
+        <Stat label="Tutors" value={data?.teachers ?? '…'} icon={<Users />} />
         <Stat
           label="Classes"
           value={data?.classes.length ?? '…'}
@@ -379,7 +379,7 @@ export function SchoolDashboard({
                 <p className="text-sm text-muted-foreground">Loading…</p>
               ) : data.tutors.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No teachers yet. They join with the teacher code.
+                  No tutors yet. They join with the tutor code.
                 </p>
               ) : (
                 <ul className="divide-y">
@@ -428,7 +428,7 @@ export function SchoolDashboard({
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Classes</CardTitle>
               <CardDescription>
-                Every active class at your school and how many students are in
+                Every active class at your school and how many learners are in
                 it.
               </CardDescription>
             </CardHeader>
@@ -437,7 +437,7 @@ export function SchoolDashboard({
                 <p className="text-sm text-muted-foreground">Loading…</p>
               ) : data.classes.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No classes yet. Teachers create them from their dashboard.
+                  No classes yet. Tutors create them from their dashboard.
                 </p>
               ) : (
                 <div className="overflow-x-auto">
@@ -445,9 +445,9 @@ export function SchoolDashboard({
                     <thead>
                       <tr className="border-b text-xs text-muted-foreground">
                         <th className="py-2 pr-3 font-medium">Class</th>
-                        <th className="py-2 pr-3 font-medium">Teacher</th>
+                        <th className="py-2 pr-3 font-medium">Tutor</th>
                         <th className="py-2 text-right font-medium">
-                          Students
+                          Learners
                         </th>
                       </tr>
                     </thead>

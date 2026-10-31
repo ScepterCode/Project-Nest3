@@ -44,7 +44,7 @@ it('lists pending requests and withdraws one', async () => {
   render(<PendingJoinRequests />);
 
   expect(await screen.findByText('2D Animation')).toBeInTheDocument();
-  expect(screen.getByText(/Waiting for your teacher/)).toBeInTheDocument();
+  expect(screen.getByText(/Waiting for your tutor/)).toBeInTheDocument();
   expect(screen.getByText(/Ms Ade/)).toBeInTheDocument();
 
   fireEvent.click(screen.getByText('Withdraw'));
