@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/card';
 import { ResendConfirmation } from '@/components/auth/resend-confirmation';
 import { emailLinkError } from '@/lib/auth/email-links';
+import Logo from '@/components/Header/Logo';
 
 // Only fixed messages are shown: the `error` value picks one, so a crafted
 // link can't put its own text on this page.
@@ -23,6 +24,9 @@ export default async function Page({
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
+        <div className="mb-6 flex justify-center">
+          <Logo />
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">{info.title}</CardTitle>

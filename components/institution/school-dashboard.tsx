@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   AlertTriangle,
-  ArrowRight,
   BarChart3,
   BookOpen,
   CheckCircle2,
@@ -13,11 +12,11 @@ import {
   GraduationCap,
   Layers,
   LifeBuoy,
-  ShieldCheck,
   Upload,
   UserCog,
   Users,
 } from 'lucide-react';
+import { AttentionEntry, AttentionList } from '@/components/ui/attention-list';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -36,6 +35,7 @@ import {
   MyInstitution,
   SchoolCodesCard,
 } from '@/components/institution/institution-membership';
+import { Stat } from '@/components/ui/stat';
 import { createClient } from '@/lib/supabase/client';
 
 interface Overview {
@@ -119,61 +119,6 @@ async function loadOverview(): Promise<Overview> {
 
 const pct = (value: number | null) =>
   value === null ? '—' : `${Math.round(value * 100)}%`;
-
-function Stat({
-  label,
-  value,
-  hint,
-  icon,
-}: {
-  label: string;
-  value: string | number;
-  hint?: string | undefined;
-  icon: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-lg border bg-white p-4">
-      <div className="flex items-center justify-between text-muted-foreground [&_svg]:h-4 [&_svg]:w-4">
-        <span className="text-xs font-medium uppercase tracking-wide">
-          {label}
-        </span>
-        {icon}
-      </div>
-      <p className="mt-2 text-2xl font-semibold tabular-nums text-gray-900">
-        {value}
-      </p>
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
-    </div>
-  );
-}
-
-function AttentionItem({
-  href,
-  tone,
-  children,
-}: {
-  href: string;
-  tone: 'warn' | 'info';
-  children: React.ReactNode;
-}) {
-  return (
-    <li>
-      <Link
-        href={href}
-        className="group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm hover:bg-gray-50"
-      >
-        <span
-          className={`h-2 w-2 shrink-0 rounded-full ${
-            tone === 'warn' ? 'bg-amber-500' : 'bg-blue-500'
-          }`}
-          aria-hidden
-        />
-        <span className="flex-1">{children}</span>
-        <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-700" />
-      </Link>
-    </li>
-  );
-}
 
 const QUICK_LINKS = [
   {
@@ -263,61 +208,76 @@ export function SchoolDashboard({
     .filter(Boolean)
     .join(' · ');
 
-  const attention = data
-    ? [
-        data.pendingRoleRequests > 0 && (
-          <AttentionItem
-            key="requests"
-            href="/dashboard/institution/role-requests"
-            tone="warn"
-          >
-            <strong>{data.pendingRoleRequests}</strong> role{' '}
-            {data.pendingRoleRequests === 1 ? 'request' : 'requests'} waiting
-            for you
-          </AttentionItem>
-        ),
-        noConsent > 0 && (
-          <AttentionItem
-            key="consent"
-            href="/dashboard/institution/users"
-            tone="warn"
-          >
-            <strong>{noConsent}</strong> of {data.students} learners have no
-            guardian consent recorded
-          </AttentionItem>
-        ),
-        flagged.length > 0 && (
-          <AttentionItem key="flagged" href="#tutors" tone="warn">
-            <strong>{flagged.length}</strong>{' '}
-            {flagged.length === 1 ? 'tutor needs' : 'tutors need'} attention
-          </AttentionItem>
-        ),
-        overdue > 0 && (
-          <AttentionItem
-            key="overdue"
-            href="/dashboard/institution/reports"
-            tone="warn"
-          >
-            <strong>{overdue}</strong> pieces of work waiting more than a week
-            for marking
-          </AttentionItem>
-        ),
-        data.teachers === 0 && (
-          <AttentionItem key="no-teachers" href="#codes" tone="info">
-            No teachers yet: share the teacher code with your staff
-          </AttentionItem>
-        ),
-        emptyClasses > 0 && (
-          <AttentionItem
-            key="empty"
-            href="/dashboard/institution/reports"
-            tone="info"
-          >
-            <strong>{emptyClasses}</strong>{' '}
-            {emptyClasses === 1 ? 'class has' : 'classes have'} no students yet
-          </AttentionItem>
-        ),
-      ].filter(Boolean)
+  const attention: AttentionEntry[] = data
+    ? (
+        [
+          data.pendingRoleRequests > 0 && {
+            key: 'requests',
+            href: '/dashboard/institution/role-requests',
+            tone: 'warn',
+            content: (
+              <>
+                <strong>{data.pendingRoleRequests}</strong> role{' '}
+                {data.pendingRoleRequests === 1 ? 'request' : 'requests'}{' '}
+                waiting for you
+              </>
+            ),
+          },
+          noConsent > 0 && {
+            key: 'consent',
+            href: '/dashboard/institution/users',
+            tone: 'warn',
+            content: (
+              <>
+                <strong>{noConsent}</strong> of {data.students} learners have no
+                guardian consent recorded
+              </>
+            ),
+          },
+          flagged.length > 0 && {
+            key: 'flagged',
+            href: '#tutors',
+            tone: 'warn',
+            content: (
+              <>
+                <strong>{flagged.length}</strong>{' '}
+                {flagged.length === 1 ? 'tutor needs' : 'tutors need'} attention
+              </>
+            ),
+          },
+          overdue > 0 && {
+            key: 'overdue',
+            href: '/dashboard/institution/reports',
+            tone: 'warn',
+            content: (
+              <>
+                <strong>{overdue}</strong> pieces of work waiting more than a
+                week for marking
+              </>
+            ),
+          },
+          data.teachers === 0 && {
+            key: 'no-teachers',
+            href: '#codes',
+            tone: 'info',
+            content: (
+              <>No teachers yet: share the teacher code with your staff</>
+            ),
+          },
+          emptyClasses > 0 && {
+            key: 'empty',
+            href: '/dashboard/institution/reports',
+            tone: 'info',
+            content: (
+              <>
+                <strong>{emptyClasses}</strong>{' '}
+                {emptyClasses === 1 ? 'class has' : 'classes have'} no students
+                yet
+              </>
+            ),
+          },
+        ] as (AttentionEntry | false)[]
+      ).filter((e): e is AttentionEntry => Boolean(e))
     : [];
 
   return (
@@ -395,13 +355,8 @@ export function SchoolDashboard({
             <CardContent>
               {!data ? (
                 <p className="text-sm text-muted-foreground">Checking…</p>
-              ) : attention.length === 0 ? (
-                <p className="flex items-center gap-2 text-sm text-green-700">
-                  <ShieldCheck className="h-4 w-4" />
-                  All clear. Nothing is waiting for you.
-                </p>
               ) : (
-                <ul className="-mx-3 divide-y">{attention}</ul>
+                <AttentionList items={attention} />
               )}
             </CardContent>
           </Card>
