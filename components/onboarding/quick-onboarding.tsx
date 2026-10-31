@@ -21,12 +21,12 @@ export interface QuickOnboardingData {
 const NEXT_STEP = {
   student: {
     icon: GraduationCap,
-    text: 'Next, enter the class code your teacher gave you. Your teacher accepts the request and the class appears on your dashboard.',
+    text: 'Next, enter the class code your tutor gave you. Your tutor accepts the request and the class appears on your dashboard.',
     button: 'Continue to join a class',
   },
   teacher: {
     icon: BookOpen,
-    text: 'Next, create your first class. Each class gets a short code to give your students; you accept each one who asks to join.',
+    text: 'Next, create your first class. Each class gets a short code to give your learners; you accept each one who asks to join.',
     button: 'Continue to my classes',
   },
 };
@@ -61,7 +61,7 @@ export function QuickOnboarding({
           <CardTitle className="text-2xl">Welcome to ProjectNest</CardTitle>
           <CardDescription>
             Check your name as you want{' '}
-            {role === 'student' ? 'your teachers' : 'your students'} to see it.
+            {role === 'student' ? 'your tutors' : 'your learners'} to see it.
           </CardDescription>
         </CardHeader>
         <CardContent>

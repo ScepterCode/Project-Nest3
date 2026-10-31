@@ -67,7 +67,7 @@ export function SignUpForm({
         if (codeRole !== expected) {
           setError(
             role === 'teacher'
-              ? "That teacher code isn't valid. Ask your school's admin for the teacher code."
+              ? "That tutor code isn't valid. Ask your school's admin for the tutor code."
               : "That admin invite isn't valid or has already been used. Ask the programme organiser for a new one."
           );
           return;
@@ -166,8 +166,8 @@ export function SignUpForm({
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="student">Student</SelectItem>
-                    <SelectItem value="teacher">Teacher</SelectItem>
+                    <SelectItem value="student">Learner</SelectItem>
+                    <SelectItem value="teacher">Tutor</SelectItem>
                     <SelectItem value="institution">School admin</SelectItem>
                   </SelectContent>
                 </Select>
@@ -175,7 +175,7 @@ export function SignUpForm({
               {role !== 'student' && (
                 <div className="grid gap-2">
                   <Label htmlFor="signup-code">
-                    {role === 'teacher' ? 'Teacher code' : 'Admin invite code'}
+                    {role === 'teacher' ? 'Tutor code' : 'Admin invite code'}
                   </Label>
                   <Input
                     id="signup-code"
@@ -189,7 +189,7 @@ export function SignUpForm({
                   />
                   <p className="text-xs text-muted-foreground">
                     {role === 'teacher'
-                      ? "Your school's admin gives you this. Students don't need a code."
+                      ? "Your school's admin gives you this. Learners don't need a code."
                       : 'The programme organiser gives you this one-time code.'}
                   </p>
                 </div>
@@ -226,7 +226,7 @@ export function SignUpForm({
             <div className="mt-4 text-center text-sm">
               Already have an account?{' '}
               <Link href="/auth/login" className="underline underline-offset-4">
-                Login
+                Sign in
               </Link>
             </div>
           </form>

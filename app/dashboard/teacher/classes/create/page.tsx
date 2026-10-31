@@ -307,7 +307,7 @@ export default function CreateClassPage() {
                   {formatClassCodeForDisplay(createdClass.code)}
                 </div>
                 <p className="text-xs text-gray-500">
-                  Students can use this code to join your class
+                  Learners can use this code to join your class
                 </p>
               </div>
               <div className="flex gap-3 justify-center">

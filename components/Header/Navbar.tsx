@@ -9,7 +9,7 @@ type NavProps = {
 };
 export default function Navbar({ children1, children2 }: NavProps) {
   return (
-    <header className="sticky top-0 z-50 border-b border-gray-200 bg-white">
+    <header className="sticky top-0 z-50 border-b bg-card">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-14 items-center justify-between gap-4">
           <Logo />
@@ -17,7 +17,7 @@ export default function Navbar({ children1, children2 }: NavProps) {
         </div>
       </div>
       {children1 && (
-        <div className="hidden border-t border-gray-100 md:block">
+        <div className="hidden border-t md:block">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             {children1}
           </div>

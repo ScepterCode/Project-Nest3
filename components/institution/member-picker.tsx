@@ -65,8 +65,8 @@ export function MemberPicker({ id, role, value, onChange }: MemberPickerProps) {
       <p className="text-sm text-muted-foreground">
         No {plural} at your school yet.
         {role === 'teacher'
-          ? ' Teachers join with the teacher code, or add them on the Users page.'
-          : ' Students join when a teacher accepts them into a class, or add them on the Users page.'}
+          ? ' Tutors join with the tutor code, or add them on the People page.'
+          : ' Learners join when a tutor accepts them into a class, or add them on the People page.'}
       </p>
     );
   }
@@ -89,7 +89,7 @@ export function MemberPicker({ id, role, value, onChange }: MemberPickerProps) {
         className="w-full rounded border bg-white p-2 text-sm"
       >
         <option value="">
-          -- Choose {role === 'teacher' ? 'a teacher' : 'a student'} (
+          -- Choose {role === 'teacher' ? 'a tutor' : 'a learner'} (
           {shown.length}) --
         </option>
         {shown.map(m => (

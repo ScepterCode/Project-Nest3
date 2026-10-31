@@ -139,7 +139,7 @@ export default function TeacherPeerReviewsPage() {
       });
       if (error) throw error;
       toast.error(
-        `Published: ${data.students} students paired, ${data.reviews_per_student} review(s) each.`
+        `Published: ${data.students} learners paired, ${data.reviews_per_student} review(s) each.`
       );
       await fetchData();
     } catch (error: any) {
@@ -439,7 +439,7 @@ export default function TeacherPeerReviewsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+      <div className="w-full">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center justify-center min-h-[400px]">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -450,14 +450,14 @@ export default function TeacherPeerReviewsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="w-full">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold">Peer Review Management</h1>
             <p className="text-gray-600 dark:text-gray-400">
-              Create and manage student peer review assignments
+              Create and manage learner peer review assignments
             </p>
           </div>
           <div className="flex items-center space-x-4">
@@ -548,7 +548,7 @@ export default function TeacherPeerReviewsPage() {
                 {overallStats.participationRate}%
               </div>
               <p className="text-xs text-muted-foreground">
-                Student participation
+                Learner participation
               </p>
             </CardContent>
           </Card>

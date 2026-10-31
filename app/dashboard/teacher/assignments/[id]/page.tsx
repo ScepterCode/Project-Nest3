@@ -311,7 +311,7 @@ export default function TeacherAssignmentDetailPage({
                       {submissionStats.submitted_count}/
                       {submissionStats.total_students}
                     </div>
-                    <p className="text-sm text-gray-600">Students Submitted</p>
+                    <p className="text-sm text-gray-600">Learners Submitted</p>
                   </div>
 
                   <div className="space-y-2">

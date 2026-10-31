@@ -68,7 +68,7 @@ export default function JoinClassPage() {
         classId: data.class_id,
         className: data.class_name,
         classDescription: data.class_description || '',
-        teacherName: data.teacher_name || 'Unknown Teacher',
+        teacherName: data.teacher_name || 'Unknown Tutor',
         enrolledAt: data.enrolled_at,
       });
       setClassCode('');
@@ -186,7 +186,7 @@ export default function JoinClassPage() {
                   required
                 />
                 <p className="text-xs text-gray-500">
-                  Enter the code exactly as provided by your teacher
+                  Enter the code exactly as provided by your tutor
                 </p>
               </div>
 
@@ -204,7 +204,7 @@ export default function JoinClassPage() {
                 How to join a class:
               </h4>
               <ol className="text-sm text-gray-600 space-y-1">
-                <li>1. Get the class code from your teacher</li>
+                <li>1. Get the class code from your tutor</li>
                 <li>2. Enter the code in the field above</li>
                 <li>
                   3. Click &ldquo;Ask to join&rdquo;; your teacher accepts the

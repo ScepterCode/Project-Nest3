@@ -53,11 +53,11 @@ export default function PlatformOverviewPage() {
           hint={`${overview.active_schools} active`}
         />
         <Stat
-          label="Teachers"
+          label="Tutors"
           value={overview.teachers}
           hint={`${overview.admins} school admins`}
         />
-        <Stat label="Students" value={overview.students} />
+        <Stat label="Learners" value={overview.students} />
         <Stat
           label="Active people"
           value={overview.active_7d}
@@ -149,8 +149,8 @@ export default function PlatformOverviewPage() {
               <thead className="text-left text-muted-foreground">
                 <tr>
                   <th className="py-2 font-normal">School</th>
-                  <th className="py-2 font-normal">Teachers</th>
-                  <th className="py-2 font-normal">Students</th>
+                  <th className="py-2 font-normal">Tutors</th>
+                  <th className="py-2 font-normal">Learners</th>
                   <th className="py-2 font-normal">Assignments</th>
                   <th
                     className="py-2 font-normal"

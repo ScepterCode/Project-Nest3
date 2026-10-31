@@ -200,7 +200,7 @@ export default function StudentGradeDetailPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-6">
+    <div className="w-full">
       <div className="max-w-6xl mx-auto space-y-6">
         <div>
           {backLink}
@@ -243,7 +243,7 @@ export default function StudentGradeDetailPage() {
                 ) : (
                   <p className="text-gray-600">
                     {submission
-                      ? 'Not graded yet. Check back after your teacher reviews it.'
+                      ? 'Not graded yet. Check back after your tutor reviews it.'
                       : "You haven't submitted this assignment."}
                   </p>
                 )}
@@ -289,7 +289,7 @@ export default function StudentGradeDetailPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <MessageSquare className="h-5 w-5" />
-                  <span>Teacher Feedback</span>
+                  <span>Tutor Feedback</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -306,7 +306,7 @@ export default function StudentGradeDetailPage() {
             {isGraded && scoredCriteria.length > 0 && (
               <Card>
                 <CardHeader>
-                  <CardTitle>Rubric Breakdown</CardTitle>
+                  <CardTitle>Marking Guide Breakdown</CardTitle>
                   <CardDescription>
                     {detail.rubric?.name ?? 'How each criterion was scored'}
                   </CardDescription>

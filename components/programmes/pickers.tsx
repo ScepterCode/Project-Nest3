@@ -192,7 +192,7 @@ export function AnyTeacherPicker({
   }, []);
 
   if (!teachers)
-    return <p className="text-sm text-muted-foreground">Loading teachers…</p>;
+    return <p className="text-sm text-muted-foreground">Loading tutors…</p>;
   const term = filter.trim().toLowerCase();
   const pool = schoolName
     ? teachers.filter(t => t.school_name === schoolName)
@@ -216,10 +216,10 @@ export function AnyTeacherPicker({
     <div className="space-y-2">
       {pool.length > 15 && (
         <Input
-          placeholder={`Filter ${pool.length} teachers by name, email or school`}
+          placeholder={`Filter ${pool.length} tutors by name, email or school`}
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          aria-label="Filter teachers"
+          aria-label="Filter tutors"
         />
       )}
       <select

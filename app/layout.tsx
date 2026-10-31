@@ -25,7 +25,7 @@ export const metadata: Metadata = {
     template: '%s | ProjectNest',
   },
   description:
-    'Classes, assignments, grading and peer review for schools and their students.',
+    'Classes, assignments, grading and peer review for schools and their learners.',
 };
 
 export default function RootLayout({

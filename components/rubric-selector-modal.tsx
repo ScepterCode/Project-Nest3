@@ -62,12 +62,12 @@ export function RubricSelectorModal({
       const response = await fetch('/api/rubrics');
       const result = await response.json();
       if (!response.ok)
-        throw new Error(result.error || 'Failed to load rubrics');
+        throw new Error(result.error || 'Failed to load marking guides');
       setRubrics(result.rubrics || []);
       setTemplates(result.templates || []);
     } catch (error) {
-      console.error('Error fetching rubrics:', error);
-      toast.error(`Couldn't load your rubrics: ${errorMessage(error)}`);
+      console.error('Error fetching marking guides:', error);
+      toast.error(`Couldn't load your marking guides: ${errorMessage(error)}`);
       setRubrics([]);
       setTemplates([]);
     } finally {
@@ -87,7 +87,8 @@ export function RubricSelectorModal({
         )
         .eq('id', rubric.id)
         .single();
-      if (error || !data) throw new Error(error?.message || 'Rubric not found');
+      if (error || !data)
+        throw new Error(error?.message || 'Marking guide not found');
 
       const byOrder = (
         a: { order_index: number | null },
@@ -126,15 +127,15 @@ export function RubricSelectorModal({
 
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || 'Failed to attach rubric');
+        throw new Error(result.error || 'Failed to attach marking guide');
       }
 
       onRubricSelected(fullRubric);
       setOpen(false);
-      toast.success('Rubric attached to assignment successfully!');
+      toast.success('Marking guide attached to assignment successfully!');
     } catch (error) {
-      console.error('Error attaching rubric:', error);
-      toast.error(`Couldn't attach the rubric: ${errorMessage(error)}`);
+      console.error('Error attaching marking guide:', error);
+      toast.error(`Couldn't attach the marking guide: ${errorMessage(error)}`);
     } finally {
       setAttaching(null);
     }
@@ -146,15 +147,15 @@ export function RubricSelectorModal({
         {trigger || (
           <Button variant="outline" size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            Add Rubric
+            Add Marking Guide
           </Button>
         )}
       </DialogTrigger>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add Rubric to Assignment</DialogTitle>
+          <DialogTitle>Add Marking Guide to Assignment</DialogTitle>
           <DialogDescription>
-            Choose an existing rubric or create a new one
+            Choose an existing marking guide or create a new one
           </DialogDescription>
         </DialogHeader>
 
@@ -194,7 +195,7 @@ export function RubricSelectorModal({
 
           {/* Create New Rubric */}
           <div className="border-b pb-4">
-            <h3 className="font-medium mb-2">Create New Rubric</h3>
+            <h3 className="font-medium mb-2">Create New Marking Guide</h3>
             <RubricCreatorModal
               assignmentId={assignmentId}
               onRubricCreated={rubric => {
@@ -204,7 +205,7 @@ export function RubricSelectorModal({
               trigger={
                 <Button variant="outline" className="w-full">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create New Rubric
+                  Create New Marking Guide
                 </Button>
               }
             />
@@ -212,16 +213,16 @@ export function RubricSelectorModal({
 
           {/* Existing Rubrics */}
           <div>
-            <h3 className="font-medium mb-2">Use Existing Rubric</h3>
+            <h3 className="font-medium mb-2">Use Existing Marking Guide</h3>
 
             {loading ? (
-              <div className="text-center py-4">Loading rubrics...</div>
+              <div className="text-center py-4">Loading marking guides...</div>
             ) : rubrics.length === 0 ? (
               <div className="text-center py-8">
                 <FileCheck className="h-12 w-12 mx-auto mb-4 text-gray-400" />
-                <p className="text-gray-500">No rubrics available</p>
+                <p className="text-gray-500">No marking guides available</p>
                 <p className="text-sm text-gray-400">
-                  Create your first rubric above
+                  Create your first marking guide above
                 </p>
               </div>
             ) : (
@@ -259,7 +260,7 @@ export function RubricSelectorModal({
                       >
                         {attaching === rubric.id
                           ? 'Attaching...'
-                          : 'Use This Rubric'}
+                          : 'Use This Marking Guide'}
                       </Button>
                     </CardContent>
                   </Card>

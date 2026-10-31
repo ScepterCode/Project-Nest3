@@ -98,8 +98,8 @@ export function toSchool(row: Record<string, unknown>): PlatformSchool {
 }
 
 export const ROLE_LABELS: Record<string, string> = {
-  student: 'Student',
-  teacher: 'Teacher',
+  student: 'Learner',
+  teacher: 'Tutor',
   institution_admin: 'School admin',
   department_admin: 'Department admin',
   system_admin: 'Platform admin',

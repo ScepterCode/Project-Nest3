@@ -101,7 +101,7 @@ export function ClassMaterials({ classId, canManage }: ClassMaterialsProps) {
   const remove = async (material: ClassMaterial) => {
     const ok = await confirmAction({
       title: `Remove "${material.title}"?`,
-      description: 'Students will no longer see it.',
+      description: 'Learners will no longer see it.',
       confirmLabel: 'Remove',
       destructive: true,
     });
@@ -166,8 +166,8 @@ export function ClassMaterials({ classId, canManage }: ClassMaterialsProps) {
         <Card>
           <CardContent className="p-8 text-center text-sm text-muted-foreground">
             {canManage
-              ? 'No materials yet. Add files, notes or links (including videos) for your students.'
-              : 'Your teacher hasn’t shared any materials yet.'}
+              ? 'No materials yet. Add files, notes or links (including videos) for your learners.'
+              : 'Your tutor hasn’t shared any materials yet.'}
           </CardContent>
         </Card>
       ) : (

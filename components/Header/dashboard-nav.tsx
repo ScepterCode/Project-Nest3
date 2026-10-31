@@ -12,6 +12,8 @@ export interface DashboardNavItem {
   text: string;
   href: string;
   icon: React.ReactNode;
+  /** Active only on this exact page (a home page whose children are other items). */
+  exact?: boolean;
 }
 
 function NavItem({
@@ -24,7 +26,9 @@ function NavItem({
   stacked?: boolean;
 }) {
   const pathname = usePathname();
-  const active = isWithin(pathname, item.href);
+  const active = item.exact
+    ? pathname === item.href
+    : isWithin(pathname, item.href);
   return (
     <Link
       href={item.href}
@@ -34,8 +38,8 @@ function NavItem({
         stacked ? 'px-3 py-3' : 'px-3 py-2'
       } ${
         active
-          ? 'bg-blue-50 text-blue-700'
-          : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+          ? 'bg-accent text-accent-foreground'
+          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
       }`}
     >
       {item.icon}
@@ -89,14 +93,14 @@ export function DashboardMobileNav({
         aria-expanded={open}
         aria-controls="dashboard-mobile-menu"
         aria-label={open ? 'Close menu' : 'Open menu'}
-        className="rounded-md p-2 text-gray-700 hover:bg-gray-100"
+        className="rounded-md p-2 text-foreground hover:bg-muted"
       >
         {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
       </button>
       {open && (
         <div
           id="dashboard-mobile-menu"
-          className="absolute left-0 right-0 top-14 border-b border-gray-200 bg-white px-4 py-2 shadow-sm"
+          className="absolute left-0 right-0 top-14 border-b bg-card px-4 py-2 shadow-sm"
         >
           <nav aria-label="Main" className="flex flex-col">
             {items.map(item => (

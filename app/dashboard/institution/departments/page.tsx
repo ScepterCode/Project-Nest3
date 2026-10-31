@@ -78,7 +78,7 @@ export default function DepartmentManagementPage() {
 
       if (profileError || !profile?.institution_id) {
         toast.error(
-          "Your account isn't linked to an institution yet, so departments can't be created."
+          "Your account isn't linked to a school yet, so departments can't be created."
         );
         return;
       }
@@ -111,7 +111,7 @@ export default function DepartmentManagementPage() {
     if (error) {
       toast.error('Failed to delete department.' + error.message);
     } else if (!data || data.length === 0) {
-      toast.error('You can only delete departments in your own institution.');
+      toast.error('You can only delete departments in your own school.');
     } else {
       toast.success('Department deleted successfully!');
       fetchDepartments();
@@ -127,8 +127,7 @@ export default function DepartmentManagementPage() {
       .eq('id', userId)
       .select('id');
     if (error) return error.message;
-    if (!data || data.length === 0)
-      return "This user isn't in your institution.";
+    if (!data || data.length === 0) return "This user isn't in your school.";
     return null;
   };
 
@@ -149,9 +148,9 @@ export default function DepartmentManagementPage() {
 
     const error = await setUserDepartment(selectedDepartment, selectedTeacher);
     if (error) {
-      toast.error('Failed to assign teacher to department. ' + error);
+      toast.error('Failed to assign tutor to department. ' + error);
     } else {
-      toast.success('Teacher assigned to department successfully!');
+      toast.success('Tutor assigned to department successfully!');
       setSelectedDepartment(null);
       setSelectedTeacher(null);
     }
@@ -177,7 +176,7 @@ export default function DepartmentManagementPage() {
           <CardHeader>
             <CardTitle>Create New Department</CardTitle>
             <CardDescription>
-              Organize students and teachers into departments.
+              Organize learners and tutors into departments.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -230,7 +229,7 @@ export default function DepartmentManagementPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Assign Teachers to Departments</CardTitle>
+            <CardTitle>Assign Tutors to Departments</CardTitle>
             <CardDescription>
               Assign teachers to manage specific departments (groups of
               students).
@@ -254,7 +253,7 @@ export default function DepartmentManagementPage() {
               </select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="selectTeacher">Select Teacher</Label>
+              <Label htmlFor="selectTeacher">Select Tutor</Label>
               <MemberPicker
                 id="selectTeacher"
                 role="teacher"
@@ -266,16 +265,16 @@ export default function DepartmentManagementPage() {
               onClick={handleAssignTeacherToDepartment}
               disabled={!selectedDepartment || !selectedTeacher}
             >
-              Assign Teacher
+              Assign Tutor
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Group Students into Departments</CardTitle>
+            <CardTitle>Group Learners into Departments</CardTitle>
             <CardDescription>
-              Add students to specific departments.
+              Add learners to specific departments.
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4">
@@ -298,7 +297,7 @@ export default function DepartmentManagementPage() {
               </select>
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="selectStudent">Select Student</Label>
+              <Label htmlFor="selectStudent">Select Learner</Label>
               <MemberPicker
                 id="selectStudent"
                 role="student"
@@ -315,7 +314,7 @@ export default function DepartmentManagementPage() {
               }
               disabled={!selectedDepartment || !selectedStudent}
             >
-              Add Student to Department
+              Add Learner to Department
             </Button>
           </CardContent>
         </Card>

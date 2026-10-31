@@ -138,7 +138,7 @@ export default function StudentClassesPage() {
         (teachers ?? []).map(t => [
           t.id,
           `${t.first_name ?? ''} ${t.last_name ?? ''}`.trim() ||
-            'Unknown Teacher',
+            'Unknown Tutor',
         ])
       );
 
@@ -175,7 +175,7 @@ export default function StudentClassesPage() {
             id: cls.id,
             name: cls.name,
             description: cls.description ?? '',
-            teacher_name: teacherNames.get(cls.teacher_id) ?? 'Unknown Teacher',
+            teacher_name: teacherNames.get(cls.teacher_id) ?? 'Unknown Tutor',
             teacher_id: cls.teacher_id,
             enrollment_date: enrolledAt,
             status: 'active' as const,
@@ -263,7 +263,7 @@ export default function StudentClassesPage() {
 
   if (loading || loadingClasses) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -274,12 +274,14 @@ export default function StudentClassesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+    <div className="space-y-6">
+      <div>
+        <div>
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Classes</h1>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">
+                My Classes
+              </h1>
               <p className="text-gray-600">
                 Manage your enrolled classes, {getUserDisplayName()}
               </p>
@@ -303,7 +305,7 @@ export default function StudentClassesPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>

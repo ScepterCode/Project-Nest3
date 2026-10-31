@@ -128,7 +128,7 @@ export default function SubmitAssignmentPage() {
         class_name: classData?.name || 'Unknown Class',
         teacher_name: teacherData
           ? `${teacherData.first_name} ${teacherData.last_name}`
-          : 'Unknown Teacher',
+          : 'Unknown Tutor',
       });
 
       // Check for existing submission
@@ -297,8 +297,8 @@ export default function SubmitAssignmentPage() {
                 : 'New Assignment Submission',
             message:
               existingSubmission?.status === 'revision_requested'
-                ? `A student resubmitted "${assignment?.title}" after your requested changes`
-                : `A student has submitted "${assignment?.title}"`,
+                ? `A learner resubmitted "${assignment?.title}" after your requested changes`
+                : `A learner has submitted "${assignment?.title}"`,
             priority: 'medium',
             target_user_id: assignment?.teacher_id,
             action_url: `/dashboard/teacher/assignments/${assignmentId}/submissions`,
@@ -442,7 +442,7 @@ export default function SubmitAssignmentPage() {
         <Card className="mb-6 border-red-200 bg-red-50">
           <CardHeader>
             <CardTitle className="text-base text-red-800">
-              Your teacher asked for changes
+              Your tutor asked for changes
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2 text-sm text-red-900">

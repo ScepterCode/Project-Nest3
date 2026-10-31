@@ -71,7 +71,7 @@ export default function StudentGradesPage() {
         return;
       }
 
-      console.log('Loading grades for student:', user.id);
+      console.log('Loading grades for learner:', user.id);
 
       // Check if submissions table exists
       const { data: testSubmissions, error: submissionTestError } =
@@ -270,7 +270,7 @@ export default function StudentGradesPage() {
 
   if (loading || loadingGrades) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -281,12 +281,14 @@ export default function StudentGradesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+    <div className="space-y-6">
+      <div>
+        <div>
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">My Grades</h1>
+              <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">
+                My Grades
+              </h1>
               <p className="text-gray-600">
                 Track your academic progress, {getUserDisplayName()}
               </p>
@@ -301,7 +303,7 @@ export default function StudentGradesPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>

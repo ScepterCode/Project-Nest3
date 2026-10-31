@@ -92,9 +92,9 @@ export default function StudentAssignmentDetailPage({
         .single();
 
       if (assignmentError) {
-        console.error('Student assignment query error:', assignmentError);
+        console.error('Learner assignment query error:', assignmentError);
         console.error(
-          'Student assignment query error details:',
+          'Learner assignment query error details:',
           JSON.stringify(assignmentError, null, 2)
         );
         setError('Assignment not found or access denied');
@@ -376,7 +376,7 @@ export default function StudentAssignmentDetailPage({
                       <div>
                         <h4 className="font-medium mb-1">
                           {status === 'revision'
-                            ? 'What your teacher wants changed:'
+                            ? 'What your tutor wants changed:'
                             : 'Feedback:'}
                         </h4>
                         <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">

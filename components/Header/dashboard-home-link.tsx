@@ -24,7 +24,7 @@ export function DashboardHomeLink({ role }: { role: string }) {
   return (
     <Link
       href={home}
-      className="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900 print:hidden"
+      className="inline-flex w-fit items-center gap-1.5 rounded-md px-2 py-1 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground print:hidden"
     >
       <ArrowLeft className="h-4 w-4" />
       Dashboard

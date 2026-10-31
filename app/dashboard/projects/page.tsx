@@ -332,10 +332,10 @@ function EmptyProjects({
     text =
       groups > 0
         ? "No projects yet. Start one above in one of your school's programmes. Projects your learners join in cross-school programmes also appear here."
-        : "No programmes yet. Start one above and pick the teacher who'll run it; learners join with its code.";
+        : "No programmes yet. Start one above and pick the tutor who'll run it; learners join with its code.";
   } else if (access?.role === 'teacher') {
     text = !access.is_mentor
-      ? 'Production projects run in programmes. Your school admin can start a programme with you as its mentor, or make you a mentor from the Users page.'
+      ? 'Production projects run in programmes. Your school admin can start a programme with you as its mentor, or make you a mentor from the People page.'
       : groups > 0
         ? 'No projects yet. Start one above.'
         : "You're a mentor, but you don't run a programme yet. Your school admin can start one with you as its mentor.";

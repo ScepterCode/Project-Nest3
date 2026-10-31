@@ -24,8 +24,8 @@ import { confirmAction, errorMessage, toast } from '@/lib/toast';
 
 const AUDIENCES: Record<string, string> = {
   admins: 'School admins',
-  teachers: 'Teachers',
-  students: 'Students',
+  teachers: 'Tutors',
+  students: 'Learners',
   everyone: 'Everyone',
 };
 const ALL_SCHOOLS = 'all';

@@ -170,7 +170,7 @@ export default function StudentClassDetailPage({
 
       const teacherName = teacherData
         ? `${teacherData.first_name} ${teacherData.last_name}`
-        : 'Unknown Teacher';
+        : 'Unknown Tutor';
 
       // Get assignments for this class
       const { data: assignmentsData } = await supabase
@@ -253,7 +253,7 @@ export default function StudentClassDetailPage({
           id: row.student_id,
           name:
             `${row.first_name ?? ''} ${row.last_name ?? ''}`.trim() ||
-            'Unnamed student',
+            'Unnamed learner',
           enrollment_date: row.enrolled_at,
         }));
 
@@ -328,7 +328,7 @@ export default function StudentClassDetailPage({
 
   if (loading || loadingClass) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -340,7 +340,7 @@ export default function StudentClassDetailPage({
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="text-center py-12">
             <div className="text-red-600 mb-4">
@@ -362,7 +362,7 @@ export default function StudentClassDetailPage({
 
   if (!classDetail) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="text-center">
           <div className="text-lg">Class not found</div>
         </div>
@@ -371,11 +371,11 @@ export default function StudentClassDetailPage({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+      <div>
+        <div>
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
             <div className="flex items-center space-x-4">
               <Button
                 variant="ghost"
@@ -385,7 +385,7 @@ export default function StudentClassDetailPage({
                 Back to Classes
               </Button>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-semibold tracking-tight md:text-[28px]">
                   {classDetail.name}
                 </h1>
                 <p className="text-gray-600">
@@ -398,7 +398,7 @@ export default function StudentClassDetailPage({
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {/* Overview Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
           <Card>
@@ -557,7 +557,7 @@ export default function StudentClassDetailPage({
                   Classmates ({classDetail.classmates.length})
                 </CardTitle>
                 <CardDescription>
-                  Other students enrolled in this class
+                  Other learners enrolled in this class
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -565,7 +565,7 @@ export default function StudentClassDetailPage({
                   <div className="text-center py-8">
                     <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                     <p className="text-gray-600">
-                      No other students enrolled yet
+                      No other learners enrolled yet
                     </p>
                   </div>
                 ) : (
@@ -606,7 +606,7 @@ export default function StudentClassDetailPage({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-medium mb-2">Teacher</h4>
+                    <h4 className="font-medium mb-2">Tutor</h4>
                     <div className="flex items-center space-x-2">
                       <GraduationCap className="h-4 w-4 text-gray-500" />
                       <span>{classDetail.teacher_name}</span>

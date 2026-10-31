@@ -41,7 +41,7 @@ interface BackupStatus {
 }
 
 const BUCKET_LABELS: Record<string, string> = {
-  submissions: 'Student work',
+  submissions: 'Learner work',
   'class-materials': 'Class materials',
 };
 

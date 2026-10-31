@@ -172,7 +172,7 @@ export default function BulkImportPage() {
           import finishes, download the <strong>set-up links</strong> and send
           each person theirs (WhatsApp, SMS…) so they can choose a password.
           Links expire (usually after an hour); you can make new ones from the
-          Users page. Emails that already have an account are skipped and left
+          People page. Emails that already have an account are skipped and left
           unchanged.
         </AlertDescription>
       </Alert>
@@ -308,7 +308,7 @@ export default function BulkImportPage() {
                   The file lists each new account with its link and a message
                   ready to paste into WhatsApp or SMS. Send them soon: links
                   expire, usually after an hour. Anyone who missed theirs can
-                  get a new one from the Users page.
+                  get a new one from the People page.
                 </p>
                 <Button
                   size="sm"
@@ -330,7 +330,7 @@ export default function BulkImportPage() {
                           r?.first_name ?? '',
                           r?.last_name ?? '',
                           c.email,
-                          c.setup_link ?? 'Make one from the Users page',
+                          c.setup_link ?? 'Make one from the People page',
                           c.setup_link
                             ? setupMessage(r?.first_name ?? null, c.setup_link)
                             : '',

@@ -15,7 +15,7 @@ const TABS = [
   { href: '/dashboard/platform/programmes', label: 'Programmes' },
   { href: '/dashboard/platform/projects', label: 'Projects' },
   { href: '/dashboard/platform/nominations', label: 'Nominations' },
-  { href: '/dashboard/platform/rubrics', label: 'Rubric templates' },
+  { href: '/dashboard/platform/rubrics', label: 'Marking guide templates' },
   { href: '/dashboard/platform/invites', label: 'Admin invites' },
   { href: '/dashboard/platform/announcements', label: 'Announcements' },
   { href: '/dashboard/platform/health', label: 'Health' },

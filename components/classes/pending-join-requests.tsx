@@ -58,7 +58,7 @@ export function PendingJoinRequests() {
       <CardContent className="space-y-3 p-4">
         <p className="flex items-center gap-2 font-medium text-amber-900">
           <Clock className="h-4 w-4" />
-          Waiting for your teacher to accept
+          Waiting for your tutor to accept
         </p>
         <ul className="space-y-2">
           {requests.map(request => (

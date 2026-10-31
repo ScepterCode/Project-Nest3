@@ -112,7 +112,7 @@ export function TutorMetricsTable({
             </th>
             <th
               className="py-2 pr-3 font-normal"
-              title="Past-due work a student never handed in"
+              title="Past-due work a learner never handed in"
             >
               Missed deadlines
             </th>

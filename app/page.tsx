@@ -26,12 +26,10 @@ export default function Home() {
           <div className="text-center">
             <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-gray-900 mb-6">
               Transform Your
-              <span className="text-blue-600 block">
-                Educational Institution
-              </span>
+              <span className="text-blue-600 block">Educational School</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              Streamline student enrollment, manage classes, track assignments,
+              Streamline learner enrollment, manage classes, track assignments,
               and gain powerful insights with our comprehensive educational
               management platform.
             </p>
@@ -59,12 +57,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Everything You Need to Manage Your Institution
+              Everything You Need to Manage Your School
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From student enrollment to advanced analytics, our platform
-              provides all the tools you need to run your educational
-              institution efficiently.
+              From learner enrollment to advanced analytics, our platform
+              provides all the tools you need to run your educational school
+              efficiently.
             </p>
           </div>
 
@@ -72,11 +70,11 @@ export default function Home() {
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 p-8 rounded-xl border border-blue-100">
               <Users className="h-12 w-12 text-blue-600 mb-4" />
               <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Student Management
+                Learner Management
               </h3>
               <p className="text-gray-600">
-                Streamline enrollment, track student progress, and manage class
-                rosters with our intuitive student management system.
+                Streamline enrollment, track learner progress, and manage class
+                rosters with our intuitive learner management system.
               </p>
             </div>
 
@@ -86,8 +84,8 @@ export default function Home() {
                 Assignment Tracking
               </h3>
               <p className="text-gray-600">
-                Create, distribute, and grade assignments with rubrics and
-                anonymous peer reviews.
+                Create, distribute, and grade assignments with marking guides
+                and anonymous peer reviews.
               </p>
             </div>
 
@@ -97,8 +95,8 @@ export default function Home() {
                 Advanced Analytics
               </h3>
               <p className="text-gray-600">
-                See grades and submission progress per class, and
-                institution-wide reports for administrators.
+                See grades and submission progress per class, and school-wide
+                reports for administrators.
               </p>
             </div>
 
@@ -108,8 +106,8 @@ export default function Home() {
                 Role-Based Access
               </h3>
               <p className="text-gray-600">
-                Secure multi-tier access control for students, teachers,
-                department admins, and institution administrators.
+                Secure multi-tier access control for learners, tutors,
+                department admins, and school administrators.
               </p>
             </div>
 
@@ -130,8 +128,8 @@ export default function Home() {
                 Smart Notifications
               </h3>
               <p className="text-gray-600">
-                Students and teachers are notified about new assignments,
-                grades, peer reviews, and role requests.
+                Learners and tutors are notified about new assignments, grades,
+                peer reviews, and role requests.
               </p>
             </div>
           </div>
@@ -159,7 +157,7 @@ export default function Home() {
               <div className="flex items-start space-x-4">
                 <GraduationCap className="h-8 w-8 text-blue-600 shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-gray-900">Students</h4>
+                  <h4 className="font-semibold text-gray-900">Learners</h4>
                   <p className="text-gray-600">
                     Join classes with a code, submit work, review classmates
                     anonymously, and follow their grades.
@@ -169,10 +167,10 @@ export default function Home() {
               <div className="flex items-start space-x-4">
                 <BookOpen className="h-8 w-8 text-green-600 shrink-0" />
                 <div>
-                  <h4 className="font-semibold text-gray-900">Teachers</h4>
+                  <h4 className="font-semibold text-gray-900">Tutors</h4>
                   <p className="text-gray-600">
-                    Run classes, publish assignments, grade with rubrics, and
-                    set up peer review rounds.
+                    Run classes, publish assignments, grade with marking guides,
+                    and set up peer review rounds.
                   </p>
                 </div>
               </div>
@@ -180,11 +178,11 @@ export default function Home() {
                 <Building2 className="h-8 w-8 text-purple-600 shrink-0" />
                 <div>
                   <h4 className="font-semibold text-gray-900">
-                    Institution administrators
+                    School administrators
                   </h4>
                   <p className="text-gray-600">
                     Manage members, departments, and role requests, and see
-                    reports across the institution.
+                    reports across the school.
                   </p>
                 </div>
               </div>
@@ -245,7 +243,7 @@ export default function Home() {
 
             <div className="bg-gray-800 p-8 rounded-xl flex flex-col justify-center">
               <h3 className="text-2xl font-semibold mb-4">
-                Bring ProjectNest to your institution
+                Bring ProjectNest to your school
               </h3>
               <p className="text-gray-300 mb-6">
                 Tell us about your school and what you need, and we&apos;ll help

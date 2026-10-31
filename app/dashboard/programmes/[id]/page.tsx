@@ -622,7 +622,7 @@ function TutorPicker({
   }, [programmeId]);
 
   if (!tutors)
-    return <p className="text-sm text-muted-foreground">Loading teachers…</p>;
+    return <p className="text-sm text-muted-foreground">Loading tutors…</p>;
   const term = filter.trim().toLowerCase();
   const shown = tutors.filter(
     t =>
@@ -639,7 +639,7 @@ function TutorPicker({
           placeholder={`Filter ${tutors.length} teachers`}
           value={filter}
           onChange={e => setFilter(e.target.value)}
-          aria-label="Filter teachers"
+          aria-label="Filter tutors"
         />
       )}
       <select

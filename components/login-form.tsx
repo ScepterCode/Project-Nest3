@@ -73,11 +73,11 @@ export function LoginForm({
           router.push('/onboarding');
         }
       } else {
-        console.error('No user found after login');
+        console.error('No user found after sign in');
         setError('Authentication failed - no user found');
       }
     } catch (error: unknown) {
-      console.error('Login process error:', error);
+      console.error('Sign in process error:', error);
       setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
@@ -88,9 +88,9 @@ export function LoginForm({
     <div className={cn('flex flex-col gap-6', className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <CardTitle className="text-2xl">Sign in</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your email below to sign in to your account
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -144,7 +144,7 @@ export function LoginForm({
                 </div>
               )}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? 'Logging in...' : 'Login'}
+                {isLoading ? 'Signing in...' : 'Sign in'}
               </Button>
             </div>
             <div className="mt-4 text-center text-sm">

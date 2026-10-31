@@ -16,7 +16,7 @@ export default function PageHeader() {
       children2={
         <div className="flex items-center gap-4">
           <Navlinks href="/auth/login" className="hidden sm:inline">
-            Login
+            Sign in
           </Navlinks>
           <Link
             href="/auth/sign-up"
@@ -25,7 +25,7 @@ export default function PageHeader() {
             Get Started
           </Link>
           <MobileMenu
-            links={[...SECTIONS, { href: '/auth/login', label: 'Login' }]}
+            links={[...SECTIONS, { href: '/auth/login', label: 'Sign in' }]}
           />
         </div>
       }

@@ -60,7 +60,7 @@ it('offers programme templates first and attaches one like any rubric', async ()
   render(
     <RubricSelectorModal assignmentId="a1" onRubricSelected={onSelected} />
   );
-  fireEvent.click(screen.getByText('Add Rubric'));
+  fireEvent.click(screen.getByText('Add Marking Guide'));
 
   expect(await screen.findByText('Programme templates')).toBeInTheDocument();
   expect(screen.getByText('Foundation: Walk cycle')).toBeInTheDocument();

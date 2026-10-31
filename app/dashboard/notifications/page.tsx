@@ -219,7 +219,7 @@ export default function NotificationsPage() {
 
   if (loading || loadingNotifications) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-[50vh] items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -232,12 +232,12 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter(n => !n.is_read).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-6">
+    <div className="space-y-6">
+      <div>
+        <div>
+          <div className="flex flex-wrap items-end justify-between gap-4 border-b pb-5">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+              <h1 className="flex items-center gap-2 text-2xl font-semibold tracking-tight md:text-[28px]">
                 <Bell className="h-6 w-6" />
                 Notifications
                 {unreadCount > 0 && (
@@ -273,7 +273,7 @@ export default function NotificationsPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div>
         {/* Filters and Actions */}
         <Card className="mb-6">
           <CardContent className="pt-6">

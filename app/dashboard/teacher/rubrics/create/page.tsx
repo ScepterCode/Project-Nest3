@@ -302,7 +302,7 @@ export default function CreateRubricPage() {
 
   const validateRubric = () => {
     if (!rubricData.name.trim()) {
-      toast.error('Please enter a rubric name');
+      toast.error('Please enter a marking guide name');
       return false;
     }
     if (criteria.length === 0) {
@@ -356,14 +356,14 @@ export default function CreateRubricPage() {
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
-        throw new Error(result.error || 'Failed to create rubric');
+        throw new Error(result.error || 'Failed to create marking guide');
       }
 
-      toast.success('Rubric created successfully!');
+      toast.success('Marking guide created successfully!');
       router.push(listPath);
     } catch (error) {
-      console.error('Error creating rubric:', error);
-      toast.error(`Couldn't create the rubric: ${errorMessage(error)}`);
+      console.error('Error creating marking guide:', error);
+      toast.error(`Couldn't create the marking guide: ${errorMessage(error)}`);
     } finally {
       setSaving(false);
     }
@@ -427,7 +427,7 @@ export default function CreateRubricPage() {
       <div className="text-center py-12">
         <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
         <p className="text-gray-600">
-          You need to be logged in as a teacher to create rubrics.
+          You need to be logged in as a tutor to create marking guides.
         </p>
       </div>
     );
@@ -439,12 +439,12 @@ export default function CreateRubricPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">
-            {programme ? 'New programme template' : 'Create Rubric'}
+            {programme ? 'New programme template' : 'Create Marking Guide'}
           </h1>
           <p className="text-gray-600">
             {programme
               ? 'Published for every tutor at every school as soon as you save it'
-              : 'Design a comprehensive grading rubric for your assignments'}
+              : 'Design a marking guide for grading your assignments'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -460,7 +460,7 @@ export default function CreateRubricPage() {
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save Rubric
+                Save Marking Guide
               </>
             )}
           </Button>
@@ -483,8 +483,8 @@ export default function CreateRubricPage() {
             <CardHeader>
               <CardTitle>Choose a Template</CardTitle>
               <CardDescription>
-                Start with a pre-built rubric template and customize it to your
-                needs
+                Start with a pre-built marking guide template and customize it
+                to your needs
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -523,7 +523,7 @@ export default function CreateRubricPage() {
                       Start from Scratch
                     </CardTitle>
                     <CardDescription>
-                      Create a completely custom rubric
+                      Create a completely custom marking guide
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -549,16 +549,16 @@ export default function CreateRubricPage() {
             <CardHeader>
               <CardTitle>Basic Information</CardTitle>
               <CardDescription>
-                Set up the basic details for your rubric
+                Set up the basic details for your marking guide
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Rubric Name *</Label>
+                  <Label htmlFor="name">Marking Guide Name *</Label>
                   <Input
                     id="name"
-                    placeholder="e.g., Essay Writing Rubric"
+                    placeholder="e.g., Essay Writing Marking Guide"
                     value={rubricData.name}
                     onChange={e =>
                       setRubricData(prev => ({ ...prev, name: e.target.value }))
@@ -595,7 +595,7 @@ export default function CreateRubricPage() {
                 <Label htmlFor="description">Description</Label>
                 <Textarea
                   id="description"
-                  placeholder="Describe what this rubric evaluates..."
+                  placeholder="Describe what this marking guide evaluates..."
                   value={rubricData.description}
                   onChange={e =>
                     setRubricData(prev => ({
@@ -874,7 +874,7 @@ export default function CreateRubricPage() {
                   <div className="space-y-4">
                     <div className="text-center">
                       <h3 className="text-xl font-bold">
-                        {rubricData.name || 'Untitled Rubric'}
+                        {rubricData.name || 'Untitled Marking Guide'}
                       </h3>
                       {rubricData.description && (
                         <p className="text-gray-600 mt-2">

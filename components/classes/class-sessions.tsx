@@ -290,7 +290,7 @@ export function ClassSessions({
                 </div>
                 {students.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
-                    No students in this class yet.
+                    No learners in this class yet.
                   </p>
                 ) : (
                   <ul className="divide-y rounded-md border">
