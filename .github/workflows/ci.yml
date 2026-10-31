@@ -35,6 +35,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: No new hard-coded colours
+        run: npm run check:colours
+
       - name: Test
         run: npm test -- --ci
 

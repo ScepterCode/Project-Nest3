@@ -12,26 +12,7 @@ import {
   sinceText,
   toSchool,
 } from '@/lib/platform/client';
-
-function Stat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: number | string;
-  note?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold">{value}</p>
-        {note && <p className="text-xs text-muted-foreground">{note}</p>}
-      </CardContent>
-    </Card>
-  );
-}
+import { Stat } from '@/components/ui/stat';
 
 export default function PlatformOverviewPage() {
   const [overview, setOverview] = useState<PlatformOverview | null>(null);
@@ -69,18 +50,18 @@ export default function PlatformOverviewPage() {
         <Stat
           label="Schools"
           value={overview.schools}
-          note={`${overview.active_schools} active`}
+          hint={`${overview.active_schools} active`}
         />
         <Stat
           label="Teachers"
           value={overview.teachers}
-          note={`${overview.admins} school admins`}
+          hint={`${overview.admins} school admins`}
         />
         <Stat label="Students" value={overview.students} />
         <Stat
           label="Active people"
           value={overview.active_7d}
-          note={`last 7 days · ${overview.active_30d} in 30 days`}
+          hint={`last 7 days · ${overview.active_30d} in 30 days`}
         />
         <Stat label="Classes" value={overview.classes} />
         <Stat label="Assignments" value={overview.assignments} />
@@ -88,7 +69,7 @@ export default function PlatformOverviewPage() {
         <Stat
           label="Quiet schools"
           value={quiet.length}
-          note={`no activity in ${QUIET_AFTER_DAYS} days`}
+          hint={`no activity in ${QUIET_AFTER_DAYS} days`}
         />
       </div>
 

@@ -1,12 +1,16 @@
 import React from 'react';
-import { BookOpen } from 'lucide-react';
 import Link from 'next/link';
+import { NestMark } from '@/components/brand/nest-mark';
 
-export default function Logo() {
+export default function Logo({ href = '/' }: { href?: string }) {
   return (
-    <Link href="/" className="flex items-center space-x-2">
-      <BookOpen className="h-8 w-8 text-blue-600" />
-      <span className="text-xl font-bold text-gray-900">ProjectNest</span>
+    <Link
+      href={href}
+      aria-label="ProjectNest home"
+      className="flex items-center gap-2 text-foreground"
+    >
+      <NestMark size={30} />
+      <span className="text-xl font-semibold tracking-tight">projectnest</span>
     </Link>
   );
 }

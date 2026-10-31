@@ -8,6 +8,7 @@
     "lint:fix": "next lint --fix",
     "type-check": "tsc --noEmit",
     "quality-check": "npm run type-check && npm run lint",
+    "check:colours": "node scripts/check-colours.js",
     "prepare": "husky || true",
     "test": "jest",
     "test:watch": "jest --watch",

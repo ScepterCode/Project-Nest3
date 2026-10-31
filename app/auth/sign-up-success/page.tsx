@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import Logo from '@/components/Header/Logo';
 import { ResendConfirmation } from '@/components/auth/resend-confirmation';
 import { SIGNUP_EMAIL_KEY } from '@/lib/auth/email-links';
 
@@ -56,6 +57,9 @@ export default function Page() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
+        <div className="mb-6 flex justify-center">
+          <Logo />
+        </div>
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Check your email</CardTitle>

@@ -27,7 +27,7 @@ export default function MobileMenu({ links }: { links: MobileMenuLink[] }) {
       {open && (
         <div
           id="mobile-menu"
-          className="absolute left-0 right-0 top-16 bg-white border-b border-gray-200 shadow-sm"
+          className="absolute left-0 right-0 top-14 bg-white border-b border-gray-200 shadow-sm"
         >
           <div className="px-4 py-3 flex flex-col">
             {links.map(link => (

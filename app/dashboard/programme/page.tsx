@@ -14,6 +14,7 @@ import {
   platformRpc,
   sinceText,
 } from '@/lib/platform/client';
+import { Stat } from '@/components/ui/stat';
 
 interface SchoolRow {
   school_id: string;
@@ -46,26 +47,6 @@ const NUMERIC: (keyof SchoolRow)[] = [
   'missed_deadlines',
   'tutors_flagged',
 ];
-
-function Stat({
-  label,
-  value,
-  note,
-}: {
-  label: string;
-  value: number | string;
-  note?: string;
-}) {
-  return (
-    <Card>
-      <CardContent className="p-4">
-        <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="text-2xl font-bold">{value}</p>
-        {note && <p className="text-xs text-muted-foreground">{note}</p>}
-      </CardContent>
-    </Card>
-  );
-}
 
 const pct = (v: number | null) => (v === null ? '—' : `${v}%`);
 
@@ -110,14 +91,14 @@ export default function ProgrammePage() {
         <Stat
           label="Schools"
           value={overview.schools}
-          note={`${overview.active_schools} active`}
+          hint={`${overview.active_schools} active`}
         />
         <Stat label="Tutors" value={overview.teachers} />
         <Stat label="Learners" value={overview.students} />
         <Stat
           label="Active people"
           value={overview.active_7d}
-          note={`last 7 days · ${overview.active_30d} in 30`}
+          hint={`last 7 days · ${overview.active_30d} in 30`}
         />
         <Stat label="Classes" value={overview.classes} />
         <Stat label="Assignments" value={overview.assignments} />

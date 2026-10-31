@@ -14,7 +14,7 @@ export default function PageHeader() {
   return (
     <Navbar
       children2={
-        <>
+        <div className="flex items-center gap-4">
           <Navlinks href="/auth/login" className="hidden sm:inline">
             Login
           </Navlinks>
@@ -27,16 +27,16 @@ export default function PageHeader() {
           <MobileMenu
             links={[...SECTIONS, { href: '/auth/login', label: 'Login' }]}
           />
-        </>
+        </div>
       }
       children1={
-        <>
+        <nav aria-label="Sections" className="flex gap-6 py-2 text-sm">
           {SECTIONS.map(section => (
             <Navlinks key={section.href} href={section.href}>
               {section.label}
             </Navlinks>
           ))}
-        </>
+        </nav>
       }
     />
   );

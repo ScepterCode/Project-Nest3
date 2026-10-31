@@ -1,9 +1,13 @@
 import { ForgotPasswordForm } from '@/components/forgot-password-form';
+import Logo from '@/components/Header/Logo';
 
 export default function Page() {
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
+        <div className="mb-6 flex justify-center">
+          <Logo />
+        </div>
         <ForgotPasswordForm />
       </div>
     </div>
