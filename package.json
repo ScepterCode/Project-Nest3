@@ -18,7 +18,8 @@
     "db:new": "supabase migration new",
     "db:push": "supabase db push",
     "db:status": "supabase migration list",
-    "db:replay": "node scripts/db/replay-migrations.js"
+    "db:replay": "node scripts/db/replay-migrations.js",
+    "db:walkthrough": "node scripts/db/walkthrough.js"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
