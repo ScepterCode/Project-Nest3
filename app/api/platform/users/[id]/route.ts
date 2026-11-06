@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { requirePlatformAdmin } from '@/lib/platform/server';
+import { sendPasswordReset } from '@/lib/auth/password-reset';
 
 // About 100 years: Supabase has no "forever", and the account can be enabled
 // again at any time.
@@ -65,10 +66,11 @@ export async function POST(
         { status: 400 }
       );
     }
-    const origin = request.nextUrl.origin;
-    const { error } = await supabase.auth.resetPasswordForEmail(
+    // Not the admin's own (PKCE) client: that link would only work in the
+    // admin's browser. See lib/auth/password-reset.ts.
+    const { error } = await sendPasswordReset(
       target.user.email,
-      { redirectTo: `${origin}/auth/update-password` }
+      request.nextUrl.origin
     );
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 502 });
