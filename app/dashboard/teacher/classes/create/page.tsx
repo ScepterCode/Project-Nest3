@@ -157,43 +157,53 @@ export default function CreateClassPage() {
     try {
       console.log('Starting class creation process...');
 
-      // Generate unique class code using the robust utility
-      console.log('Generating class code for:', className.trim());
-      const classCode = await generateRobustClassCode({
-        className: className.trim(),
-        maxRetries: 5,
-      });
-      console.log('Generated class code:', classCode);
-
-      // Get user's institution_id from user_profiles table
-      const { data: userProfile, error: profileError } = await supabase
-        .from('user_profiles')
+      // The tutor's school comes from users (user_profiles is a legacy table
+      // that new accounts have no row in, which made every creation fail).
+      const { data: me, error: profileError } = await supabase
+        .from('users')
         .select('institution_id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profileError) {
         console.error('Error fetching user profile:', profileError);
         setErrors({
-          general: 'Failed to fetch user information. Please try again.',
+          general: 'Failed to fetch your account. Please try again.',
         });
         setIsLoading(false);
         return;
       }
 
-      const { data: classData, error } = (await supabase
-        .from('classes')
-        .insert([
-          {
-            name: className.trim(),
-            description: description.trim(),
-            teacher_id: user.id,
-            institution_id: userProfile?.institution_id,
-            code: classCode,
-          },
-        ])
-        .select()
-        .single()) as { data: ClassCreationResult | null; error: any };
+      // The code is checked for uniqueness before inserting, but RLS hides
+      // other tutors' classes from that check: on a clash, pick another.
+      let classData: ClassCreationResult | null = null;
+      let error: { code?: string; message: string } | null = null;
+      let classCode = '';
+      for (let attempt = 0; attempt < 4; attempt++) {
+        classCode = await generateRobustClassCode({
+          className: className.trim(),
+          maxRetries: 5,
+        });
+        const result = (await supabase
+          .from('classes')
+          .insert([
+            {
+              name: className.trim(),
+              description: description.trim(),
+              teacher_id: user.id,
+              institution_id: me?.institution_id ?? null,
+              code: classCode,
+            },
+          ])
+          .select()
+          .single()) as {
+          data: ClassCreationResult | null;
+          error: { code?: string; message: string } | null;
+        };
+        classData = result.data;
+        error = result.error;
+        if (!error || error.code !== '23505') break;
+      }
 
       if (error) {
         console.error('Error creating class:', error);
